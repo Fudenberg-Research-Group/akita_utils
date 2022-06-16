@@ -4,6 +4,20 @@ import os
 from setuptools import find_packages, setup
 
 
+PKG_NAME = "bioframe"
+README_PATH = "README.md"
+INSTALL_DEPS_PATH = "requirements.txt"
+CLASSIFIERS = [
+    "Development Status :: 4 - Beta",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+]
+
+
 def read(*paths, **kwargs):
     """Read the contents of a text file safely.
     >>> read("akita_utils", "VERSION")
@@ -42,5 +56,8 @@ setup(
     entry_points={
         "console_scripts": ["akita_utils = akita_utils.__main__:main"]
     },
+    classifiers=CLASSIFIERS,
+    python_requires=">=3.7",
+    install_requires=get_requirements(INSTALL_DEPS_PATH),
     extras_require={"test": read_requirements("requirements-test.txt")},
 )
