@@ -59,7 +59,6 @@ def h5_to_df(filename):
         if "ref_"+key in scd_out.keys():
             diff = scd_out["ref_"+key][()].mean(axis=1)- scd_out["alt_"+key][()].mean(axis=1)
             s.append( pd.Series(diff, name=key) ) 
-
     seq_coords_df = pd.concat(s,axis=1)
     for key in ['chrom','strand_2']:#'rownames','strand','chrom','TF']:
         seq_coords_df[key] = seq_coords_df[key].str.decode('utf8').copy()
@@ -67,12 +66,121 @@ def h5_to_df(filename):
     
     len_orig = len(seq_coords_df)
     seq_coords_df.drop_duplicates('index',inplace=True)
-    print('orig', len_orig, 'filt', len(seq_coords_df))
-    print(len_orig-len(seq_coords_df), 'duplicates removed')
+    print(len_orig-len(seq_coords_df), 'duplicates removed for ',filename)
     seq_coords_df.rename(columns={'index':'mut_index'}, inplace=True)
     seq_coords_df.reset_index(inplace=True, drop=True)
     return seq_coords_df
 
+import glob
+from io import StringIO
+
+def filter_boundary_h5(
+    h5_dirs = '/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5',
+    score_key = 'SCD',
+):
+    ## load scores from boundary mutagenesis, average chosen score across models
+    dfs = []
+    for h5_file in glob.glob(h5_dirs):
+        dfs.append(h5_to_df(h5_file))
+    score_key = 'SCD'
+    df = dfs[0].copy()
+    df[score_key] = np.mean(  [df[score_key] for df in dfs]  , axis=0)
+    df['span'] = df['span'].str.decode('utf8')
+
+    ## append scores for full mut and all ctcf mut to table
+    print('annotating each site with boundary-wide scores')
+    score_10k = np.zeros((len(df),))
+    score_all_ctcf = np.zeros((len(df),))
+    for i in np.unique(df['boundary_index'].values):
+        inds = df['boundary_index'].values== i 
+        df_boundary = df.iloc[inds]
+        score_10k[inds] = df_boundary.iloc[-1]['SCD']
+        if len(df_boundary)> 2:
+            score_all_ctcf[inds] = df_boundary.iloc[-2]['SCD']
+    df['score_all_ctcf']= score_all_ctcf
+    df['score_10k']= score_10k
+    
+    # considering only single ctcf mutations 
+    # require that they fall in an overall boundary that has some saliency
+    # TODO: maybe also require that the neighboring bins don't have a more salient boundary?
+    # suffix _2 means _motif
+    sites = df.iloc[ (df['strand_2'].values != 'nan') *
+                     (df['score_all_ctcf'].values > 5)
+                    ].copy()
+
+    # extracting start/end of motif from span
+    sites  = pd.concat([
+                    sites, 
+                    sites['span'].str.split('-', expand=True).astype(int).rename(columns={0:'start_2',1:'end_2'}).copy()],axis=1)
+    sites.reset_index(inplace=True,drop=True)
+
+    print('filtering sites by overlap with rmsk')
+    # require that sites don't overlap rmsk !
+    # this is important for sineB2 in mice, maybe other things as well
+    rmsk_cols = pd.read_csv(StringIO('bin	swScore	milliDiv	milliDel	milliIns	genoName	genoStart	genoEnd	genoLeft	strand	repName	repClass	repFamily	repStart	repEnd	repLeft	id'),sep= '\t')
+    rmsk = pd.read_table('/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz', names=rmsk_cols.keys())
+    rmsk.rename(columns={'genoName':'chrom','genoStart':'start','genoEnd':'end'}, inplace=True)
+
+    sites = bioframe.count_overlaps(
+                        sites, 
+                        rmsk[['chrom','start','end']], 
+                        cols1=['chrom','start_2','end_2'])
+    sites = sites.iloc[sites['count'].values==0]
+    sites.reset_index(inplace=True,drop=True)
+    if sites.duplicated().sum() > 0: 
+        raise ValueError("no duplicates allowed")
+    
+    return sites
+
+def filter_sites_by_score(
+    sites,
+    score_key='SCD',
+    weak_thresh_pct = 1, # don't use sites weaker than this, might be artifacts
+    weak_num = 500 ,
+    strong_thresh_pct = 99, # don't use sites weaker than this, might be artifacts
+    strong_num = 500 ,
+
+):
+    ''' chooses a specified number of strong and weak sites exluding low and/or high outliers which may contain more artifacts.  '''
+    if (weak_num < 1) or (strong_num<1): raise ValueError("must select a postive number of sites")
+    strong_thresh = np.percentile(sites[score_key].values,strong_thresh_pct)
+    weak_thresh = np.percentile(sites[score_key].values,weak_thresh_pct)
+    weak_sites   = sites.loc[ sites[score_key] > weak_thresh  ].copy().sort_values(score_key)[:weak_num]
+    strong_sites = sites.loc[ sites[score_key] < strong_thresh  ].copy().sort_values(score_key)[-strong_num:][::-1]
+    strong_sites.reset_index(inplace=True,drop=True)
+    weak_sites.reset_index(inplace=True,drop=True)
+    return strong_sites, weak_sites
+
+def prepare_insertion_tsv(
+    h5_dirs = '/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5',
+    score_key = 'SCD',
+    flank_pad = 60, #how much flanking sequence around the sites to include
+    weak_thresh_pct = 1, # don't use sites weaker than this, might be artifacts
+    weak_num = 500 ,
+    strong_thresh_pct = 99, # don't use sites weaker than this, might be artifacts
+    strong_num = 500 ,
+    save_tsv=None, # optional filename to save a tsv
+):
+    '''creates a tsv with strong followed by weak sequences, which can be used as input to akita_insert.py or akita_flat_map.py'''
+    
+    sites = filter_boundary_h5(h5_dirs = h5_dirs, score_key=score_key)
+    
+    strong_sites, weak_sites = filter_sites_by_score(
+                                        sites,
+                                        score_key=score_key,
+                                        weak_thresh_pct = weak_thresh_pct, 
+                                        weak_num = weak_num,
+                                        strong_thresh_pct = strong_thresh_pct, 
+                                        strong_num = strong_num )
+
+    site_df =  pd.concat([strong_sites.copy(),weak_sites.copy()])
+    seq_coords_df = site_df[['chrom','start_2','end_2','strand_2','SCD']].copy().rename(
+        columns={'start_2':'start','end_2':'end','strand_2':'strand', 'SCD':'genomic_SCD'})
+    seq_coords_df.reset_index(inplace=True)
+    seq_coords_df = bioframe.expand(seq_coords_df, pad=flank_pad)
+    print('df prepared')
+    if save_tsv is not None: seq_coords_df.to_csv(save_tsv, sep='\t', index=False)
+    return seq_coords_df
 
 
 ### sequence handling
