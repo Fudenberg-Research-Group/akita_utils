@@ -116,23 +116,6 @@ def main():
         type="int",
         help="Specify head index (0=human 1=mus) ",
     )
-    parser.add_option(
-        "--mut-method",
-        dest="mutation_method",
-        default="mask",
-        type="str",
-        help="Specify mutation method, [Default: %default]",
-    )
-    parser.add_option(
-        "--motif-width", dest="motif_width", default=18, type="int", help="motif width"
-    )
-    parser.add_option(
-        "--use-span",
-        dest="use_span",
-        default=False,
-        action="store_true",
-        help="specify if using spans",
-    )
 
     # multi
     parser.add_option(
@@ -198,6 +181,29 @@ def main():
         help="cpu constraints to avoid the a40 gpus. [Default: %default]",
     )
 
+    ## insertion-specific options
+    parser.add_option(
+        "--background-file",
+        dest="background_file",
+        default=None,
+        help="file with insertion seqs in fasta format",
+    )
+    parser.add_option(
+        "--spacer-bp",
+        dest="spacer_bp",
+        default=0,
+        type="int",
+        help="Specify spacing between insertions",
+    )
+    parser.add_option(
+        "--num-inserts",
+        dest="num_inserts",
+        default=6,
+        type="int",
+        help="Specify number of insertions",
+    )
+
+    
     (options, args) = parser.parse_args()
 
     if len(args) != 3:
@@ -209,6 +215,7 @@ def main():
 
     #######################################################
     # prep work
+    scd_stats = options.scd_stats
 
     # output directory
     if not options.restart:
@@ -237,7 +244,7 @@ def main():
                 cmd += "conda activate basenji-gpu;"
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
 
-            cmd += " ${SLURM_SUBMIT_DIR}/akita_motif_scd.py %s %s %d" % (
+            cmd += " ${SLURM_SUBMIT_DIR}/akita_insert_core-flank-pairs.py %s %s %d" % (
                 options_pkl_file,
                 " ".join(args),
                 pi,
@@ -265,13 +272,13 @@ def main():
             jobs.append(j)
 
     slurm.multi_run(
-        jobs, max_proc=options.max_proc, verbose=True, launch_sleep=10, update_sleep=60
+        jobs, max_proc=options.max_proc, verbose=True, launch_sleep=30, update_sleep=60
     )
 
     #######################################################
     # collect output
 
-    collect_h5("scd.h5", options.out_dir, options.processes)
+    collect_h5("scd.h5", options.out_dir, options.processes, options.scd_stats)
 
     # for pi in range(options.processes):
     #     shutil.rmtree('%s/job%d' % (options.out_dir,pi))
@@ -287,7 +294,7 @@ def collect_table(file_name, out_dir, num_procs):
         )
 
 
-def collect_h5(file_name, out_dir, num_procs):
+def collect_h5(file_name, out_dir, num_procs, scd_stats):
     # count variants
     num_variants = 0
     for pi in range(num_procs):
@@ -320,9 +327,11 @@ def collect_h5(file_name, out_dir, num_procs):
             )
 
         else:
-            num_targets = job0_h5_open[key].shape[1]
+            assert len( job0_h5_open[key].shape)==3
+            num_targets = job0_h5_open[key].shape[-1]
+            num_background_seqs = job0_h5_open[key].shape[0]
             final_h5_open.create_dataset(
-                key, shape=(num_variants, num_targets), dtype=job0_h5_open[key].dtype
+                key, shape=(num_background_seqs, num_variants, num_targets), dtype=job0_h5_open[key].dtype
             )
 
     job0_h5_open.close()
@@ -344,8 +353,12 @@ def collect_h5(file_name, out_dir, num_procs):
                 if job_h5_open[key].dtype.char == "S":
                     final_strings[key] += list(job_h5_open[key])
                 else:
-                    job_variants = job_h5_open[key].shape[0]
-                    final_h5_open[key][vi : vi + job_variants] = job_h5_open[key]
+                    if key in scd_stats: ## because we put the background seqs in the first index here.. 
+                        job_variants = job_h5_open[key].shape[1]
+                        final_h5_open[key][:, vi : vi + job_variants, :] = job_h5_open[key]
+                    else:
+                        job_variants = job_h5_open[key].shape[0]
+                        final_h5_open[key][vi : vi + job_variants] = job_h5_open[key]
 
         vi += job_variants
         job_h5_open.close()

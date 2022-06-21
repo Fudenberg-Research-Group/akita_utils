@@ -52,7 +52,7 @@ from basenji import dna_io
 """
 akita_scd.py
 
-Compute SNP Contact Difference (SCD) scores for motif insertions from a tsv file with chrom,start,end,strand.
+Compute SNP Contact Difference (SCD) scores for paired motif insertions from a tsv file with chrom,start,end,strand for positions of motifs used as the core & flanking sequence. 
 
 """
 
@@ -273,30 +273,37 @@ def main():
                 continue
             background_seqs.append(dna_io.dna_1hot(line.strip()))
 
-    if len((seq_coords_df["end"] - seq_coords_df["start"]).unique()) > 1:
-        raise ValueError("all tiled insertions must be the same length")
-    insert_length = int((seq_coords_df["end"] - seq_coords_df["start"]).unique())
+    df_site_pairs  = seq_coords_df
+    core_len = (df_site_pairs["end_core"] - df_site_pairs["start_core"]).unique()
+    flank_len = (df_site_pairs["end_flank"] - df_site_pairs["start_flank"]).unique()
+    if not (len(core_len) == 1) and (len(flank_len) == 1) and (core_len==flank_len):
+        raise ValueError("current code works with fixed and equal size for core & flank motifs before padding.")
+    
     spacer_bp = options.spacer_bp
     num_inserts = options.num_inserts
-    multi_insert_length = num_inserts * (insert_length + spacer_bp)
-    offsets = []
-    for i in range(num_inserts):
-        offsets.append(
-            seq_length // 2 - multi_insert_length // 2 + i * (insert_length + spacer_bp)
-        )
 
-    def seqs_gen(seq_coords_df, offsets, genome_open):
-        for s in seq_coords_df.itertuples():
-            seq_1hot_insertion = dna_io.dna_1hot(
-                genome_open.fetch(s.chrom, s.start, s.end).upper()
-            )
-            if s.strand == "-":
-                seq_1hot_insertion = dna_io.hot1_rc(seq_1hot_insertion)
-            for background_seq in background_seqs:
-                seq_1hot = background_seq.copy()
-                for offset in offsets:
-                    seq_1hot[offset : offset + insert_length] = seq_1hot_insertion
-                yield seq_1hot
+ 
+    def seqs_gen(df_site_pairs, genome_open, spacer_bp, num_inserts):
+        # iterate over paired motif positions, insert the core into the flanking sequence
+        # then insert num_insert copies of this cassette into the background sequence
+        for s in df_site_pairs.itertuples():
+          for background_seq in background_seqs:
+            seq_1hot = background_seq.copy()
+            seq_1hot_core = dna_io.dna_1hot(genome_open.fetch(
+                                s.chrom_core, s.start_core-s.pad_core, s.end_core+s.pad_core).upper())
+            if s.strand_core == '-': seq_1hot_core = dna_io.hot1_rc(seq_1hot_core)
+            seq_1hot_flank = dna_io.dna_1hot(genome_open.fetch(
+                                s.chrom_flank, s.start_flank-s.pad_flank, s.end_flank+s.pad_flank).upper())
+            if s.strand_flank == '-': seq_1hot_flank = dna_io.hot1_rc(seq_1hot_flank)
+            seq_1hot_insert = seq_1hot_flank.copy()
+            seq_1hot_insert[s.pad_flank - s.pad_core: (-s.pad_flank+s.pad_core)] = seq_1hot_core
+            insert_length = len(seq_1hot_insert)
+            multi_insert_length = num_inserts * (insert_length+spacer_bp)
+            offsets = [ (seq_length//2 - multi_insert_length//2 + i * (insert_length+spacer_bp)) for i in range(num_inserts)]
+            for offset in offsets:
+               seq_1hot[offset:offset+insert_length] = seq_1hot_insert.copy()
+            yield seq_1hot
+
 
     #################################################################
     # setup output
@@ -319,7 +326,7 @@ def main():
 
     # initialize predictions stream
     preds_stream = stream.PredStreamGen(
-        seqnn_model, seqs_gen(seq_coords_df, offsets, genome_open), batch_size
+        seqnn_model, seqs_gen(seq_coords_df, genome_open, spacer_bp, num_inserts), batch_size
     )
 
     # predictions index
@@ -441,6 +448,7 @@ def write_snp(
         plt.tight_layout()
         plt.savefig("%s/s%d.pdf" % (plot_dir, si))
         plt.close()
+
 
 def _insul_diamond_central(mat, window=10):
     """calculate insulation in a diamond around the central pixel"""
