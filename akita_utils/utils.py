@@ -367,7 +367,7 @@ def custom_create_flat_seqs(seqnn_model, genome_fasta, seq_length, dataframe, sa
     return flat_seqs
 
 
-def custom_calculate_scores(seqnn_model, genome_fasta, seq_length, dataframe, sample_set, devisor = 5, max_iters = 1, batch_size = 6, shuffle_k = 8, ctcf_thresh = 8, scores_thresh = 5500, scores_pixelwise_thresh = .04 ):
+def custom_calculate_scores(seqnn_model, genome_fasta, seq_length, dataframe, sample_set, max_iters = 1, batch_size = 6, shuffle_k = 8, ctcf_thresh = 8, scores_thresh = 5500, scores_pixelwise_thresh = .04, masking = False ):
     '''
     This function creates flat sequences
     '''
@@ -387,16 +387,20 @@ def custom_calculate_scores(seqnn_model, genome_fasta, seq_length, dataframe, sa
 
         num_iters = 0
         while num_iters < max_iters:
-            print('ind',ind, ', iter ',num_iters,', for', chrom, start, end)
+            print('ind',ind, ', iter ',num_iters, ',k ',shuffle_k,', for', chrom, start, end)
 
             seq_1hot_batch = []
             for i in range(batch_size):
                 seq_1hot_mut = permute_seq_k(seq_1hot,k= shuffle_k)
-                s = scan_motif(seq_1hot_mut, motif  )
-                for i in np.where(s > ctcf_thresh)[0]:
-                    #seq_1hot_mut[i-motif_window:i+motif_window] = permute_seq_k(seq_1hot_mut[i-motif_window:i+motif_window], k=2)
-                    seq_1hot_mut[i-motif_window+1:i+motif_window] = seq_1hot_mut[i-motif_window+1:i+motif_window][mot_shuf]
-                seq_1hot_batch.append(seq_1hot_mut)
+                if masking==True:
+                    s = scan_motif(seq_1hot_mut, motif  )
+                    for i in np.where(s > ctcf_thresh)[0]:
+                        #seq_1hot_mut[i-motif_window:i+motif_window] = permute_seq_k(seq_1hot_mut[i-motif_window:i+motif_window], k=2)
+                        seq_1hot_mut[i-motif_window+1:i+motif_window] = seq_1hot_mut[i-motif_window+1:i+motif_window][mot_shuf]
+                    seq_1hot_batch.append(seq_1hot_mut)
+                else:
+                    seq_1hot_batch.append(seq_1hot_mut)
+                    
             seq_1hot_batch = np.array(seq_1hot_batch)
 
             pred = seqnn_model.predict(seq_1hot_batch, batch_size=batch_size)
