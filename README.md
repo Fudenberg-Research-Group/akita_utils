@@ -59,7 +59,8 @@ See also
 
 Awesome akita_utils created by Fudenberg-Research-Group
 
-'''
+Under continous development
+
 ## Install
 
 ```bash
