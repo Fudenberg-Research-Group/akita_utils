@@ -1,4 +1,4 @@
-
+<!--
 # Python Project Template
 
 A low dependency and really simple to start project template for Python Projects.
@@ -46,7 +46,8 @@ See also
 > Curious about architectural decisions on this template? read [ABOUT_THIS_TEMPLATE.md](ABOUT_THIS_TEMPLATE.md)  
 > If you want to contribute to this template please open an [issue](https://github.com/rochacbruno/python-project-template/issues) or fork and send a PULL REQUEST.
 
-[❤️ Sponsor this project](https://github.com/sponsors/rochacbruno/)
+ [❤️ Sponsor this project](https://github.com/sponsors/rochacbruno/)
+-->
 
 <!--  DELETE THE LINES ABOVE THIS AND WRITE YOUR PROJECT README BELOW -->
 
@@ -58,12 +59,13 @@ See also
 
 Awesome akita_utils created by Fudenberg-Research-Group
 
-## Install it from PyPI
+'''
+## Install
 
 ```bash
+git clone https://github.com/Fudenberg-Research-Group/akita_utils.git
 pip install akita_utils
 ```
-
 ## Usage
 
 ```py
