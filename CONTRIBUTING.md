@@ -11,20 +11,20 @@ This instructions are for linux base systems. (Linux, MacOS, BSD, etc.)
 - Clone your fork of this repo. `git clone git@github.com:YOUR_GIT_USERNAME/akita_utils.git`
 - Enter the directory `cd akita_utils`
 - Add upstream repo `git remote add upstream https://github.com/Fudenberg-Research-Group/akita_utils`
-
+<!--
 ## Setting up your own virtual environment
 
 Run `make virtualenv` to create a virtual environment.
 then activate it with `source .venv/bin/activate`.
-
+-->
 ## Install the project in develop mode
 
 Run `make install` to install the project in develop mode.
-
+<!--
 ## Run the tests to ensure everything is working
 
 Run `make test` to run the tests.
-
+-->
 ## Create a new branch to work on your contribution
 
 Run `git checkout -b my_contribution`
@@ -32,7 +32,7 @@ Run `git checkout -b my_contribution`
 ## Make your changes
 
 Edit the files using your preferred editor. (we recommend VIM or VSCode)
-
+<!--
 ## Format the code
 
 Run `make fmt` to format the code.
@@ -52,7 +52,7 @@ Ensure code coverage report shows `100%` coverage, add tests to your PR.
 Run `make docs` to build the docs.
 
 Ensure your new changes are documented.
-
+-->
 ## Commit your changes
 
 This project uses [conventional git commit messages](https://www.conventionalcommits.org/en/v1.0.0/).
@@ -70,7 +70,7 @@ On github interface, click on `Pull Request` button.
 Wait CI to run and one of the developers will review your PR.
 ## Makefile utilities
 
-This project comes with a `Makefile` that contains a number of useful utility.
+This project comes with a `Makefile` that contains a number of useful utility under development.
 
 ```bash 
 ❯ make
