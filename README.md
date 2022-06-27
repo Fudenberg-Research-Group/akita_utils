@@ -66,7 +66,7 @@ Under continous development
 ```bash
 git clone https://github.com/Fudenberg-Research-Group/akita_utils.git
 cd akita_utils
-pip install akita_utils
+make install
 ```
 ## Usage
 
