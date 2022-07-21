@@ -117,6 +117,25 @@ def main():
       default=None,              
       help='h5_dirs')
 
+  parser.add_option('--shuffle_k', dest='shuffle_k',
+      default=8, type='int',
+      help='basepairs considered for shuffling')
+
+  parser.add_option('--ctcf-thresh', dest='ctcf_thresh',
+      default=8, type='int',
+      help='maximum alowable ctcf motifs in a flat seq')
+
+  parser.add_option('--scores-thresh', dest='scores_thresh',
+      default=5500, type='int',
+      help='maximum alowable score for a flat seq')
+
+  parser.add_option('--scores-pixelwise-thresh', dest='scores_pixelwise_thresh',
+      default=0.04, type='float',
+      help='maximum alowable pixel score for a flat seq')
+    
+  parser.add_option('--chrom-data', dest='chrom_data',
+      default=None,              
+      help='crom_data_directory')
 
   (options, args) = parser.parse_args()
 
@@ -172,8 +191,8 @@ def main():
     batch_size = options.batch_size
   print(batch_size)
   mutation_method = options.mutation_method
-  if not mutation_method in ['mask','permute']:
-    raise ValueError('undefined mutation method:', mutation_method)
+  # if not mutation_method in ['mask','permute']:
+  #   raise ValueError('undefined mutation method:', mutation_method)
   motif_width = options.motif_width
   use_span = options.use_span
   if options.use_span:
@@ -200,24 +219,44 @@ def main():
     target_labels = ['']*len(target_ids)
 
   #################################################################
-  # load model h5 files to create motifs
+  # fetching chromosome data
 
-  site_df = akita_utils.prepare_insertion_tsv(
-    h5_dirs = options.h5_dirs, #'/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5',
-    score_key = 'SCD',
-    flank_pad = 60, #how much flanking sequence around the sites to include
-    weak_thresh_pct = 1, # don't use sites weaker than this, might be artifacts
-    weak_num = 5 ,
-    strong_thresh_pct = 99, # don't use sites weaker than this, might be artifacts
-    strong_num = 5 ,
-    save_tsv = None, # optional filename to save a tsv
-    )  
-    
-    
+  chromsizes = bioframe.read_chromsizes(options.chrom_data)
+  dframe = pd.DataFrame(chromsizes)
+  dframe['end'] = dframe['length']+ 1310720
+  dframe = dframe.reset_index()
+  dframe.rename(columns = {'index' : 'chrom', 'length':'start'}, inplace = True)
+  df = bioframe.frac_gc(dframe, bioframe.load_fasta(options.genome_fasta), return_input=True)
+
   #################################################################
+  # Generating a sample for down stream analysis
+
+  super_set = []
+  error = 0.01
+
+  for gc in np.percentile(df['GC'].dropna().values, np.linspace(1,99,50)):
+    for i in range(df.shape[0]):
+        if gc-error <= df['GC'].values[i] <= gc+error:
+            super_set += [i]
+            break
+
+  super_set = list(set(super_set)) 
+  sample_set = super_set[2:3]
+  new_dataframe = df.iloc[[ind for ind in set(sample_set)]]
+  #################################################################
+
   # create flat sequences
     
-  flat_seqs = akita_utils.create_flat_seqs(seqnn_model=seqnn_model, genome_fasta=options.genome_fasta, site_df=site_df, seq_length=seq_length)    
+  flat_seqs = akita_utils.create_flat_seqs(seqnn_model=seqnn_model, 
+                                        genome_fasta=options.genome_fasta, 
+                                        seq_length=seq_length, 
+                                        dataframe=new_dataframe, 
+                                        max_iters = max_iters, 
+                                        batch_size = batch_size, 
+                                        shuffle_k = options.shuffle_k, 
+                                        ctcf_thresh = options.ctcf_thresh, 
+                                        scores_thresh = options.scores_thresh, 
+                                        scores_pixelwise_thresh = options.scores_pixelwise_thresh)    
     
     
   #################################################################

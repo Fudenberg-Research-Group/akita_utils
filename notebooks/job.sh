@@ -14,6 +14,10 @@
 
 conda activate basenji-gpu
 
-python background_explore.py -f /project/fudenber_735/genomes/mm10/mm10.fa --h5 '/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5' --head-index 1 --batch-size 6 -m -o flat_test  --stats SCD,INS-16,INS-64 /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 motif_positions.8.mm10.tsv
+python background_scores_exploration.py -f /project/fudenber_735/genomes/mm10/mm10.fa --chrom-data /project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed --head-index 1 --batch-size 6 --max-iters 170 -m -o flat_test  --stats SCD,INS-16,INS-64 /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 motif_positions.8.mm10.tsv
+
+
+python mutation_method_exploration.py -f /project/fudenber_735/genomes/mm10/mm10.fa --chrom-data /project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed --head-index 1 --batch-size 10 --max-iters 100 -m -o flat_test  --stats SCD,INS-16,INS-64 /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 motif_positions.8.mm10.tsv
+
 
 # conda deactivate
