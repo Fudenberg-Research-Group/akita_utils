@@ -7,6 +7,8 @@ import tensorflow as tf
 from basenji import dna_io
 from io import StringIO
 import pysam
+import time 
+
 
 ### numeric utilites
 
@@ -332,7 +334,7 @@ def create_flat_seqs(
         seq = genome_open.fetch(chrom, start, end).upper()
         seq_1hot = dna_io.dna_1hot(seq)
 
-        
+        t0 = time.time()
         num_iters = 0
         while num_iters < max_iters:
             print("ind", ind, ", iter ", num_iters, ", for", chrom, start, end)
@@ -353,11 +355,13 @@ def create_flat_seqs(
             pred = seqnn_model.predict(seq_1hot_batch, batch_size=batch_size)
             scores = np.sum(pred**2, axis=-1).sum(axis=-1)
             scores_pixelwise = np.max(pred**2, axis=-1).max(axis=-1)
-
+            t1 = time.time()
+            
             if np.any([
                     (np.min(scores) < scores_thresh)
                     , (np.min(scores_pixelwise) < scores_pixelwise_thresh)]
             ):
+                
                 best_ind = np.argmin(scores_pixelwise)
                 best_seq = seq_1hot_batch[best_ind]
                 best_pred = pred[best_ind]
@@ -371,6 +375,8 @@ def create_flat_seqs(
                     np.min(scores),
                     " pixelwise",
                     np.min(scores_pixelwise),
+                    "time",
+                    t1 - t0
                 )
 
             else:
@@ -390,7 +396,7 @@ def create_flat_seqs(
 
             num_iters += 1
             if num_iters >= max_iters:
-                print("max iters exceeded")
+                print(f"max iters exceeded, final time {t1 - t0}")
                 
                 if gc :
                     flat_seqs.append([
@@ -398,6 +404,7 @@ def create_flat_seqs(
                     best_pred,
                     best_score,
                     best_score_pixelwise,
+                    t1 - t0,
                     gc
                 ])
                 else:
@@ -405,7 +412,8 @@ def create_flat_seqs(
                     best_seq,
                     best_pred,
                     best_score,
-                    best_score_pixelwise
+                    best_score_pixelwise,
+                    t1 - t0
                 ])
                 # raise ValueError('cannot generate flat sequence for', chrom, start, end)
 
