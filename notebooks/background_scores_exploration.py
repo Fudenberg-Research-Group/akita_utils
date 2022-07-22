@@ -231,22 +231,22 @@ def main():
   #################################################################
   # calculating initial scores
     
-  scores_before = {}
-  for gc in sample_set:
-    new_dataframe = df.iloc[[gc]]
-    for k in shuffle_set:
-        print(gc,k)
-        scores_before[gc,k] = akita_utils.custom_calculate_scores(seqnn_model=seqnn_model, 
-                                                        genome_fasta=options.genome_fasta, 
-                                                        seq_length=seq_length, 
-                                                        dataframe=new_dataframe, 
-                                                        max_iters = options.max_iters, 
-                                                        batch_size = options.batch_size, 
-                                                        shuffle_k = k, 
-                                                        ctcf_thresh = options.ctcf_thresh, 
-                                                        scores_thresh = options.scores_thresh, 
-                                                        scores_pixelwise_thresh = options.scores_pixelwise_thresh,
-                                                        success_scores = 1)
+  # scores_before = {}
+  # for gc in sample_set:
+  #   new_dataframe = df.iloc[[gc]]
+  #   for k in shuffle_set:
+  #       print(gc,k)
+  #       scores_before[gc,k] = akita_utils.custom_calculate_scores(seqnn_model=seqnn_model, 
+  #                                                       genome_fasta=options.genome_fasta, 
+  #                                                       seq_length=seq_length, 
+  #                                                       dataframe=new_dataframe, 
+  #                                                       max_iters = options.max_iters, 
+  #                                                       batch_size = options.batch_size, 
+  #                                                       shuffle_k = k, 
+  #                                                       ctcf_thresh = options.ctcf_thresh, 
+  #                                                       scores_thresh = options.scores_thresh, 
+  #                                                       scores_pixelwise_thresh = options.scores_pixelwise_thresh,
+  #                                                       )
     
     
   #################################################################  
@@ -266,7 +266,7 @@ def main():
                                                         ctcf_thresh = options.ctcf_thresh, 
                                                         scores_thresh = options.scores_thresh, 
                                                         scores_pixelwise_thresh = options.scores_pixelwise_thresh,
-                                                        success_scores = 1)
+                                                        )
     
     
   #################################################################  
@@ -287,7 +287,7 @@ def main():
                                                         ctcf_thresh = options.ctcf_thresh, 
                                                         scores_thresh = score, 
                                                         scores_pixelwise_thresh = options.scores_pixelwise_thresh,
-                                                        success_scores = 1)
+                                                        )
         
   #################################################################
     
@@ -315,19 +315,19 @@ def main():
         for k in shuffle_set:
             
             ax = fig.add_subplot(spec[sample_set.index(ind),shuffle_set.index(k)])
-            temp_scores_before = []
+            # temp_scores_before = []
             temp_scores_shuffle_after = []
-            for i in scores_before[ind,k]:
-                temp_scores_before =+ i
+            # for i in scores_before[ind,k]:
+            #     temp_scores_before =+ i
             for i in scores_shuffle_after[ind,k]:
                 temp_scores_shuffle_after =+ i
 
             kde_df_after = pd.DataFrame(temp_scores_shuffle_after, columns=["score"])
-            kde_df_before = pd.DataFrame(temp_scores_before, columns=["score"])
+            # kde_df_before = pd.DataFrame(temp_scores_before, columns=["score"])
             sns.kdeplot(data=kde_df_after, x="score", bw_adjust=.3, label='after', fill=True)
-            sns.kdeplot(data=kde_df_before, x="score", bw_adjust=.3, label='before', fill=True)
+            # sns.kdeplot(data=kde_df_before, x="score", bw_adjust=.3, label='before', fill=True)
             ax.legend()
-            plt.title(f'GC_{gc} k_{k} before and after masking')
+            plt.title(f'GC_{gc} k_{k}')
     plt.savefig(f'{plot_dir}/shuffle_parameter_results.pdf')
     plt.close()
     
@@ -339,18 +339,18 @@ def main():
         for score in scores_thresh_set:
             
             ax = fig.add_subplot(spec[sample_set.index(ind),scores_thresh_set.index(score)])
-            temp_scores_before = []
+            # temp_scores_before = []
             temp_scores_thresh_after = []
 
-            for i in scores_before[ind,8]:
-                temp_scores_before =+ i
+            # for i in scores_before[ind,8]:
+            #     temp_scores_before =+ i
             for i in scores_thresh_after[ind,score]:
                 temp_scores_thresh_after =+ i
 
             kde_df_after = pd.DataFrame(temp_scores_thresh_after, columns=["score"])
-            kde_df_before = pd.DataFrame(temp_scores_before, columns=["score"])
-            sns.kdeplot(data=kde_df_after, x="score", bw_adjust=.3, label='masking', fill=True)
-            sns.kdeplot(data=kde_df_before, x="score", bw_adjust=.3, label='permutation', fill=True)
+            # kde_df_before = pd.DataFrame(temp_scores_before, columns=["score"])
+            sns.kdeplot(data=kde_df_after, x="score", bw_adjust=.3, fill=True)
+            # sns.kdeplot(data=kde_df_before, x="score", bw_adjust=.3, label='permutation', fill=True)
             ax.legend()
             plt.title(f'GC_{gc} scores_thresh_{score}')       
     plt.savefig(f'{plot_dir}/masking_threshold_parameter_results.pdf')
