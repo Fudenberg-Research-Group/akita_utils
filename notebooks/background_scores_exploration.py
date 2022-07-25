@@ -328,7 +328,7 @@ def main():
             # sns.kdeplot(data=kde_df_before, x="score", bw_adjust=.3, label='before', fill=True)
             ax.legend()
             plt.title(f'GC_{gc} k_{k}')
-    plt.savefig(f'{plot_dir}/shuffle_parameter_results.pdf')
+    plt.savefig(f'{plot_dir}/shuffle_parameter_results.pdf',dpi=300)
     plt.close()
     
     fig = plt.figure(figsize=(6* len(scores_thresh_set) , 6 *  len(sample_set) ), constrained_layout=True)     
@@ -353,7 +353,7 @@ def main():
             # sns.kdeplot(data=kde_df_before, x="score", bw_adjust=.3, label='permutation', fill=True)
             ax.legend()
             plt.title(f'GC_{gc} scores_thresh_{score}')       
-    plt.savefig(f'{plot_dir}/masking_threshold_parameter_results.pdf')
+    plt.savefig(f'{plot_dir}/masking_threshold_parameter_results.pdf',dpi=300)
     plt.close()
 
 ################################################################################
