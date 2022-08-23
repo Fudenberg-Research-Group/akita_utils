@@ -1,0 +1,929 @@
+==========================================
+SLURM_JOB_ID = 10295063
+SLURM_JOB_NODELIST = e23-01
+TMPDIR = /tmp/SLURM_10295063
+==========================================
+2022-08-02 14:52:12.931176: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcusolver.so.11'; dlerror: libcusolver.so.11: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /spack/apps/linux-centos7-x86_64/gcc-8.3.0/cudnn-8.0.4.30-11.0-6a7irmnv2pzykgfbnb7mnuwvbzia6eng/lib64:/spack/apps/linux-centos7-x86_64/gcc-8.3.0/cuda-11.0.2-2ezy5sph3mqshfbwtpxxdqhs44wj7664/lib64:/spack/apps/linux-centos7-x86_64/gcc-8.3.0/pmix-3.1.3-3sm6emyqaxapunh7rwbjvtaqoqe2e5z3/lib:/spack/apps/linux-centos7-x86_64/gcc-8.3.0/openmpi-4.0.2-ipm3dnvlbtxawpi4ifz7jma6jgr7mexq/lib:/spack/apps/linux-centos7-x86_64/gcc-8.3.0/openblas-0.3.8-2no6mfziiclwxb7lstxoos335gnhjpes/lib:/spack/apps/gcc/8.3.0/lib64:/home1/smaruj/software/GSL/lib:/home1/smaruj/software/HTSLIB/lib
+2022-08-02 14:52:12.932944: W tensorflow/core/common_runtime/gpu/gpu_device.cc:1850] Cannot dlopen some GPU libraries. Please make sure the missing libraries mentioned above are installed properly if you would like to use GPU. Follow the guide at https://www.tensorflow.org/install/gpu for how to download and setup the required libraries for your platform.
+Skipping registering GPU devices...
+2022-08-02 14:52:12.968188: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2022-08-02 14:52:12.969694: W tensorflow/core/common_runtime/gpu/gpu_device.cc:1850] Cannot dlopen some GPU libraries. Please make sure the missing libraries mentioned above are installed properly if you would like to use GPU. Follow the guide at https://www.tensorflow.org/install/gpu for how to download and setup the required libraries for your platform.
+Skipping registering GPU devices...
+[]
+Time needed for importing libraries:  27.69189953804016
+4
+Model: "model_1"
+__________________________________________________________________________________________________
+ Layer (type)                   Output Shape         Param #     Connected to                     
+==================================================================================================
+ sequence (InputLayer)          [(None, 1310720, 4)  0           []                               
+                                ]                                                                 
+                                                                                                  
+ stochastic_reverse_complement   ((None, 1310720, 4)  0          ['sequence[0][0]']               
+ (StochasticReverseComplement)  , ())                                                             
+                                                                                                  
+ stochastic_shift (StochasticSh  (None, 1310720, 4)  0           ['stochastic_reverse_complement[0
+ ift)                                                            ][0]']                           
+                                                                                                  
+ re_lu (ReLU)                   (None, 1310720, 4)   0           ['stochastic_shift[0][0]']       
+                                                                                                  
+ conv1d (Conv1D)                (None, 1310720, 128  7680        ['re_lu[0][0]']                  
+                                )                                                                 
+                                                                                                  
+ batch_normalization (BatchNorm  (None, 1310720, 128  512        ['conv1d[0][0]']                 
+ alization)                     )                                                                 
+                                                                                                  
+ max_pooling1d (MaxPooling1D)   (None, 655360, 128)  0           ['batch_normalization[0][0]']    
+                                                                                                  
+ re_lu_1 (ReLU)                 (None, 655360, 128)  0           ['max_pooling1d[0][0]']          
+                                                                                                  
+ conv1d_1 (Conv1D)              (None, 655360, 128)  81920       ['re_lu_1[0][0]']                
+                                                                                                  
+ batch_normalization_1 (BatchNo  (None, 655360, 128)  512        ['conv1d_1[0][0]']               
+ rmalization)                                                                                     
+                                                                                                  
+ max_pooling1d_1 (MaxPooling1D)  (None, 327680, 128)  0          ['batch_normalization_1[0][0]']  
+                                                                                                  
+ re_lu_2 (ReLU)                 (None, 327680, 128)  0           ['max_pooling1d_1[0][0]']        
+                                                                                                  
+ conv1d_2 (Conv1D)              (None, 327680, 128)  81920       ['re_lu_2[0][0]']                
+                                                                                                  
+ batch_normalization_2 (BatchNo  (None, 327680, 128)  512        ['conv1d_2[0][0]']               
+ rmalization)                                                                                     
+                                                                                                  
+ max_pooling1d_2 (MaxPooling1D)  (None, 163840, 128)  0          ['batch_normalization_2[0][0]']  
+                                                                                                  
+ re_lu_3 (ReLU)                 (None, 163840, 128)  0           ['max_pooling1d_2[0][0]']        
+                                                                                                  
+ conv1d_3 (Conv1D)              (None, 163840, 128)  81920       ['re_lu_3[0][0]']                
+                                                                                                  
+ batch_normalization_3 (BatchNo  (None, 163840, 128)  512        ['conv1d_3[0][0]']               
+ rmalization)                                                                                     
+                                                                                                  
+ max_pooling1d_3 (MaxPooling1D)  (None, 81920, 128)  0           ['batch_normalization_3[0][0]']  
+                                                                                                  
+ re_lu_4 (ReLU)                 (None, 81920, 128)   0           ['max_pooling1d_3[0][0]']        
+                                                                                                  
+ conv1d_4 (Conv1D)              (None, 81920, 128)   81920       ['re_lu_4[0][0]']                
+                                                                                                  
+ batch_normalization_4 (BatchNo  (None, 81920, 128)  512         ['conv1d_4[0][0]']               
+ rmalization)                                                                                     
+                                                                                                  
+ max_pooling1d_4 (MaxPooling1D)  (None, 40960, 128)  0           ['batch_normalization_4[0][0]']  
+                                                                                                  
+ re_lu_5 (ReLU)                 (None, 40960, 128)   0           ['max_pooling1d_4[0][0]']        
+                                                                                                  
+ conv1d_5 (Conv1D)              (None, 40960, 128)   81920       ['re_lu_5[0][0]']                
+                                                                                                  
+ batch_normalization_5 (BatchNo  (None, 40960, 128)  512         ['conv1d_5[0][0]']               
+ rmalization)                                                                                     
+                                                                                                  
+ max_pooling1d_5 (MaxPooling1D)  (None, 20480, 128)  0           ['batch_normalization_5[0][0]']  
+                                                                                                  
+ re_lu_6 (ReLU)                 (None, 20480, 128)   0           ['max_pooling1d_5[0][0]']        
+                                                                                                  
+ conv1d_6 (Conv1D)              (None, 20480, 128)   81920       ['re_lu_6[0][0]']                
+                                                                                                  
+ batch_normalization_6 (BatchNo  (None, 20480, 128)  512         ['conv1d_6[0][0]']               
+ rmalization)                                                                                     
+                                                                                                  
+ max_pooling1d_6 (MaxPooling1D)  (None, 10240, 128)  0           ['batch_normalization_6[0][0]']  
+                                                                                                  
+ re_lu_7 (ReLU)                 (None, 10240, 128)   0           ['max_pooling1d_6[0][0]']        
+                                                                                                  
+ conv1d_7 (Conv1D)              (None, 10240, 128)   81920       ['re_lu_7[0][0]']                
+                                                                                                  
+ batch_normalization_7 (BatchNo  (None, 10240, 128)  512         ['conv1d_7[0][0]']               
+ rmalization)                                                                                     
+                                                                                                  
+ max_pooling1d_7 (MaxPooling1D)  (None, 5120, 128)   0           ['batch_normalization_7[0][0]']  
+                                                                                                  
+ re_lu_8 (ReLU)                 (None, 5120, 128)    0           ['max_pooling1d_7[0][0]']        
+                                                                                                  
+ conv1d_8 (Conv1D)              (None, 5120, 128)    81920       ['re_lu_8[0][0]']                
+                                                                                                  
+ batch_normalization_8 (BatchNo  (None, 5120, 128)   512         ['conv1d_8[0][0]']               
+ rmalization)                                                                                     
+                                                                                                  
+ max_pooling1d_8 (MaxPooling1D)  (None, 2560, 128)   0           ['batch_normalization_8[0][0]']  
+                                                                                                  
+ re_lu_9 (ReLU)                 (None, 2560, 128)    0           ['max_pooling1d_8[0][0]']        
+                                                                                                  
+ conv1d_9 (Conv1D)              (None, 2560, 128)    81920       ['re_lu_9[0][0]']                
+                                                                                                  
+ batch_normalization_9 (BatchNo  (None, 2560, 128)   512         ['conv1d_9[0][0]']               
+ rmalization)                                                                                     
+                                                                                                  
+ max_pooling1d_9 (MaxPooling1D)  (None, 1280, 128)   0           ['batch_normalization_9[0][0]']  
+                                                                                                  
+ re_lu_10 (ReLU)                (None, 1280, 128)    0           ['max_pooling1d_9[0][0]']        
+                                                                                                  
+ conv1d_10 (Conv1D)             (None, 1280, 128)    81920       ['re_lu_10[0][0]']               
+                                                                                                  
+ batch_normalization_10 (BatchN  (None, 1280, 128)   512         ['conv1d_10[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ max_pooling1d_10 (MaxPooling1D  (None, 640, 128)    0           ['batch_normalization_10[0][0]'] 
+ )                                                                                                
+                                                                                                  
+ re_lu_11 (ReLU)                (None, 640, 128)     0           ['max_pooling1d_10[0][0]']       
+                                                                                                  
+ conv1d_11 (Conv1D)             (None, 640, 64)      24576       ['re_lu_11[0][0]']               
+                                                                                                  
+ batch_normalization_11 (BatchN  (None, 640, 64)     256         ['conv1d_11[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ re_lu_12 (ReLU)                (None, 640, 64)      0           ['batch_normalization_11[0][0]'] 
+                                                                                                  
+ conv1d_12 (Conv1D)             (None, 640, 128)     8192        ['re_lu_12[0][0]']               
+                                                                                                  
+ batch_normalization_12 (BatchN  (None, 640, 128)    512         ['conv1d_12[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ dropout (Dropout)              (None, 640, 128)     0           ['batch_normalization_12[0][0]'] 
+                                                                                                  
+ add (Add)                      (None, 640, 128)     0           ['max_pooling1d_10[0][0]',       
+                                                                  'dropout[0][0]']                
+                                                                                                  
+ re_lu_13 (ReLU)                (None, 640, 128)     0           ['add[0][0]']                    
+                                                                                                  
+ conv1d_13 (Conv1D)             (None, 640, 64)      24576       ['re_lu_13[0][0]']               
+                                                                                                  
+ batch_normalization_13 (BatchN  (None, 640, 64)     256         ['conv1d_13[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ re_lu_14 (ReLU)                (None, 640, 64)      0           ['batch_normalization_13[0][0]'] 
+                                                                                                  
+ conv1d_14 (Conv1D)             (None, 640, 128)     8192        ['re_lu_14[0][0]']               
+                                                                                                  
+ batch_normalization_14 (BatchN  (None, 640, 128)    512         ['conv1d_14[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ dropout_1 (Dropout)            (None, 640, 128)     0           ['batch_normalization_14[0][0]'] 
+                                                                                                  
+ add_1 (Add)                    (None, 640, 128)     0           ['add[0][0]',                    
+                                                                  'dropout_1[0][0]']              
+                                                                                                  
+ re_lu_15 (ReLU)                (None, 640, 128)     0           ['add_1[0][0]']                  
+                                                                                                  
+ conv1d_15 (Conv1D)             (None, 640, 64)      24576       ['re_lu_15[0][0]']               
+                                                                                                  
+ batch_normalization_15 (BatchN  (None, 640, 64)     256         ['conv1d_15[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ re_lu_16 (ReLU)                (None, 640, 64)      0           ['batch_normalization_15[0][0]'] 
+                                                                                                  
+ conv1d_16 (Conv1D)             (None, 640, 128)     8192        ['re_lu_16[0][0]']               
+                                                                                                  
+ batch_normalization_16 (BatchN  (None, 640, 128)    512         ['conv1d_16[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ dropout_2 (Dropout)            (None, 640, 128)     0           ['batch_normalization_16[0][0]'] 
+                                                                                                  
+ add_2 (Add)                    (None, 640, 128)     0           ['add_1[0][0]',                  
+                                                                  'dropout_2[0][0]']              
+                                                                                                  
+ re_lu_17 (ReLU)                (None, 640, 128)     0           ['add_2[0][0]']                  
+                                                                                                  
+ conv1d_17 (Conv1D)             (None, 640, 64)      24576       ['re_lu_17[0][0]']               
+                                                                                                  
+ batch_normalization_17 (BatchN  (None, 640, 64)     256         ['conv1d_17[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ re_lu_18 (ReLU)                (None, 640, 64)      0           ['batch_normalization_17[0][0]'] 
+                                                                                                  
+ conv1d_18 (Conv1D)             (None, 640, 128)     8192        ['re_lu_18[0][0]']               
+                                                                                                  
+ batch_normalization_18 (BatchN  (None, 640, 128)    512         ['conv1d_18[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ dropout_3 (Dropout)            (None, 640, 128)     0           ['batch_normalization_18[0][0]'] 
+                                                                                                  
+ add_3 (Add)                    (None, 640, 128)     0           ['add_2[0][0]',                  
+                                                                  'dropout_3[0][0]']              
+                                                                                                  
+ re_lu_19 (ReLU)                (None, 640, 128)     0           ['add_3[0][0]']                  
+                                                                                                  
+ conv1d_19 (Conv1D)             (None, 640, 64)      24576       ['re_lu_19[0][0]']               
+                                                                                                  
+ batch_normalization_19 (BatchN  (None, 640, 64)     256         ['conv1d_19[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ re_lu_20 (ReLU)                (None, 640, 64)      0           ['batch_normalization_19[0][0]'] 
+                                                                                                  
+ conv1d_20 (Conv1D)             (None, 640, 128)     8192        ['re_lu_20[0][0]']               
+                                                                                                  
+ batch_normalization_20 (BatchN  (None, 640, 128)    512         ['conv1d_20[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ dropout_4 (Dropout)            (None, 640, 128)     0           ['batch_normalization_20[0][0]'] 
+                                                                                                  
+ add_4 (Add)                    (None, 640, 128)     0           ['add_3[0][0]',                  
+                                                                  'dropout_4[0][0]']              
+                                                                                                  
+ re_lu_21 (ReLU)                (None, 640, 128)     0           ['add_4[0][0]']                  
+                                                                                                  
+ conv1d_21 (Conv1D)             (None, 640, 64)      24576       ['re_lu_21[0][0]']               
+                                                                                                  
+ batch_normalization_21 (BatchN  (None, 640, 64)     256         ['conv1d_21[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ re_lu_22 (ReLU)                (None, 640, 64)      0           ['batch_normalization_21[0][0]'] 
+                                                                                                  
+ conv1d_22 (Conv1D)             (None, 640, 128)     8192        ['re_lu_22[0][0]']               
+                                                                                                  
+ batch_normalization_22 (BatchN  (None, 640, 128)    512         ['conv1d_22[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ dropout_5 (Dropout)            (None, 640, 128)     0           ['batch_normalization_22[0][0]'] 
+                                                                                                  
+ add_5 (Add)                    (None, 640, 128)     0           ['add_4[0][0]',                  
+                                                                  'dropout_5[0][0]']              
+                                                                                                  
+ re_lu_23 (ReLU)                (None, 640, 128)     0           ['add_5[0][0]']                  
+                                                                                                  
+ conv1d_23 (Conv1D)             (None, 640, 64)      24576       ['re_lu_23[0][0]']               
+                                                                                                  
+ batch_normalization_23 (BatchN  (None, 640, 64)     256         ['conv1d_23[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ re_lu_24 (ReLU)                (None, 640, 64)      0           ['batch_normalization_23[0][0]'] 
+                                                                                                  
+ conv1d_24 (Conv1D)             (None, 640, 128)     8192        ['re_lu_24[0][0]']               
+                                                                                                  
+ batch_normalization_24 (BatchN  (None, 640, 128)    512         ['conv1d_24[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ dropout_6 (Dropout)            (None, 640, 128)     0           ['batch_normalization_24[0][0]'] 
+                                                                                                  
+ add_6 (Add)                    (None, 640, 128)     0           ['add_5[0][0]',                  
+                                                                  'dropout_6[0][0]']              
+                                                                                                  
+ re_lu_25 (ReLU)                (None, 640, 128)     0           ['add_6[0][0]']                  
+                                                                                                  
+ conv1d_25 (Conv1D)             (None, 640, 64)      24576       ['re_lu_25[0][0]']               
+                                                                                                  
+ batch_normalization_25 (BatchN  (None, 640, 64)     256         ['conv1d_25[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ re_lu_26 (ReLU)                (None, 640, 64)      0           ['batch_normalization_25[0][0]'] 
+                                                                                                  
+ conv1d_26 (Conv1D)             (None, 640, 128)     8192        ['re_lu_26[0][0]']               
+                                                                                                  
+ batch_normalization_26 (BatchN  (None, 640, 128)    512         ['conv1d_26[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ dropout_7 (Dropout)            (None, 640, 128)     0           ['batch_normalization_26[0][0]'] 
+                                                                                                  
+ add_7 (Add)                    (None, 640, 128)     0           ['add_6[0][0]',                  
+                                                                  'dropout_7[0][0]']              
+                                                                                                  
+ re_lu_27 (ReLU)                (None, 640, 128)     0           ['add_7[0][0]']                  
+                                                                                                  
+ conv1d_27 (Conv1D)             (None, 640, 64)      24576       ['re_lu_27[0][0]']               
+                                                                                                  
+ batch_normalization_27 (BatchN  (None, 640, 64)     256         ['conv1d_27[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ re_lu_28 (ReLU)                (None, 640, 64)      0           ['batch_normalization_27[0][0]'] 
+                                                                                                  
+ conv1d_28 (Conv1D)             (None, 640, 128)     8192        ['re_lu_28[0][0]']               
+                                                                                                  
+ batch_normalization_28 (BatchN  (None, 640, 128)    512         ['conv1d_28[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ dropout_8 (Dropout)            (None, 640, 128)     0           ['batch_normalization_28[0][0]'] 
+                                                                                                  
+ add_8 (Add)                    (None, 640, 128)     0           ['add_7[0][0]',                  
+                                                                  'dropout_8[0][0]']              
+                                                                                                  
+ re_lu_29 (ReLU)                (None, 640, 128)     0           ['add_8[0][0]']                  
+                                                                                                  
+ conv1d_29 (Conv1D)             (None, 640, 64)      24576       ['re_lu_29[0][0]']               
+                                                                                                  
+ batch_normalization_29 (BatchN  (None, 640, 64)     256         ['conv1d_29[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ re_lu_30 (ReLU)                (None, 640, 64)      0           ['batch_normalization_29[0][0]'] 
+                                                                                                  
+ conv1d_30 (Conv1D)             (None, 640, 128)     8192        ['re_lu_30[0][0]']               
+                                                                                                  
+ batch_normalization_30 (BatchN  (None, 640, 128)    512         ['conv1d_30[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ dropout_9 (Dropout)            (None, 640, 128)     0           ['batch_normalization_30[0][0]'] 
+                                                                                                  
+ add_9 (Add)                    (None, 640, 128)     0           ['add_8[0][0]',                  
+                                                                  'dropout_9[0][0]']              
+                                                                                                  
+ re_lu_31 (ReLU)                (None, 640, 128)     0           ['add_9[0][0]']                  
+                                                                                                  
+ conv1d_31 (Conv1D)             (None, 640, 64)      24576       ['re_lu_31[0][0]']               
+                                                                                                  
+ batch_normalization_31 (BatchN  (None, 640, 64)     256         ['conv1d_31[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ re_lu_32 (ReLU)                (None, 640, 64)      0           ['batch_normalization_31[0][0]'] 
+                                                                                                  
+ conv1d_32 (Conv1D)             (None, 640, 128)     8192        ['re_lu_32[0][0]']               
+                                                                                                  
+ batch_normalization_32 (BatchN  (None, 640, 128)    512         ['conv1d_32[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ dropout_10 (Dropout)           (None, 640, 128)     0           ['batch_normalization_32[0][0]'] 
+                                                                                                  
+ add_10 (Add)                   (None, 640, 128)     0           ['add_9[0][0]',                  
+                                                                  'dropout_10[0][0]']             
+                                                                                                  
+ re_lu_33 (ReLU)                (None, 640, 128)     0           ['add_10[0][0]']                 
+                                                                                                  
+ conv1d_33 (Conv1D)             (None, 640, 80)      51200       ['re_lu_33[0][0]']               
+                                                                                                  
+ batch_normalization_33 (BatchN  (None, 640, 80)     320         ['conv1d_33[0][0]']              
+ ormalization)                                                                                    
+                                                                                                  
+ re_lu_34 (ReLU)                (None, 640, 80)      0           ['batch_normalization_33[0][0]'] 
+                                                                                                  
+ one_to_two (OneToTwo)          (None, 640, 640, 80  0           ['re_lu_34[0][0]']               
+                                )                                                                 
+                                                                                                  
+ re_lu_35 (ReLU)                (None, 640, 640, 80  0           ['one_to_two[0][0]']             
+                                )                                                                 
+                                                                                                  
+ conv2d (Conv2D)                (None, 640, 640, 80  57600       ['re_lu_35[0][0]']               
+                                )                                                                 
+                                                                                                  
+ batch_normalization_34 (BatchN  (None, 640, 640, 80  320        ['conv2d[0][0]']                 
+ ormalization)                  )                                                                 
+                                                                                                  
+ symmetrize2d (Symmetrize2D)    (None, 640, 640, 80  0           ['batch_normalization_34[0][0]'] 
+                                )                                                                 
+                                                                                                  
+ re_lu_36 (ReLU)                (None, 640, 640, 80  0           ['symmetrize2d[0][0]']           
+                                )                                                                 
+                                                                                                  
+ conv2d_1 (Conv2D)              (None, 640, 640, 40  28800       ['re_lu_36[0][0]']               
+                                )                                                                 
+                                                                                                  
+ batch_normalization_35 (BatchN  (None, 640, 640, 40  160        ['conv2d_1[0][0]']               
+ ormalization)                  )                                                                 
+                                                                                                  
+ re_lu_37 (ReLU)                (None, 640, 640, 40  0           ['batch_normalization_35[0][0]'] 
+                                )                                                                 
+                                                                                                  
+ conv2d_2 (Conv2D)              (None, 640, 640, 80  3200        ['re_lu_37[0][0]']               
+                                )                                                                 
+                                                                                                  
+ batch_normalization_36 (BatchN  (None, 640, 640, 80  320        ['conv2d_2[0][0]']               
+ ormalization)                  )                                                                 
+                                                                                                  
+ dropout_11 (Dropout)           (None, 640, 640, 80  0           ['batch_normalization_36[0][0]'] 
+                                )                                                                 
+                                                                                                  
+ add_11 (Add)                   (None, 640, 640, 80  0           ['symmetrize2d[0][0]',           
+                                )                                 'dropout_11[0][0]']             
+                                                                                                  
+ symmetrize2d_1 (Symmetrize2D)  (None, 640, 640, 80  0           ['add_11[0][0]']                 
+                                )                                                                 
+                                                                                                  
+ re_lu_38 (ReLU)                (None, 640, 640, 80  0           ['symmetrize2d_1[0][0]']         
+                                )                                                                 
+                                                                                                  
+ conv2d_3 (Conv2D)              (None, 640, 640, 40  28800       ['re_lu_38[0][0]']               
+                                )                                                                 
+                                                                                                  
+ batch_normalization_37 (BatchN  (None, 640, 640, 40  160        ['conv2d_3[0][0]']               
+ ormalization)                  )                                                                 
+                                                                                                  
+ re_lu_39 (ReLU)                (None, 640, 640, 40  0           ['batch_normalization_37[0][0]'] 
+                                )                                                                 
+                                                                                                  
+ conv2d_4 (Conv2D)              (None, 640, 640, 80  3200        ['re_lu_39[0][0]']               
+                                )                                                                 
+                                                                                                  
+ batch_normalization_38 (BatchN  (None, 640, 640, 80  320        ['conv2d_4[0][0]']               
+ ormalization)                  )                                                                 
+                                                                                                  
+ dropout_12 (Dropout)           (None, 640, 640, 80  0           ['batch_normalization_38[0][0]'] 
+                                )                                                                 
+                                                                                                  
+ add_12 (Add)                   (None, 640, 640, 80  0           ['symmetrize2d_1[0][0]',         
+                                )                                 'dropout_12[0][0]']             
+                                                                                                  
+ symmetrize2d_2 (Symmetrize2D)  (None, 640, 640, 80  0           ['add_12[0][0]']                 
+                                )                                                                 
+                                                                                                  
+ re_lu_40 (ReLU)                (None, 640, 640, 80  0           ['symmetrize2d_2[0][0]']         
+                                )                                                                 
+                                                                                                  
+ conv2d_5 (Conv2D)              (None, 640, 640, 40  28800       ['re_lu_40[0][0]']               
+                                )                                                                 
+                                                                                                  
+ batch_normalization_39 (BatchN  (None, 640, 640, 40  160        ['conv2d_5[0][0]']               
+ ormalization)                  )                                                                 
+                                                                                                  
+ re_lu_41 (ReLU)                (None, 640, 640, 40  0           ['batch_normalization_39[0][0]'] 
+                                )                                                                 
+                                                                                                  
+ conv2d_6 (Conv2D)              (None, 640, 640, 80  3200        ['re_lu_41[0][0]']               
+                                )                                                                 
+                                                                                                  
+ batch_normalization_40 (BatchN  (None, 640, 640, 80  320        ['conv2d_6[0][0]']               
+ ormalization)                  )                                                                 
+                                                                                                  
+ dropout_13 (Dropout)           (None, 640, 640, 80  0           ['batch_normalization_40[0][0]'] 
+                                )                                                                 
+                                                                                                  
+ add_13 (Add)                   (None, 640, 640, 80  0           ['symmetrize2d_2[0][0]',         
+                                )                                 'dropout_13[0][0]']             
+                                                                                                  
+ symmetrize2d_3 (Symmetrize2D)  (None, 640, 640, 80  0           ['add_13[0][0]']                 
+                                )                                                                 
+                                                                                                  
+ re_lu_42 (ReLU)                (None, 640, 640, 80  0           ['symmetrize2d_3[0][0]']         
+                                )                                                                 
+                                                                                                  
+ conv2d_7 (Conv2D)              (None, 640, 640, 40  28800       ['re_lu_42[0][0]']               
+                                )                                                                 
+                                                                                                  
+ batch_normalization_41 (BatchN  (None, 640, 640, 40  160        ['conv2d_7[0][0]']               
+ ormalization)                  )                                                                 
+                                                                                                  
+ re_lu_43 (ReLU)                (None, 640, 640, 40  0           ['batch_normalization_41[0][0]'] 
+                                )                                                                 
+                                                                                                  
+ conv2d_8 (Conv2D)              (None, 640, 640, 80  3200        ['re_lu_43[0][0]']               
+                                )                                                                 
+                                                                                                  
+ batch_normalization_42 (BatchN  (None, 640, 640, 80  320        ['conv2d_8[0][0]']               
+ ormalization)                  )                                                                 
+                                                                                                  
+ dropout_14 (Dropout)           (None, 640, 640, 80  0           ['batch_normalization_42[0][0]'] 
+                                )                                                                 
+                                                                                                  
+ add_14 (Add)                   (None, 640, 640, 80  0           ['symmetrize2d_3[0][0]',         
+                                )                                 'dropout_14[0][0]']             
+                                                                                                  
+ symmetrize2d_4 (Symmetrize2D)  (None, 640, 640, 80  0           ['add_14[0][0]']                 
+                                )                                                                 
+                                                                                                  
+ re_lu_44 (ReLU)                (None, 640, 640, 80  0           ['symmetrize2d_4[0][0]']         
+                                )                                                                 
+                                                                                                  
+ conv2d_9 (Conv2D)              (None, 640, 640, 40  28800       ['re_lu_44[0][0]']               
+                                )                                                                 
+                                                                                                  
+ batch_normalization_43 (BatchN  (None, 640, 640, 40  160        ['conv2d_9[0][0]']               
+ ormalization)                  )                                                                 
+                                                                                                  
+ re_lu_45 (ReLU)                (None, 640, 640, 40  0           ['batch_normalization_43[0][0]'] 
+                                )                                                                 
+                                                                                                  
+ conv2d_10 (Conv2D)             (None, 640, 640, 80  3200        ['re_lu_45[0][0]']               
+                                )                                                                 
+                                                                                                  
+ batch_normalization_44 (BatchN  (None, 640, 640, 80  320        ['conv2d_10[0][0]']              
+ ormalization)                  )                                                                 
+                                                                                                  
+ dropout_15 (Dropout)           (None, 640, 640, 80  0           ['batch_normalization_44[0][0]'] 
+                                )                                                                 
+                                                                                                  
+ add_15 (Add)                   (None, 640, 640, 80  0           ['symmetrize2d_4[0][0]',         
+                                )                                 'dropout_15[0][0]']             
+                                                                                                  
+ symmetrize2d_5 (Symmetrize2D)  (None, 640, 640, 80  0           ['add_15[0][0]']                 
+                                )                                                                 
+                                                                                                  
+ re_lu_46 (ReLU)                (None, 640, 640, 80  0           ['symmetrize2d_5[0][0]']         
+                                )                                                                 
+                                                                                                  
+ conv2d_11 (Conv2D)             (None, 640, 640, 40  28800       ['re_lu_46[0][0]']               
+                                )                                                                 
+                                                                                                  
+ batch_normalization_45 (BatchN  (None, 640, 640, 40  160        ['conv2d_11[0][0]']              
+ ormalization)                  )                                                                 
+                                                                                                  
+ re_lu_47 (ReLU)                (None, 640, 640, 40  0           ['batch_normalization_45[0][0]'] 
+                                )                                                                 
+                                                                                                  
+ conv2d_12 (Conv2D)             (None, 640, 640, 80  3200        ['re_lu_47[0][0]']               
+                                )                                                                 
+                                                                                                  
+ batch_normalization_46 (BatchN  (None, 640, 640, 80  320        ['conv2d_12[0][0]']              
+ ormalization)                  )                                                                 
+                                                                                                  
+ dropout_16 (Dropout)           (None, 640, 640, 80  0           ['batch_normalization_46[0][0]'] 
+                                )                                                                 
+                                                                                                  
+ add_16 (Add)                   (None, 640, 640, 80  0           ['symmetrize2d_5[0][0]',         
+                                )                                 'dropout_16[0][0]']             
+                                                                                                  
+ symmetrize2d_6 (Symmetrize2D)  (None, 640, 640, 80  0           ['add_16[0][0]']                 
+                                )                                                                 
+                                                                                                  
+ squeeze_excite (SqueezeExcite)  (None, 640, 640, 80  2010       ['symmetrize2d_6[0][0]']         
+                                )                                                                 
+                                                                                                  
+ cropping2d (Cropping2D)        (None, 512, 512, 80  0           ['squeeze_excite[0][0]']         
+                                )                                                                 
+                                                                                                  
+ upper_tri (UpperTri)           (None, 130305, 80)   0           ['cropping2d[0][0]']             
+                                                                                                  
+ re_lu_48 (ReLU)                (None, 130305, 80)   0           ['upper_tri[0][0]']              
+                                                                                                  
+ dense (Dense)                  (None, 130305, 5)    405         ['re_lu_48[0][0]']               
+                                                                                                  
+ switch_reverse_triu (SwitchRev  (None, 130305, 5)   0           ['dense[0][0]',                  
+ erseTriu)                                                        'stochastic_reverse_complement[0
+                                                                 ][1]']                           
+                                                                                                  
+==================================================================================================
+Total params: 1,508,143
+Trainable params: 1,499,183
+Non-trainable params: 8,960
+__________________________________________________________________________________________________
+None
+model_strides [2048, 2048]
+target_lengths [130305, 130305]
+target_crops [-64833, -64833]
+Number of all sequences to be tested:  4
+padding = 0 || Started working on padding = 0
+(1, 1310720, 4)
+1/1 [==============================] - ETA: 0s1/1 [==============================] - 14s 14s/step
+(1, 130305, 6)
+
+**********
+Padding:  0 
+Sequence:  1 
+Background:  0 
+SCD averaged over targets:  11.09
+**********
+
+Metrics: 
+target_ind:  0 SCD:  9.93
+target_ind:  0 INS-16:  -0.09484742658411562
+target_ind:  0 INS-64:  -0.11188794324079411
+target_ind:  1 SCD:  11.336
+target_ind:  1 INS-16:  -0.09714333153524889
+target_ind:  1 INS-64:  -0.12396676785608624
+target_ind:  2 SCD:  11.34
+target_ind:  2 INS-16:  -0.15691463183979742
+target_ind:  2 INS-64:  -0.1832079744094338
+target_ind:  3 SCD:  11.31
+target_ind:  3 INS-16:  -0.15055491330595355
+target_ind:  3 INS-64:  -0.17773898283368708
+target_ind:  4 SCD:  11.31
+target_ind:  4 INS-16:  -0.1431735193305336
+target_ind:  4 INS-64:  -0.17183657156177468
+target_ind:  5 SCD:  11.31
+target_ind:  5 INS-16:  -0.12959331768774704
+target_ind:  5 INS-64:  -0.14974840631585176
+padding = 0 || Plotting
+(1, 1310720, 4)
+1/1 [==============================] - ETA: 0s1/1 [==============================] - 3s 3s/step
+(1, 130305, 6)
+
+**********
+Padding:  0 
+Sequence:  2 
+Background:  0 
+SCD averaged over targets:  8.67
+**********
+
+Metrics: 
+target_ind:  0 SCD:  5.797
+target_ind:  0 INS-16:  -0.056639298148777176
+target_ind:  0 INS-64:  -0.06910413662378985
+target_ind:  1 SCD:  5.664
+target_ind:  1 INS-16:  -0.013729773962450592
+target_ind:  1 INS-64:  -0.039714532698857996
+target_ind:  2 SCD:  11.31
+target_ind:  2 INS-16:  -0.08458676545516304
+target_ind:  2 INS-64:  -0.11837858772790436
+target_ind:  3 SCD:  11.31
+target_ind:  3 INS-16:  -0.09846225180644763
+target_ind:  3 INS-64:  -0.1272315634161984
+target_ind:  4 SCD:  9.914
+target_ind:  4 INS-16:  -0.0734841569139081
+target_ind:  4 INS-64:  -0.10347773339676734
+target_ind:  5 SCD:  8.016
+target_ind:  5 INS-16:  -0.0839329896708251
+target_ind:  5 INS-64:  -0.10659653593501862
+padding = 0 || Plotting
+(1, 1310720, 4)
+1/1 [==============================] - ETA: 0s1/1 [==============================] - 3s 3s/step
+(1, 130305, 6)
+
+**********
+Padding:  0 
+Sequence:  1 
+Background:  0 
+SCD averaged over targets:  13.21
+**********
+
+Metrics: 
+target_ind:  0 SCD:  11.31
+target_ind:  0 INS-16:  -0.1293749903501729
+target_ind:  0 INS-64:  -0.14806574922361732
+target_ind:  1 SCD:  12.24
+target_ind:  1 INS-16:  -0.15574073037611166
+target_ind:  1 INS-64:  -0.18174023771530662
+target_ind:  2 SCD:  16.0
+target_ind:  2 INS-16:  -0.20763146924407114
+target_ind:  2 INS-64:  -0.23118044407944968
+target_ind:  3 SCD:  12.38
+target_ind:  3 INS-16:  -0.19249378551136365
+target_ind:  3 INS-64:  -0.21718402250221414
+target_ind:  4 SCD:  16.0
+target_ind:  4 INS-16:  -0.19625770056200592
+target_ind:  4 INS-64:  -0.22370137825823053
+target_ind:  5 SCD:  11.31
+target_ind:  5 INS-16:  -0.16417371425704053
+target_ind:  5 INS-64:  -0.18545285431586703
+padding = 0 || Plotting
+(1, 1310720, 4)
+1/1 [==============================] - ETA: 0s1/1 [==============================] - 3s 3s/step
+(1, 130305, 6)
+
+**********
+Padding:  0 
+Sequence:  3 
+Background:  0 
+SCD averaged over targets:  8.67
+**********
+
+Metrics: 
+target_ind:  0 SCD:  5.824
+target_ind:  0 INS-16:  -0.05607936693274457
+target_ind:  0 INS-64:  -0.06890492610525974
+target_ind:  1 SCD:  5.664
+target_ind:  1 INS-16:  -0.012393122134001358
+target_ind:  1 INS-64:  -0.03924493815302994
+target_ind:  2 SCD:  11.31
+target_ind:  2 INS-16:  -0.08276922052556818
+target_ind:  2 INS-64:  -0.11756792215272263
+target_ind:  3 SCD:  11.31
+target_ind:  3 INS-16:  -0.09695808501111661
+target_ind:  3 INS-64:  -0.12651575360180492
+target_ind:  4 SCD:  9.92
+target_ind:  4 INS-16:  -0.07190761641551384
+target_ind:  4 INS-64:  -0.10278023562045718
+target_ind:  5 SCD:  8.016
+target_ind:  5 INS-16:  -0.08269250440032115
+target_ind:  5 INS-64:  -0.10604636954003023
+padding = 0 || Plotting
+padding = 1 || Started working on padding = 1
+(1, 1310720, 4)
+1/1 [==============================] - ETA: 0s1/1 [==============================] - 3s 3s/step
+(1, 130305, 6)
+
+**********
+Padding:  1 
+Sequence:  1 
+Background:  0 
+SCD averaged over targets:  11.83
+**********
+
+Metrics: 
+target_ind:  0 SCD:  11.39
+target_ind:  0 INS-16:  -0.11210939912456769
+target_ind:  0 INS-64:  -0.12929769672568084
+target_ind:  1 SCD:  11.7
+target_ind:  1 INS-16:  -0.12763440279150198
+target_ind:  1 INS-64:  -0.15511648782505955
+target_ind:  2 SCD:  12.88
+target_ind:  2 INS-16:  -0.17766706745615118
+target_ind:  2 INS-64:  -0.20638780852503513
+target_ind:  3 SCD:  11.445
+target_ind:  3 INS-16:  -0.1652928529520751
+target_ind:  3 INS-64:  -0.19670460260849315
+target_ind:  4 SCD:  12.24
+target_ind:  4 INS-16:  -0.16594662873641305
+target_ind:  4 INS-64:  -0.1972092573257696
+target_ind:  5 SCD:  11.31
+target_ind:  5 INS-16:  -0.1441382607923666
+target_ind:  5 INS-64:  -0.16730602720154839
+padding = 1 || Plotting
+(1, 1310720, 4)
+1/1 [==============================] - ETA: 0s1/1 [==============================] - 2s 2s/step
+(1, 130305, 6)
+
+**********
+Padding:  1 
+Sequence:  2 
+Background:  0 
+SCD averaged over targets:  8.7
+**********
+
+Metrics: 
+target_ind:  0 SCD:  5.82
+target_ind:  0 INS-16:  -0.055651276479125496
+target_ind:  0 INS-64:  -0.06900477741389643
+target_ind:  1 SCD:  5.664
+target_ind:  1 INS-16:  -0.012501034340839613
+target_ind:  1 INS-64:  -0.039573784070232806
+target_ind:  2 SCD:  11.31
+target_ind:  2 INS-16:  -0.08277887035264328
+target_ind:  2 INS-64:  -0.11805337010692799
+target_ind:  3 SCD:  11.31
+target_ind:  3 INS-16:  -0.09675013123764822
+target_ind:  3 INS-64:  -0.1269142044630314
+target_ind:  4 SCD:  10.07
+target_ind:  4 INS-16:  -0.07181292748733943
+target_ind:  4 INS-64:  -0.10319353146043932
+target_ind:  5 SCD:  8.016
+target_ind:  5 INS-16:  -0.08241772557435771
+target_ind:  5 INS-64:  -0.10630555645690813
+padding = 1 || Plotting
+(1, 1310720, 4)
+1/1 [==============================] - ETA: 0s1/1 [==============================] - 3s 3s/step
+(1, 130305, 6)
+
+**********
+Padding:  1 
+Sequence:  1 
+Background:  0 
+SCD averaged over targets:  13.25
+**********
+
+Metrics: 
+target_ind:  0 SCD:  11.31
+target_ind:  0 INS-16:  -0.12000754133985919
+target_ind:  0 INS-64:  -0.14324116095219736
+target_ind:  1 SCD:  12.12
+target_ind:  1 INS-16:  -0.14663877223320157
+target_ind:  1 INS-64:  -0.17865926713195548
+target_ind:  2 SCD:  16.0
+target_ind:  2 INS-16:  -0.1935736011610672
+target_ind:  2 INS-64:  -0.22699274342245906
+target_ind:  3 SCD:  12.78
+target_ind:  3 INS-16:  -0.17954757750741107
+target_ind:  3 INS-64:  -0.21375621177734852
+target_ind:  4 SCD:  16.0
+target_ind:  4 INS-16:  -0.18381087110918973
+target_ind:  4 INS-64:  -0.21931185746816212
+target_ind:  5 SCD:  11.31
+target_ind:  5 INS-16:  -0.1553260290575593
+target_ind:  5 INS-64:  -0.1822508721779181
+padding = 1 || Plotting
+(1, 1310720, 4)
+1/1 [==============================] - ETA: 0s1/1 [==============================] - 3s 3s/step
+(1, 130305, 6)
+
+**********
+Padding:  1 
+Sequence:  3 
+Background:  0 
+SCD averaged over targets:  8.64
+**********
+
+Metrics: 
+target_ind:  0 SCD:  5.81
+target_ind:  0 INS-16:  -0.056429414409893776
+target_ind:  0 INS-64:  -0.06867236471280998
+target_ind:  1 SCD:  5.664
+target_ind:  1 INS-16:  -0.012165069580078125
+target_ind:  1 INS-64:  -0.038706335146503464
+target_ind:  2 SCD:  11.31
+target_ind:  2 INS-16:  -0.08234993553915514
+target_ind:  2 INS-64:  -0.11697598701288786
+target_ind:  3 SCD:  11.31
+target_ind:  3 INS-16:  -0.09676750092638339
+target_ind:  3 INS-64:  -0.12604720103778555
+target_ind:  4 SCD:  9.71
+target_ind:  4 INS-16:  -0.07175683786746541
+target_ind:  4 INS-64:  -0.10226751346620755
+target_ind:  5 SCD:  8.016
+target_ind:  5 INS-16:  -0.0827658430860919
+target_ind:  5 INS-64:  -0.10569439964191912
+padding = 1 || Plotting
+padding = 2 || Started working on padding = 2
+(1, 1310720, 4)
+1/1 [==============================] - ETA: 0s1/1 [==============================] - 2s 2s/step
+(1, 130305, 6)
+
+**********
+Padding:  2 
+Sequence:  1 
+Background:  0 
+SCD averaged over targets:  13.37
+**********
+
+Metrics: 
+target_ind:  0 SCD:  11.914
+target_ind:  0 INS-16:  -0.12660802305922678
+target_ind:  0 INS-64:  -0.14373051499842782
+target_ind:  1 SCD:  13.8
+target_ind:  1 INS-16:  -0.14889224810091403
+target_ind:  1 INS-64:  -0.1772401964871248
+target_ind:  2 SCD:  15.234
+target_ind:  2 INS-16:  -0.19532021986166007
+target_ind:  2 INS-64:  -0.22107075258539732
+target_ind:  3 SCD:  11.94
+target_ind:  3 INS-16:  -0.17910682165575592
+target_ind:  3 INS-64:  -0.2086842096786816
+target_ind:  4 SCD:  16.0
+target_ind:  4 INS-16:  -0.18416405478013834
+target_ind:  4 INS-64:  -0.21441080749049443
+target_ind:  5 SCD:  11.31
+target_ind:  5 INS-16:  -0.15650644415452075
+target_ind:  5 INS-64:  -0.179440600639621
+padding = 2 || Plotting
+(1, 1310720, 4)
+1/1 [==============================] - ETA: 0s1/1 [==============================] - 3s 3s/step
+(1, 130305, 6)
+
+**********
+Padding:  2 
+Sequence:  2 
+Background:  0 
+SCD averaged over targets:  8.68
+**********
+
+Metrics: 
+target_ind:  0 SCD:  5.812
+target_ind:  0 INS-16:  -0.056349562090847335
+target_ind:  0 INS-64:  -0.06906853402531761
+target_ind:  1 SCD:  5.664
+target_ind:  1 INS-16:  -0.012911664638594677
+target_ind:  1 INS-64:  -0.0395131552682481
+target_ind:  2 SCD:  11.31
+target_ind:  2 INS-16:  -0.08352986814476285
+target_ind:  2 INS-64:  -0.11803305984970529
+target_ind:  3 SCD:  11.31
+target_ind:  3 INS-16:  -0.0976048646708251
+target_ind:  3 INS-64:  -0.12692289820749603
+target_ind:  4 SCD:  9.96
+target_ind:  4 INS-16:  -0.07255150112709981
+target_ind:  4 INS-64:  -0.10317713562503818
+target_ind:  5 SCD:  8.016
+target_ind:  5 INS-16:  -0.08319887907608696
+target_ind:  5 INS-64:  -0.10633554465608203
+padding = 2 || Plotting
+(1, 1310720, 4)
+1/1 [==============================] - ETA: 0s1/1 [==============================] - 2s 2s/step
+(1, 130305, 6)
+
+**********
+Padding:  2 
+Sequence:  1 
+Background:  0 
+SCD averaged over targets:  14.35
+**********
+
+Metrics: 
+target_ind:  0 SCD:  11.4
+target_ind:  0 INS-16:  -0.13817189333467145
+target_ind:  0 INS-64:  -0.15540810852274461
+target_ind:  1 SCD:  16.0
+target_ind:  1 INS-16:  -0.17210370090167984
+target_ind:  1 INS-64:  -0.19780432400306164
+target_ind:  2 SCD:  16.0
+target_ind:  2 INS-16:  -0.2145880295825099
+target_ind:  2 INS-64:  -0.24055924964306438
+target_ind:  3 SCD:  15.336
+target_ind:  3 INS-16:  -0.19624467329545456
+target_ind:  3 INS-64:  -0.22501232931033166
+target_ind:  4 SCD:  16.0
+target_ind:  4 INS-16:  -0.2060961817564229
+target_ind:  4 INS-64:  -0.23470482545466345
+target_ind:  5 SCD:  11.375
+target_ind:  5 INS-16:  -0.17104656234560275
+target_ind:  5 INS-64:  -0.19330168015037105
+padding = 2 || Plotting
+(1, 1310720, 4)
+1/1 [==============================] - ETA: 0s1/1 [==============================] - 2s 2s/step
+(1, 130305, 6)
+
+**********
+Padding:  2 
+Sequence:  3 
+Background:  0 
+SCD averaged over targets:  8.63
+**********
+
+Metrics: 
+target_ind:  0 SCD:  5.8
+target_ind:  0 INS-16:  -0.056883197528100296
+target_ind:  0 INS-64:  -0.0688067598620167
+target_ind:  1 SCD:  5.664
+target_ind:  1 INS-16:  -0.012916248306455349
+target_ind:  1 INS-64:  -0.03892142330554596
+target_ind:  2 SCD:  11.31
+target_ind:  2 INS-16:  -0.08342154883584486
+target_ind:  2 INS-64:  -0.11731662372782037
+target_ind:  3 SCD:  11.31
+target_ind:  3 INS-16:  -0.09767627339118083
+target_ind:  3 INS-64:  -0.12635722324605272
+target_ind:  4 SCD:  9.68
+target_ind:  4 INS-16:  -0.07265596050518774
+target_ind:  4 INS-64:  -0.10255746401058209
+target_ind:  5 SCD:  8.01
+target_ind:  5 INS-16:  -0.0834982649610919
+target_ind:  5 INS-64:  -0.10595521197585817
+padding = 2 || Plotting
+Peak memory during predicting in MB:  30478.678016
+Prediction Time in seconds:  44.89138627052307
+Peak memory during saving in MB:  17.808384
+Saving Time in seconds:  0.007327079772949219

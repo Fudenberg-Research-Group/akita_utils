@@ -200,12 +200,12 @@ def main():
 
     (options, args) = parser.parse_args()
 
-    if len(args) != 3:
-        parser.error("Must provide parameters and model files and VCF file")
-    else:
-        params_file = args[0]
-        model_file = args[1]
-        vcf_file = args[2]
+    # if len(args) != 3:
+    #     parser.error("Must provide parameters and model files and VCF file")
+    # else:
+    params_file = args[0]
+    model_file = args[1]
+    vcf_file = args[2]
 
     #######################################################
     # prep work
@@ -234,7 +234,7 @@ def main():
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
             else:
                 cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += "conda activate basenji-gpu;"
+                cmd += "conda activate basenji;"
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
 
             cmd += " ${SLURM_SUBMIT_DIR}/akita_motif_scd.py %s %s %d" % (

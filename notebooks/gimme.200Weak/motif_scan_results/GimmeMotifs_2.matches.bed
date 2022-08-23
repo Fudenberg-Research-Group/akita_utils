@@ -1,0 +1,13 @@
+# GimmeMotifs version 0.17.1
+# Input: Weak.fasta
+# Motifs: /tmp/tmpthvnbnbr
+# FPR: 0.01 (hg38)
+# Scoring: GC frequency normalized z-score
+ WeakFlank_4	6	18	GimmeMotifs_2	3.3042105560498647	-
+ WeakFlank_15	13	25	GimmeMotifs_2	2.9618940389739064	+
+ WeakFlank_54	13	25	GimmeMotifs_2	3.1724868551164493	-
+ WeakFlank_60	18	30	GimmeMotifs_2	3.6103382299589812	+
+ WeakFlank_81	15	27	GimmeMotifs_2	3.0006475944417756	+
+ WeakFlank_89	16	28	GimmeMotifs_2	2.971992148064311	+
+ WeakFlank_101	0	12	GimmeMotifs_2	3.2413856477767466	+
+ WeakFlank_160	14	26	GimmeMotifs_2	2.8850465237052636	-

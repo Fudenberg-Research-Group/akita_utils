@@ -12,8 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# =========================================================================
+
 from __future__ import print_function
+
+# libraries for tracking time and memory
+import time
+start_import_Time = time.time()
+
+import tracemalloc
+# ========================================================================
 
 from optparse import OptionParser
 import json
@@ -55,10 +62,13 @@ from basenji import seqnn
 from basenji import stream
 from basenji import dna_io
 
+ImportTime = (time.time() - start_import_Time)
+print("Time needed for importing libraries: ", ImportTime)
+
 # from basenji import vcf as bvcf
 
 """
-PS_akita_insert.py
+akita_padding_v2.py
 
 Compute SNP Contact Difference (SCD) scores, and INS scores for motif insertions with different paddings from a tsv file with chrom, start, end, strand.
 
@@ -246,7 +256,27 @@ def main():
     options.scd_stats = options.scd_stats.split(",")
 
     random.seed(44)
-
+    
+    #################################################################
+    # GPU checkpoint
+    
+    # gpus = tf.config.list_physical_devices('GPU')
+    # print("GPUs recognized by the tensorflow", gpus)
+    
+    from tensorflow.python.client import device_lib
+       
+    print("\n#################\nGPU CHECKPOINT\n#################\n")
+    
+    print("local devices: ", device_lib.list_local_devices())
+    
+    print("Is GPU Available?", tf.test.is_gpu_available())
+    
+    print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+    
+    print("Name of the device", tf.test.gpu_device_name())
+    
+    print("\n#################\n")
+    
     #################################################################
     # read parameters and targets
 
@@ -326,6 +356,9 @@ def main():
     
     # print(options.scd_stats)
     
+    tracemalloc.start()
+    start_prediction_time = time.time()
+    
     out = multiple_padding(seq_coords_df, background_seqs, pad_list, target_map_size, hic_diags,
                            seq_length=seq_length,
                            genome_open=genome_open,
@@ -338,12 +371,33 @@ def main():
                            plotting=options.plot_map, 
                            one_side_radius=options.one_side_radius, 
                            motif_len=19)
-
+    current, peak = tracemalloc.get_traced_memory()
+    memory_in_bytes = peak * 1024
+    memory_in_MB = memory_in_bytes / (10**6)
+    print("Peak memory during predicting in MB: ", memory_in_MB)
+    
+    tracemalloc.stop()
+    PredTime = (time.time() - start_prediction_time)
+    print("Prediction Time in seconds: ", PredTime)
+    
+    tracemalloc.start()
+    start_saving_time = time.time()
+    
     save_h5(seq_coords_df=seq_coords_df, 
             out_dir=options.out_dir, 
             stat=options.scd_stats, 
             prediction=out)
-
+    
+    current, peak = tracemalloc.get_traced_memory()
+    memory_in_bytes = peak * 1024
+    memory_in_MB = memory_in_bytes / (10**6)
+    print("Peak memory during saving in MB: ", memory_in_MB)
+    
+    SaveTime = (time.time() - start_saving_time)
+    print("Saving Time in seconds: ", SaveTime)
+    
+    # save_npy(out_dir = "/home1/smaruj/akita_utils/bin/" + options.out_dir, prediction=out)
+    
 #################################################################
 # matrics (SCD, INS) caculation
 
@@ -447,6 +501,8 @@ def multiple_padding(seq_coords_df,
         
         
         for i in seq_coords_df.index:      #iteraton over sequences
+            
+            # startTime = time.time()
             
             orientation_string = seq_coords_df.iloc[i].orientation
             orientation_list = split_arrows(orientation_string)
@@ -580,7 +636,11 @@ def multiple_padding(seq_coords_df,
                 INS_all_sequences[window][i] = INS_all_backgrounds[window]
                 
             SCD_all_sequences[i] = SCD_all_backgrounds
-                
+            
+            # Tracking the time
+            # OneSeq_Time = (time.time() - startTime)
+            # print("Time needed for one sequence (all backgrounds): ", OneSeq_Time)
+            
         # print("INS_all_sequences ", INS_all_sequences)
         # print("SCD_all_sequences ", SCD_all_sequences)
         
@@ -616,6 +676,14 @@ def save_h5(seq_coords_df, out_dir, stat, prediction, filename="out.h5"):
         hf.create_dataset("Strand",  data=strand.astype('S'))
         hf.create_dataset("genomic_SCD",  data=genSCD)
 
+        
+def save_npy(out_dir, prediction):
+        
+    np.save(out_dir + "/SCD.npy", prediction[0])
+    for key in prediction[1]:
+        np.save(out_dir + "/INS-" + str(key) + ".npy", prediction[1][key])
+
+            
 ################################################################################
 # __main__
 ################################################################################
