@@ -47,12 +47,11 @@ from basenji import seqnn
 from basenji import stream
 from basenji import dna_io
 
-# from basenji import vcf as bvcf
 
 """
-akita_scd.py
+Derived from akita_scd.py
 
-Compute SNP Contact Difference (SCD) scores for paired motif insertions from a tsv file with chrom,start,end,strand for positions of motifs used as the core & flanking sequence. 
+Compute insertion scores for paired motif insertions from a tsv file with chrom,start,end,strand for positions of motifs used as the core & flanking sequence. 
 
 """
 
@@ -60,7 +59,7 @@ Compute SNP Contact Difference (SCD) scores for paired motif insertions from a t
 # main
 ################################################################################
 def main():
-    usage = "usage: %prog [options] <params_file> <model_file> <vcf_file>"
+    usage = "usage: %prog [options] <params_file> <model_file> <tsv_file>"
     parser = OptionParser(usage)
     parser.add_option(
         "-f",
@@ -191,7 +190,7 @@ def main():
         options.out_dir = "%s/job%d" % (options.out_dir, worker_index)
 
     else:
-        parser.error("Must provide parameters and model files and QTL VCF file")
+        parser.error("Must provide parameters and model files and TSV file")
 
     if not os.path.isdir(options.out_dir):
         os.mkdir(options.out_dir)
