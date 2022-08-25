@@ -187,7 +187,7 @@ def filter_sites_by_score(
     score_key="SCD",
     weak_thresh_pct=1,  # don't use sites weaker than this, might be artifacts
     weak_num=500,
-    strong_thresh_pct=99,  # don't use sites weaker than this, might be artifacts
+    strong_thresh_pct=99,  # don't use sites stronger than this, might be artifacts
     strong_num=500,
 ):
     """Chooses a specified number of strong and weak sites exluding low and/or high outliers which may contain more artifacts."""
@@ -217,7 +217,7 @@ def prepare_insertion_tsv(
     pad_flank=60,  # how much flanking sequence around the sites to include
     weak_thresh_pct=1,  # don't use sites weaker than this, might be artifacts
     weak_num=500,
-    strong_thresh_pct=99,  # don't use sites weaker than this, might be artifacts
+    strong_thresh_pct=99,  # don't use sites stronger than this, might be artifacts
     strong_num=500,
     save_tsv=None,  # optional filename to save a tsv
 ):
@@ -284,7 +284,7 @@ def prepare_paired_insertion_df(
     pad_flank=60,
     weak_thresh_pct=1,  # don't use sites weaker than this, might be artifacts
     weak_num=500,
-    strong_thresh_pct=99,  # don't use sites weaker than this, might be artifacts
+    strong_thresh_pct=99,  # don't use sites stronger than this, might be artifacts
     strong_num=500,
     save_tsv=None,  # optional filename to save a tsv
 ):
