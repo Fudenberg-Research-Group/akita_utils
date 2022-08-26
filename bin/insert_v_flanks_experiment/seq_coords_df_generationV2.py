@@ -24,6 +24,7 @@ import pickle
 import random
 import sys
 import time
+import math
 
 import h5py
 import numpy as np
@@ -115,13 +116,6 @@ def main():
         help="Filename for output",
     )
     parser.add_option(
-        "--csv",
-        dest="csv",
-        default=False,
-        action="store_true",
-        help="Save dataframe as csv",
-    )
-    parser.add_option(
         "--tsv",
         dest="tsv",
         default=False,
@@ -129,11 +123,11 @@ def main():
         help="Save dataframe as tsv",
     )
     parser.add_option(
-        "--h5",
-        dest="h5",
+        "--csv",
+        dest="csv",
         default=False,
         action="store_true",
-        help="Save dataframe as h5",
+        help="Save dataframe as csv",
     )
     (options, args) = parser.parse_args()
     
@@ -160,7 +154,6 @@ def main():
     if options.mode not in possible_modes:
         parser.error("Invalid mode. Expected one of: %s" % possible_modes)
     
-    
     random.seed(44)
     
     # open genome FASTA
@@ -178,41 +171,88 @@ def main():
         strong_num = options.num_weak_motifs ,
         save_tsv=None, # optional filename to save a tsv
     )
-    
+        
     out = add_orientation(seq_coords_df, 
                 nr_strong = options.num_strong_motifs,
                 nr_weak = options.num_weak_motifs,
                 mode=options.mode,
-                orient_list=orient_list)
-    
-    num_options = len(out)
-    
-    print("Length of data frame to be prepared: ", num_options)
+                orient_list=orient_list,
+                N = options.orientation_N)
     
     if options.csv:
         out.to_csv(f"./{options.filename}.csv", index=False)
     
     if options.tsv:
         out.to_csv(f"./{options.filename}.tsv", sep="\t", index=False)
-    
-    if options.h5:
-        save_h5(out, filename=f"./{options.filename}.h5")
 
 #################################################################
-# adding orientation
+
+# functions: all_orient_strings() and permute() will be added later to one of the utils modules
+
+def all_orient_strings(N):
+    
+    all_strings = []
+    n_pos_perms = 2**N
+    n_unique_perms = 0
+    
+    for i in range(N+1):
+        string = []
+        j = N - i
+        
+        # i = number of ">"
+        # j = numer of "<"
+        
+        # print(i, j)
+        
+        for k in range(i):
+            string.append(">")
+        for l in range(j):
+            string.append("<")
+        
+        # number of permutations is smaller if objects are indistinguishable
+        # it as assumed that all >'s and <'s are exactly the same
+        # so, the number of permutations has to be divided by number of permutations 
+        # within >'s and <'s (separatelly) for each string
+        n_unique_perms += math.factorial(N) / (math.factorial(i) * math.factorial(j))
+        
+        # print(string)
+        all_strings.append(string)
+    
+    assert n_unique_perms == n_pos_perms
+    return all_strings
+
+def permute(l):
+    
+    # returns all possible permutations of a list of characters in a recursive manner
+    
+    llen = len(l)
+    
+    if llen == 0:
+        return []
+    
+    elif llen == 1:
+        return [l]
+
+    perm_list = []
+    
+    for i in range(llen):
+        rest = l[:i] + l[(i+1):]
+        
+        for rest_perm in permute(rest):
+            if [l[i]] + rest_perm not in perm_list:
+                perm_list.append([l[i]] + rest_perm)
+    
+    return perm_list
 
 def add_orientation(seq_coords_df, 
                     nr_strong,
                     nr_weak,
                     mode="same", 
-                    orient_list=[">>"]):
+                    orient_list=[">>"],
+                    N=2):
     
     df_len = len(seq_coords_df)
-    
-    # mode_types = ["same", "customize", "weak_strong", "for_each"]
-    # if mode not in mode_types:
-    #     raise ValueError("Invalid mode. Expected one of: %s" % mode_types)
-    
+        
     if mode == "same":
         seq_coords_df["orientation"] = [">>" for i in range(df_len)]
     
@@ -221,29 +261,28 @@ def add_orientation(seq_coords_df,
             seq_coords_df["orientation"] = orient_list
         else:
             raise ValueError("Check the length of the customized list of orientation strings. Expected length: %s" % df_len)
+        
+    else:
+        # all possible unique orientations of length N 
+        orient_list = []
     
-    elif mode == "weak_strong":
+        strings = all_orient_strings(N)
+
+        for ls in strings:
+            for perm in permute(ls):
+                orient_list.append(perm)
+                
+        # print(unique_permutations)
+        # print(options.orientation_N, len(unique_permutations))
         
-        if len(orient_list) != 2:
-            raise ValueError("You should provide a list of two orientation strings: first of strong motifs, second - for weak")
-        
-        strong_orientation = orient_list[0]
-        weak_orientation = orient_list[1]
-        
-        real_orient_list = [strong_orientation for j in range(nr_strong)] + [weak_orientation for k in range(nr_weak)] 
-        
-        if len(real_orient_list) == df_len:
-            seq_coords_df["orientation"] = real_orient_list
-        else:
-            raise ValueError("Check the numeber of weak and strong sites given. Expected sum of those two numbers is: %s" % df_len)
-    
-    elif mode == "for_each":
         rep_unit = seq_coords_df
         orientation_ls = []
         
         for o in range(len(orient_list)):
             orientation = orient_list[o]
-            orientation_ls = orientation_ls + [orientation for i in range(df_len)]
+            orientation_string = "".join(orientation)
+            # print(orientation)
+            orientation_ls = orientation_ls + [orientation_string for i in range(df_len)]
             if len(seq_coords_df) != len(orientation_ls):
                 seq_coords_df = pd.concat([seq_coords_df, rep_unit], ignore_index=True)
             
@@ -252,25 +291,6 @@ def add_orientation(seq_coords_df,
     seq_coords_df = seq_coords_df.drop(["index"], axis=1)
     
     return seq_coords_df
-
-#################################################################
-# saving in the h5 format
-
-def save_h5(seq_coords_df, filename="out.h5"):
-    chrom = seq_coords_df.chrom.to_numpy()
-    start = seq_coords_df.start.to_numpy().astype(np.int32)
-    end = seq_coords_df.end.to_numpy().astype(np.int32)
-    strand = seq_coords_df.strand.to_numpy()
-    genSCD = seq_coords_df.genomic_SCD.to_numpy().astype(np.float64)
-    orientation = seq_coords_df.orientation.to_numpy()
-    
-    with h5py.File("./" + filename, "w") as hf:
-        hf.create_dataset("Chromosome",  data=chrom.astype('S'))
-        hf.create_dataset("Start",  data=start)
-        hf.create_dataset("End",  data=end)
-        hf.create_dataset("Strand",  data=strand.astype('S'))
-        hf.create_dataset("genomic_SCD",  data=genSCD)
-        hf.create_dataset("orientation",  data=orientation.astype('S'))
 
 ################################################################################
 # __main__
