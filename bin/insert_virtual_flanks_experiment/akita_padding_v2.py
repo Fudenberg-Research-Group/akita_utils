@@ -221,7 +221,7 @@ def main():
     # print(args)
     
     if len(args) == 2:
-        # single worker
+        # single worker (designed for working on one GPU)
         params_file = args[0]
         model_file = args[1]
         # motif_file = args[2]
@@ -239,7 +239,7 @@ def main():
         options = pickle.load(options_pkl)
         options_pkl.close()
 
-        # update output directory
+        # update output directory (designed for working on multiple GPU)
         options.out_dir = "%s/job%d" % (options.out_dir, worker_index)
 
     else:
@@ -356,45 +356,47 @@ def main():
     
     # print(options.scd_stats)
     
-    tracemalloc.start()
-    start_prediction_time = time.time()
+    # tracemalloc.start()
+    # start_prediction_time = time.time()
     
-    out = multiple_padding(seq_coords_df, background_seqs, pad_list, target_map_size, hic_diags,
-                           seq_length=seq_length,
-                           genome_open=genome_open,
-                           seqnn_model=seqnn_model,
-                           batch_size = options.batch_size,
-                           out_dir=plot_dir,
-                           head = options.head_index,
-                           stat = options.scd_stats,
-                           verbose=True,
-                           plotting=options.plot_map, 
-                           one_side_radius=options.one_side_radius, 
-                           motif_len=19)
-    current, peak = tracemalloc.get_traced_memory()
-    memory_in_bytes = peak * 1024
-    memory_in_MB = memory_in_bytes / (10**6)
-    print("Peak memory during predicting in MB: ", memory_in_MB)
     
-    tracemalloc.stop()
-    PredTime = (time.time() - start_prediction_time)
-    print("Prediction Time in seconds: ", PredTime)
     
-    tracemalloc.start()
-    start_saving_time = time.time()
+    # out = multiple_padding(seq_coords_df, background_seqs, pad_list, target_map_size, hic_diags,
+    #                        seq_length=seq_length,
+    #                        genome_open=genome_open,
+    #                        seqnn_model=seqnn_model,
+    #                        batch_size = options.batch_size,
+    #                        out_dir=plot_dir,
+    #                        head = options.head_index,
+    #                        stat = options.scd_stats,
+    #                        verbose=True,
+    #                        plotting=options.plot_map, 
+    #                        one_side_radius=options.one_side_radius, 
+    #                        motif_len=19)
+    # current, peak = tracemalloc.get_traced_memory()
+    # memory_in_bytes = peak * 1024
+    # memory_in_MB = memory_in_bytes / (10**6)
+    # print("Peak memory during predicting in MB: ", memory_in_MB)
     
-    save_h5(seq_coords_df=seq_coords_df, 
-            out_dir=options.out_dir, 
-            stat=options.scd_stats, 
-            prediction=out)
+    # tracemalloc.stop()
+    # PredTime = (time.time() - start_prediction_time)
+    # print("Prediction Time in seconds: ", PredTime)
     
-    current, peak = tracemalloc.get_traced_memory()
-    memory_in_bytes = peak * 1024
-    memory_in_MB = memory_in_bytes / (10**6)
-    print("Peak memory during saving in MB: ", memory_in_MB)
+    # tracemalloc.start()
+    # start_saving_time = time.time()
     
-    SaveTime = (time.time() - start_saving_time)
-    print("Saving Time in seconds: ", SaveTime)
+    # save_h5(seq_coords_df=seq_coords_df, 
+    #         out_dir=options.out_dir, 
+    #         stat=options.scd_stats, 
+    #         prediction=out)
+    
+#     current, peak = tracemalloc.get_traced_memory()
+#     memory_in_bytes = peak * 1024
+#     memory_in_MB = memory_in_bytes / (10**6)
+#     print("Peak memory during saving in MB: ", memory_in_MB)
+    
+#     SaveTime = (time.time() - start_saving_time)
+#     print("Saving Time in seconds: ", SaveTime)
     
     # save_npy(out_dir = "/home1/smaruj/akita_utils/bin/" + options.out_dir, prediction=out)
     

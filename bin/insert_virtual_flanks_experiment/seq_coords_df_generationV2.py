@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 # Copyright 2017 Calico LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,43 +15,58 @@
 # limitations under the License.
 # =========================================================================
 
+###################################################
+# imports #
+
 from __future__ import print_function
 
-from optparse import OptionParser
-import json
+# general
+
 import os
-import pdb
-import pickle
-import random
 import sys
 import time
 import math
+import random
 
-import h5py
+import json
+from optparse import OptionParser
+import pickle
+
+# DS
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import pysam
-from skimage.measure import block_reduce
 import seaborn as sns
 
-#################
-import sys
+# bioinf
+
+import h5py
+import pysam
 
 sys.path.insert(0, "/home1/smaruj/akita_utils/")
-
-# from akita_utils import *
 import akita_utils
 
-#################
+# others
+import itertools
+
+# redundant ?
+# import pdb
+# from skimage.measure import
+
+
+###################################################
+# styles #
 
 sns.set(style="ticks", font_scale=1.3)
 
 
+###################################################
+# description #
+
 # """
 # seq_coords_df_generationV2.py
 #
-# Given the parameters the scirpt creates a tsv or csv file - an input to the padding experiment script.
+# Given the parameters the scirpt creates a tsv (default) or csv file - an input to the padding experiment script.
 #
 # tsv / csv table columns
 # chrom | start | end | strand | orientation | left_flank | right_flank | left_spacer | right_spacer | back_id
@@ -110,6 +126,27 @@ def main():
         help="If mode chosen is all_possible, specify number of CTCF binding sites for which all possible permutations will be tested",
     )
     parser.add_option(
+        "--flank-range",
+        dest="flank_range",
+        default="0,30",
+        type="string",
+        help="Specify range of right and left flank to be tested",
+    )
+    parser.add_option(
+        "--flank-spacer-sum",
+        dest="flank_spacer_sum",
+        default=90,
+        type="int",
+        help="Specify sum of flank and spacer so that distances between CTCFs binding sites are kept constant",
+    )
+    parser.add_option(
+        "--number-backgrounds",
+        dest="number_backgrounds",
+        default=10,
+        type="int",
+        help="Specify number of background sequences that CTCFs will be inserted into",
+    )
+    parser.add_option(
         "--filename",
         dest="filename",
         default="out",
@@ -129,16 +166,12 @@ def main():
         action="store_true",
         help="Save dataframe as csv",
     )
+    
     (options, args) = parser.parse_args()
-    
-    print("options: ", options)
-    print("args", args)
-    
+        
     orient_list = options.orientation_string.split(",")
-    
-    # print(orient_list)
-    
-    ### CHECKPOINT ###
+        
+    # orientation modes checkpoints
     
     possible_modes = ["same", "list", "all_possible"]
     
@@ -156,142 +189,225 @@ def main():
     
     random.seed(44)
     
-    # open genome FASTA
+    # opening genome FASTA
     genome_open = pysam.Fastafile(options.genome_fasta)
     
-    # load motifs
+    # loading motifs
     
     seq_coords_df = akita_utils.prepare_insertion_tsv(
         h5_dirs = "/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
-        score_key = 'SCD',
+        score_key = "SCD",
         pad_flank = 0, #how much flanking sequence around the sites to include
         weak_thresh_pct = 1, # don't use sites weaker than this, might be artifacts
         weak_num = options.num_strong_motifs ,
         strong_thresh_pct = 99, # don't use sites stronger than this, might be artifacts
         strong_num = options.num_weak_motifs ,
-        save_tsv=None, # optional filename to save a tsv
+        save_tsv = None
     )
         
-    out = add_orientation(seq_coords_df, 
-                nr_strong = options.num_strong_motifs,
-                nr_weak = options.num_weak_motifs,
-                mode=options.mode,
-                orient_list=orient_list,
-                N = options.orientation_N)
+    df_with_orientation = add_orientation(
+        seq_coords_df,
+        nr_strong = options.num_strong_motifs,
+        nr_weak = options.num_weak_motifs,
+        mode = options.mode,
+        orientation_strings = options.orientation_string,
+        N = options.orientation_N)
+    
+    df_with_background = add_background(
+        seq_coords_df,
+        options.number_backgrounds
+    )
+    
+    df_with_flanks_spacers = add_flanks_and_spacers(
+        df_with_background,
+        options.flank_range,
+        options.flank_spacer_sum
+    )
     
     if options.csv:
-        out.to_csv(f"./{options.filename}.csv", index=False)
+        df_with_flanks_spacers.to_csv(f"./{options.filename}.csv", index=False)
     
     if options.tsv:
-        out.to_csv(f"./{options.filename}.tsv", sep="\t", index=False)
+        df_with_flanks_spacers.to_csv(f"./{options.filename}.tsv", sep="\t", index=False)
 
 #################################################################
 
-# functions: all_orient_strings() and permute() will be added later to one of the utils modules
 
-def all_orient_strings(N):
+def generate_all_orientation_strings_manual(N):
     
-    all_strings = []
-    n_pos_perms = 2**N
-    n_unique_perms = 0
+    # generates all orientation strings given the length N
+    # orientation strings are all possible permutations of a string made of two characters : >, <
+    # assuming that characters of the same type are indinguishable
     
-    for i in range(N+1):
-        string = []
-        j = N - i
-        
-        # i = number of ">"
-        # j = numer of "<"
-        
-        # print(i, j)
-        
-        for k in range(i):
-            string.append(">")
-        for l in range(j):
-            string.append("<")
-        
-        # number of permutations is smaller if objects are indistinguishable
-        # it as assumed that all >'s and <'s are exactly the same
-        # so, the number of permutations has to be divided by number of permutations 
-        # within >'s and <'s (separatelly) for each string
-        n_unique_perms += math.factorial(N) / (math.factorial(i) * math.factorial(j))
-        
-        # print(string)
-        all_strings.append(string)
-    
-    assert n_unique_perms == n_pos_perms
-    return all_strings
+    def _all_unique_variants(N):
 
-def permute(l):
-    
-    # returns all possible permutations of a list of characters in a recursive manner
-    
-    llen = len(l)
-    
-    if llen == 0:
-        return []
-    
-    elif llen == 1:
-        return [l]
+        collected_variants = []
+        n_possible_variants = 2**N
+        n_unique_variants = 0
 
-    perm_list = []
+        for i in range(N+1):
+            variant = []
+            j = N - i
+
+            # i = number of ">"
+            # j = numer of "<"
+
+            for k in range(i):
+                variant.append(">")
+            for l in range(j):
+                variant.append("<")
+
+            # number of permutations is smaller if objects are indistinguishable
+            # it as assumed that all >'s and <'s are exactly the same
+            # so, the number of permutations has to be divided by number of permutations 
+            # within >'s and <'s (separatelly) for each string
+            n_unique_variants += math.factorial(N) / (math.factorial(i) * math.factorial(j))
+
+            collected_variants.append(variant)
+
+        assert n_unique_variants == n_possible_variants
+        return collected_variants
     
-    for i in range(llen):
-        rest = l[:i] + l[(i+1):]
+    
+    def _shuffle_characters(list_of_characters):
+
+        # returns all possible permutations of a list of characters in a recursive manner
+
+        llen = len(list_of_characters)
+
+        if llen == 0:
+            return []
+
+        elif llen == 1:
+            return [list_of_characters]
+
+        list_of_unique_permutations = []
+
+        for i in range(llen):
+            # keep the i-th character and shuffle everything around
+            rest_characters = list_of_characters[:i] + list_of_characters[(i+1):]
+
+            for permutation in _shuffle_characters(rest_characters):
+                if [list_of_characters[i]] + permutation not in list_of_unique_permutations:
+                    list_of_unique_permutations.append([list_of_characters[i]] + permutation)
+
+        return list_of_unique_permutations
+    
+    orientation_list = []
+    
+    all_variants = _all_unique_variants(N)
+
+    for variant in all_variants:
+        for permuted_variant in _shuffle_characters(variant):
+            orientation_list.append(permuted_variant)
+    
+    return orientation_list
+    
+    
+def generate_all_orientation_strings(N):
+
+    def _binary_to_orientation_string_map(binary_list):
         
-        for rest_perm in permute(rest):
-            if [l[i]] + rest_perm not in perm_list:
-                perm_list.append([l[i]] + rest_perm)
+        binary_to_orientation_dict = {0 : ">", 1 : "<"}
+        orientation_list = [binary_to_orientation_dict[number] for number in binary_list]
+        
+        return "".join(orientation_list)        
     
-    return perm_list
-
+    binary_list = [list(i) for i in itertools.product([0, 1], repeat=N)]
+    
+    return [_binary_to_orientation_string_map(binary_element) for binary_element in binary_list]
+    
+    
 def add_orientation(seq_coords_df, 
                     nr_strong,
                     nr_weak,
                     mode="same", 
-                    orient_list=[">>"],
+                    orientation_strings=[">>"],
                     N=2):
-    
+
     df_len = len(seq_coords_df)
         
     if mode == "same":
         seq_coords_df["orientation"] = [">>" for i in range(df_len)]
     
-    elif mode == "customize":
-        if len(orient_list) == df_len:
-            seq_coords_df["orientation"] = orient_list
+    elif mode == "list":
+        if len(orientation_strings) == df_len:
+            seq_coords_df["orientation"] = orientation_strings
         else:
             raise ValueError("Check the length of the customized list of orientation strings. Expected length: %s" % df_len)
         
     else:
         # all possible unique orientations of length N 
-        orient_list = []
-    
-        strings = all_orient_strings(N)
-
-        for ls in strings:
-            for perm in permute(ls):
-                orient_list.append(perm)
-                
-        # print(unique_permutations)
-        # print(options.orientation_N, len(unique_permutations))
         
-        rep_unit = seq_coords_df
+        # manual version
+        # orientation_strings = generate_all_orientation_strings_manual(N)
+        
+        orientation_strings = generate_all_orientation_strings(N)
+        
         orientation_ls = []
+        rep_unit = seq_coords_df
         
-        for o in range(len(orient_list)):
-            orientation = orient_list[o]
+        for ind in range(len(orientation_strings)):
+            orientation = orientation_strings[ind]
             orientation_string = "".join(orientation)
-            # print(orientation)
             orientation_ls = orientation_ls + [orientation_string for i in range(df_len)]
             if len(seq_coords_df) != len(orientation_ls):
                 seq_coords_df = pd.concat([seq_coords_df, rep_unit], ignore_index=True)
             
         seq_coords_df["orientation"] = orientation_ls
-    
+        
     seq_coords_df = seq_coords_df.drop(["index"], axis=1)
     
     return seq_coords_df
 
+
+def add_flanks_and_spacers(
+    seq_coords_df,
+    flank_range,
+    flank_spacer_sum):
+    
+    l, h = [int(num) for num in flank_range.split(",")]
+    
+    rep_unit = seq_coords_df
+    df_len = len(rep_unit)
+    
+    flank_ls = []
+    spacer_ls = []
+    
+    for flank in range(l, h):
+        spacer = flank_spacer_sum - flank
+        flank_ls = flank_ls + [flank for i in range(df_len)]
+        spacer_ls = spacer_ls + [spacer for i in range(df_len)]
+        
+        if len(seq_coords_df) != len(flank_ls):
+            seq_coords_df = pd.concat([seq_coords_df, rep_unit], ignore_index=True)
+    
+    seq_coords_df["flank_lenght"] = flank_ls
+    seq_coords_df["spacer_lenght"] = spacer_ls
+    
+    return seq_coords_df
+   
+    
+def add_background(
+        seq_coords_df,
+        number_backgrounds
+    ):
+    
+    rep_unit = seq_coords_df
+    df_len = len(rep_unit)
+    
+    background_ls = []
+    
+    for background_ind in range(number_backgrounds):
+        background_ls = background_ls + [background_ind for i in range(df_len)]
+        
+        if len(seq_coords_df) != len(background_ls):
+            seq_coords_df = pd.concat([seq_coords_df, rep_unit], ignore_index=True)
+    
+    seq_coords_df["background_index"] = background_ls
+    
+    return seq_coords_df
+        
 ################################################################################
 # __main__
 ################################################################################
