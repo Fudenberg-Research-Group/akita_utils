@@ -28,17 +28,19 @@ import numpy as np
 import slurm_gf as slurm
 
 """
-akita_scd_multi.py
+Derived from akita_scd_multi.py
 
-Compute SNP contact difference scores for variants in a VCF file,
-using multiple processes.
+Compute scores for motifs in a TSV file, using multiple processes.
+
+Relies on slurm_gf.py to auto-generate slurm jobs.
+
 """
 
 ################################################################################
 # main
 ################################################################################
 def main():
-    usage = "usage: %prog [options] <params_file> <model_file> <vcf_file>"
+    usage = "usage: %prog [options] <params_file> <model_file> <tsv_file>"
     parser = OptionParser(usage)
 
     # scd
@@ -200,12 +202,21 @@ def main():
 
     (options, args) = parser.parse_args()
 
+<<<<<<< HEAD:bin/akita_motif_scd_multi.py
     # if len(args) != 3:
     #     parser.error("Must provide parameters and model files and VCF file")
     # else:
     params_file = args[0]
     model_file = args[1]
     vcf_file = args[2]
+=======
+    if len(args) != 3:
+        parser.error("Must provide parameters and model files and TSV file")
+    else:
+        params_file = args[0]
+        model_file = args[1]
+        tsv_file = args[2]
+>>>>>>> f4f3b3c0dbe431cc6f5e0b6264ce772db029cd8f:bin/disrupt_genomic_boundary_ctcfs/akita_motif_scd_multi.py
 
     #######################################################
     # prep work
