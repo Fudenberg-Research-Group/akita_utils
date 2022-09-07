@@ -202,21 +202,12 @@ def main():
 
     (options, args) = parser.parse_args()
 
-<<<<<<< HEAD:bin/akita_motif_scd_multi.py
-    # if len(args) != 3:
-    #     parser.error("Must provide parameters and model files and VCF file")
-    # else:
-    params_file = args[0]
-    model_file = args[1]
-    vcf_file = args[2]
-=======
     if len(args) != 3:
         parser.error("Must provide parameters and model files and TSV file")
     else:
         params_file = args[0]
         model_file = args[1]
         tsv_file = args[2]
->>>>>>> f4f3b3c0dbe431cc6f5e0b6264ce772db029cd8f:bin/disrupt_genomic_boundary_ctcfs/akita_motif_scd_multi.py
 
     #######################################################
     # prep work

@@ -214,7 +214,7 @@ def main():
         N = options.orientation_N)
     
     df_with_background = add_background(
-        seq_coords_df,
+         df_with_orientation,
         options.number_backgrounds
     )
     
