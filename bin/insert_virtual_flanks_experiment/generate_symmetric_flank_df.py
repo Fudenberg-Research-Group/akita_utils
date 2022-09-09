@@ -225,6 +225,11 @@ def main():
 
 
 def generate_all_orientation_strings(N):
+    
+    '''
+    Function generates all possible orientations of N-long string consisting of binary characters (> and <) only.
+    '''
+    
     def _binary_to_orientation_string_map(binary_list):
 
         binary_to_orientation_dict = {0: ">", 1: "<"}
