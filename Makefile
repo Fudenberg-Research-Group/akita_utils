@@ -23,6 +23,7 @@ install:          ## Install the project in dev mode.
 	@if [ "$(USING_POETRY)" ]; then poetry install && exit; fi
 	@echo "Don't forget to run 'make virtualenv' if you got errors."
 	$(ENV_PREFIX)pip install -r requirements.txt
+	$(ENV_PREFIX)pip install -r requirements-test.txt
 	$(ENV_PREFIX)pip install -e . --no-deps
 
 .PHONY: fmt
