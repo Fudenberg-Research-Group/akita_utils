@@ -124,9 +124,16 @@ def main():
         help="Filename for output",
     )
     parser.add_option(
+        "--verbose",
+        dest="verbose",
+        default=False,
+        action="store_true",
+        help="Print tsv file summary",
+    )
+    parser.add_option(
         "--tsv",
         dest="tsv",
-        default=False,
+        default=True,
         action="store_true",
         help="Save dataframe as tsv",
     )
@@ -166,8 +173,6 @@ def main():
 
     df_with_orientation = add_orientation(
         seq_coords_df,
-        nr_strong=options.num_strong_motifs,
-        nr_weak=options.num_weak_motifs,
         orientation_strings=orient_list,
         all_permutations=all_permutations,
     )
@@ -179,22 +184,8 @@ def main():
     df_with_flanks_spacers = add_flanks_and_spacers(
         df_with_background, options.flank_range, options.flank_spacer_sum
     )
-
-    print("\nSummary")
-    print(
-        "Number of CTCF binding sites: ",
-        options.num_strong_motifs + options.num_weak_motifs,
-    )
-    print("Number of orientations: ", num_orients)
-    print("Number of background sequences: ", options.number_backgrounds)
-    print(
-        "Number of flanks: ",
-        int(options.flank_range.split(",")[1])
-        - int(options.flank_range.split(",")[0])
-        + 1,
-    )
-    print("===============")
-
+    
+    
     expected = (
         (options.num_strong_motifs + options.num_weak_motifs)
         * num_orients
@@ -206,11 +197,28 @@ def main():
         )
     )
     observed = len(df_with_flanks_spacers)
-
-    print("Expected length of dataframe: ", expected)
-    print("True length of dataframe: ", observed, "\n")
-
+    
     assert expected == observed
+    
+    
+    if options.verbose:
+        print("\nSummary")
+        print(
+            "Number of CTCF binding sites: ",
+            options.num_strong_motifs + options.num_weak_motifs,
+        )
+        print("Number of orientations: ", num_orients)
+        print("Number of background sequences: ", options.number_backgrounds)
+        print(
+            "Number of flanks: ",
+            int(options.flank_range.split(",")[1])
+            - int(options.flank_range.split(",")[0])
+            + 1,
+        )
+        print("===============")
+
+        print("Expected length of dataframe: ", expected)
+        print("True length of dataframe: ", observed, "\n")
 
     if options.csv:
         df_with_flanks_spacers.to_csv(f"./{options.filename}.csv", index=False)
@@ -228,6 +236,7 @@ def generate_all_orientation_strings(N):
     
     '''
     Function generates all possible orientations of N-long string consisting of binary characters (> and <) only.
+    Example: for N=2 the result is ['>>', '><', '<>', '<<'].
     '''
     
     def _binary_to_orientation_string_map(binary_list):
@@ -248,8 +257,12 @@ def generate_all_orientation_strings(N):
 
 
 def add_orientation(
-    seq_coords_df, nr_strong, nr_weak, orientation_strings, all_permutations
+    seq_coords_df, orientation_strings, all_permutations
 ):
+    
+    '''
+    Function adds an additional column named 'orientation', to the given dataframe where each row corresponds to one CTCF-binding site.
+    '''
 
     df_len = len(seq_coords_df)
 
