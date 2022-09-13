@@ -52,7 +52,9 @@ from basenji import dna_io
 akita_insert.py, derived from akita_scd.py (https://github.com/calico/basenji/blob/master/bin/akita_scd.py)
 
 
-Compute insertion scores for motif insertions from a tsv file with chrom,start,end,strand.
+Compute insertion scores for motif insertions from a tsv file with:
+chrom	start	end	strand	genomic_SCD	orientation	background_index	flank_bp	spacer_bp
+
 
 """
 
@@ -148,22 +150,8 @@ def main():
     parser.add_option(
         "--background-file",
         dest="background_file",
-        default=None,
+        default="/home1/fudenber/projects/akita_XL_2022/insertions/background_seqs.fa",
         help="file with insertion seqs in fasta format",
-    )
-    parser.add_option(
-        "--spacer-bp",
-        dest="spacer_bp",
-        default=0,
-        type="int",
-        help="Specify spacing between insertions",
-    )
-    parser.add_option(
-        "--num-inserts",
-        dest="num_inserts",
-        default=6,
-        type="int",
-        help="Specify number of insertions",
     )
 
     (options, args) = parser.parse_args()
@@ -272,32 +260,36 @@ def main():
             if ">" in line:
                 continue
             background_seqs.append(dna_io.dna_1hot(line.strip()))
-
-    if len((seq_coords_df["end"] - seq_coords_df["start"]).unique()) > 1:
-        raise ValueError("all tiled insertions must be the same length")
-    insert_length = int((seq_coords_df["end"] - seq_coords_df["start"]).unique())
-    spacer_bp = options.spacer_bp
-    num_inserts = options.num_inserts
-    multi_insert_length = num_inserts * (insert_length + spacer_bp)
-    offsets = []
-    for i in range(num_inserts):
-        offsets.append(
-            seq_length // 2 - multi_insert_length // 2 + i * (insert_length + spacer_bp)
+    num_insert_backgrounds = seq_coords_df["background_index"].max()
+    if len(background_seqs) < num_insert_backgrounds:
+        raise ValueError(
+            "must provide a background file with at least as many"
+            + "backgrounds as those specified in the insert seq_coords tsv"
         )
 
-    def seqs_gen(seq_coords_df, offsets, genome_open):
+    def seqs_gen(seq_coords_df, background_seqs, genome_open):
+        """ sequence generator for making insertions from tsvs
+            construct an iterator that yields a one-hot encoded sequence
+            that can be used as input to akita via PredStreamGen
+        """
         for s in seq_coords_df.itertuples():
+            flank_bp = s.flank_bp
+            spacer_bp = s.spacer_bp
             seq_1hot_insertion = dna_io.dna_1hot(
-                genome_open.fetch(s.chrom, s.start, s.end).upper()
+                genome_open.fetch(s.chrom, s.start - flank_bp, s.end + flank_bp).upper()
             )
             if s.strand == "-":
                 seq_1hot_insertion = dna_io.hot1_rc(seq_1hot_insertion)
-            for background_seq in background_seqs:
-                seq_1hot = background_seq.copy()
-                for offset in offsets:
-                    seq_1hot[offset : offset + insert_length] = seq_1hot_insertion
-                yield seq_1hot
-
+            seq_1hot = background_seqs[s.background_index].copy()
+            insert_bp = len(seq_1hot_insertion)
+            insert_plus_spacer_bp = insert_bp + spacer_bp
+            num_inserts = len(s.orientation)
+            multi_insert_bp = num_inserts * insert_plus_spacer_bp
+            insert_start_bp = seq_length // 2 - multi_insert_bp // 2
+            for i in range(num_inserts):
+                offset = insert_start_bp + i * insert_plus_spacer_bp
+                seq_1hot[offset : offset + insert_bp] = seq_1hot_insertion
+            yield seq_1hot
     #################################################################
     # setup output
 
@@ -305,7 +297,6 @@ def main():
         options.out_dir,
         options.scd_stats,
         seq_coords_df,
-        background_seqs,
         target_ids,
         target_labels,
     )
@@ -315,49 +306,33 @@ def main():
     #################################################################
     # predict SNP scores, write output
 
-    write_thread = None
-
     # initialize predictions stream
     preds_stream = stream.PredStreamGen(
-        seqnn_model, seqs_gen(seq_coords_df, offsets, genome_open), batch_size
+        seqnn_model, seqs_gen(seq_coords_df, background_seqs, genome_open), batch_size
     )
-
-    # predictions index
-    pi = 0
     for si in range(num_motifs):
         # get predictions
-        for bi in range(len(background_seqs)):
-            preds = preds_stream[pi]
-            pi += 1
-            # process SNP
-            write_snp(
-                preds,
-                scd_out,
-                si,
-                bi,
-                pi,
-                seqnn_model.diagonal_offset,
-                options.scd_stats,
-                plot_dir,
-                options.plot_lim_min,
-                options.plot_freq,
-            )
-
-    """Write SNP predictions to HDF."""
-
+        preds = preds_stream[si]
+        # process SNP
+        write_snp(
+            preds,
+            scd_out,
+            si,
+            seqnn_model.diagonal_offset,
+            options.scd_stats,
+            plot_dir,
+            options.plot_lim_min,
+            options.plot_freq,
+        )
     genome_open.close()
     scd_out.close()
 
 
-def initialize_output_h5(
-    out_dir, scd_stats, seq_coords_df, background_seqs, target_ids, target_labels
-):
+def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_labels):
     """Initialize an output HDF5 file for SCD stats."""
 
     num_targets = len(target_ids)
     num_motifs = len(seq_coords_df)
-    num_background_seqs = len(background_seqs)
-
     scd_out = h5py.File("%s/scd.h5" % out_dir, "w")
     seq_coords_df_dtypes = seq_coords_df.dtypes
 
@@ -373,7 +348,7 @@ def initialize_output_h5(
             raise KeyError("check input tsv for clashing score name")
         scd_out.create_dataset(
             scd_stat,
-            shape=(num_background_seqs, num_motifs, num_targets),
+            shape=(num_motifs, num_targets),
             dtype="float16",
             compression=None,
         )
@@ -385,14 +360,11 @@ def write_snp(
     ref_preds,
     scd_out,
     si,
-    bi,
-    pi,
     diagonal_offset,
     scd_stats=["SCD"],
     plot_dir=None,
     plot_lim_min=0.1,
     plot_freq=100,
-    
 ):
     """Write SNP predictions to HDF."""
 
@@ -403,18 +375,18 @@ def write_snp(
     if "SCD" in scd_stats:
         # sum of squared diffs
         sd2_preds = np.sqrt((ref_preds**2).sum(axis=0))
-        scd_out["SCD"][bi, si, :] = sd2_preds.astype("float16")
+        scd_out["SCD"][si, :] = sd2_preds.astype("float16")
 
     if np.any((["INS" in i for i in scd_stats])):
         ref_map = ut_dense(ref_preds, diagonal_offset)
         for stat in scd_stats:
             if "INS" in stat:
                 insul_window = int(stat.split("-")[1])
-                scd_out[stat][bi, si, :] = insul_diamonds_scores(
+                scd_out[stat][si, :] = insul_diamonds_scores(
                     ref_map, window=insul_window
                 )
 
-    if (plot_dir is not None) and (np.mod(pi, plot_freq) == 0):
+    if (plot_dir is not None) and (np.mod(si, plot_freq) == 0):
         print("plotting ", si)
         # convert back to dense
         ref_map = ut_dense(ref_preds, diagonal_offset)
@@ -441,6 +413,7 @@ def write_snp(
         plt.tight_layout()
         plt.savefig("%s/s%d.pdf" % (plot_dir, si))
         plt.close()
+
 
 def _insul_diamond_central(mat, window=10):
     """calculate insulation in a diamond around the central pixel"""
