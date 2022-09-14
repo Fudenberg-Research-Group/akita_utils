@@ -236,7 +236,7 @@ def main():
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
             else:
                 cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += "conda activate basenji;"
+                cmd += "conda activate basenji-gpu;"
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
 
             cmd += " ${SLURM_SUBMIT_DIR}/akita_motif_scd.py %s %s %d" % (

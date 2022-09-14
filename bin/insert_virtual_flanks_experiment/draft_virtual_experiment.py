@@ -270,10 +270,6 @@ def main():
     
     print("===================================")
     print("Number of experiements = ", num_experiments)         # Warning! It's not number of predictions. Num of predictions is this number x5 or x6
-                                                                # How about models? Is it averages? Do we have to worry about this?
-    # think about this term, do we need expand the tsv table with targets (but targets differ depending on the head)        # important issue
-    # and the same tsv file could be to predicts contact maps both in human and mouse
-    # do we need to keep values for each target or just average?
     
     # open genome FASTA
     genome_open = pysam.Fastafile(options.genome_fasta)          # needs to be closed at some point
@@ -290,7 +286,8 @@ def main():
             "must provide a background file with at least as many"
             + "backgrounds as those specified in the insert seq_coords tsv"
         )
-
+        
+    
 #     def seqs_gen(seq_coords_df, background_seqs, genome_open):
 #         """ sequence generator for making insertions from tsvs
 #             construct an iterator that yields a one-hot encoded sequence
