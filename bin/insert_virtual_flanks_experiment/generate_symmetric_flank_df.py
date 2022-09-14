@@ -66,7 +66,7 @@ import akita_utils
 
 
 def main():
-    usage = "usage: %prog [options] <params_file> <model_file> <vcf_file>"
+    usage = "usage: %prog [options] <params_file> <model_file> <vcf_file>"       # to be changed?
     parser = OptionParser(usage)
     parser.add_option(
         "--num-strong",
@@ -307,7 +307,7 @@ def add_orientation(
 
             seq_coords_df["orientation"] = orientation_ls
 
-    seq_coords_df = seq_coords_df.drop(["index"], axis=1)
+    # seq_coords_df = seq_coords_df.drop(["index"], axis=1)
 
     return seq_coords_df
 
