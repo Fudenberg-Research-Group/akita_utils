@@ -104,7 +104,7 @@ def h5_to_df(filename, scd_stats=["SCD", "SSD", "INS"], drop_duplicates_key="ind
             df_out[key] = df_out[key].str.decode("utf8").copy()
 
     if drop_duplicates_key is not None:
-        len_orig = len(seq_coords_df)
+        len_orig = len(df_out)
         if not drop_duplicates_key in df_out.keys():
             raise ValueError("duplicate removal key must be present in dataFrame")
         df_out.drop_duplicates(drop_duplicates_key, inplace=True)
@@ -154,7 +154,6 @@ def filter_boundary_ctcfs_from_h5(
         dfs.append(h5_to_df(h5_file))
     df = dfs[0].copy()
     df[score_key] = np.mean([df[score_key] for df in dfs], axis=0)
-    df["span"] = df["span"].str.decode("utf8")
 
     ## append scores for full mut and all ctcf mut to table
     print("annotating each site with boundary-wide scores")
