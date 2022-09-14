@@ -158,7 +158,7 @@ def main():
     parser.add_option(
         "--background-file",
         dest="background_file",
-        default="/home1/fudenber/projects/akita_XL_2022/insertions/background_seqs.fa",
+        default="/project/fudenber_735/tensorflow_models/akita/v2/analysis/background_seqs.fa",
         help="file with insertion seqs in fasta format",
     )
 
@@ -288,31 +288,41 @@ def main():
         )
         
     
-#     def seqs_gen(seq_coords_df, background_seqs, genome_open):
-#         """ sequence generator for making insertions from tsvs
-#             construct an iterator that yields a one-hot encoded sequence
-#             that can be used as input to akita via PredStreamGen
-#         """
-#         for s in seq_coords_df.itertuples():
-#             flank_bp = s.flank_bp
-#             spacer_bp = s.spacer_bp
-#             seq_1hot_insertion = dna_io.dna_1hot(
-#                 genome_open.fetch(s.chrom, s.start - flank_bp, s.end + flank_bp).upper()
-#             )
-#             if s.strand == "-":
-#                 seq_1hot_insertion = dna_io.hot1_rc(seq_1hot_insertion)
-#             seq_1hot = background_seqs[s.background_index].copy()
-#             insert_bp = len(seq_1hot_insertion)
-#             insert_plus_spacer_bp = insert_bp + spacer_bp
-#             num_inserts = len(s.orientation)
-#             multi_insert_bp = num_inserts * insert_plus_spacer_bp
-#             insert_start_bp = seq_length // 2 - multi_insert_bp // 2
-#             for i in range(num_inserts):
-#                 offset = insert_start_bp + i * insert_plus_spacer_bp
-#                 seq_1hot[offset : offset + insert_bp] = seq_1hot_insertion
-#             yield seq_1hot
-#     #################################################################
-#     # setup output
+    seqs_gen(seq_coords_df, background_seqs, genome_open)
+
+
+    ################################################################################
+    # functions
+    ################################################################################
+
+    def seqs_gen(seq_coords_df, background_seqs, genome_open):
+        """ sequence generator for making insertions from tsvs
+            construct an iterator that yields a one-hot encoded sequence
+            that can be used as input to akita via PredStreamGen
+        """
+        for s in seq_coords_df.itertuples():
+            flank_bp = s.flank_bp
+            spacer_bp = s.spacer_bp
+            seq_1hot_insertion = dna_io.dna_1hot(
+                genome_open.fetch(s.chrom, s.start - flank_bp, s.end + flank_bp).upper()
+            )
+            if s.strand == "-":
+                seq_1hot_insertion = dna_io.hot1_rc(seq_1hot_insertion)
+            seq_1hot = background_seqs[s.background_index].copy()
+            insert_bp = len(seq_1hot_insertion)
+            insert_plus_spacer_bp = insert_bp + spacer_bp
+            num_inserts = len(s.orientation)
+            multi_insert_bp = num_inserts * insert_plus_spacer_bp
+            insert_start_bp = seq_length // 2 - multi_insert_bp // 2
+            for i in range(num_inserts):
+                offset = insert_start_bp + i * insert_plus_spacer_bp
+                seq_1hot[offset : offset + insert_bp] = seq_1hot_insertion
+            yield seq_1hot
+
+
+    
+    #################################################################
+    # setup output
 
 #     scd_out = initialize_output_h5(
 #         options.out_dir,
@@ -481,5 +491,7 @@ def main():
 ################################################################################
 # __main__
 ################################################################################
+
+
 if __name__ == "__main__":
     main()
