@@ -58,6 +58,7 @@ from optparse import OptionParser
 import pandas as pd
 import itertools
 
+import bioframe
 import akita_utils
 
 ################################################################################
@@ -66,7 +67,7 @@ import akita_utils
 
 
 def main():
-    usage = "usage: %prog [options] <params_file> <model_file> <vcf_file>"       # to be changed?
+    usage = "usage: %prog [options]"
     parser = OptionParser(usage)
     parser.add_option(
         "--num-strong",
@@ -159,18 +160,44 @@ def main():
     random.seed(44)
 
     # loading motifs
+    score_key = "SCD"
+    weak_thresh_pct = 1
+    strong_thresh_pct = 99
+    pad_flank = 0
 
-    seq_coords_df = akita_utils.prepare_insertion_tsv(
+    sites = akita_utils.filter_boundary_ctcfs_from_h5(
         h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
-        score_key="SCD",
-        pad_flank=0,  # how much flanking sequence around the sites to include
-        weak_thresh_pct=1,  # don't use sites weaker than this, might be artifacts
-        weak_num=options.num_strong_motifs,
-        strong_thresh_pct=99,  # don't use sites stronger than this, might be artifacts
-        strong_num=options.num_weak_motifs,
-        save_tsv=None,
+        score_key=score_key,
+        threshold_all_ctcf=5,
     )
 
+    strong_sites, weak_sites = akita_utils.filter_sites_by_score(
+        sites,
+        score_key=score_key,
+        weak_thresh_pct=weak_thresh_pct,
+        weak_num=options.num_strong_motifs,
+        strong_thresh_pct=strong_thresh_pct,
+        strong_num=options.num_strong_motifs,
+    )
+
+    site_df = pd.concat([strong_sites.copy(), weak_sites.copy()])
+    seq_coords_df = (
+        site_df[["chrom", "start_2", "end_2", "strand_2", score_key]]
+        .copy()
+        .rename(
+            columns={
+                "start_2": "start",
+                "end_2": "end",
+                "strand_2": "strand",
+                score_key: "genomic_" + score_key,
+            }
+        )
+    )
+    seq_coords_df.reset_index(drop=True, inplace=True)
+    seq_coords_df.reset_index(inplace=True)
+    seq_coords_df = bioframe.expand(seq_coords_df, pad=pad_flank)
+
+    # adding orientation, background index, information about flanks and spacers
     df_with_orientation = add_orientation(
         seq_coords_df,
         orientation_strings=orient_list,
@@ -184,8 +211,10 @@ def main():
     df_with_flanks_spacers = add_flanks_and_spacers(
         df_with_background, options.flank_range, options.flank_spacer_sum
     )
-    
-    
+
+    df_with_flanks_spacers = df_with_flanks_spacers.drop(columns="index")
+    df_with_flanks_spacers.index.name = "experiment_id"
+
     expected = (
         (options.num_strong_motifs + options.num_weak_motifs)
         * num_orients
@@ -197,10 +226,9 @@ def main():
         )
     )
     observed = len(df_with_flanks_spacers)
-    
+
     assert expected == observed
-    
-    
+
     if options.verbose:
         print("\nSummary")
         print(
@@ -221,11 +249,11 @@ def main():
         print("True length of dataframe: ", observed, "\n")
 
     if options.csv:
-        df_with_flanks_spacers.to_csv(f"./{options.filename}.csv", index=False)
+        df_with_flanks_spacers.to_csv(f"./{options.filename}.csv", index=True)
 
     if options.tsv:
         df_with_flanks_spacers.to_csv(
-            f"./{options.filename}.tsv", sep="\t", index=False
+            f"./{options.filename}.tsv", sep="\t", index=True
         )
 
 
@@ -233,12 +261,12 @@ def main():
 
 
 def generate_all_orientation_strings(N):
-    
-    '''
+
+    """
     Function generates all possible orientations of N-long string consisting of binary characters (> and <) only.
     Example: for N=2 the result is ['>>', '><', '<>', '<<'].
-    '''
-    
+    """
+
     def _binary_to_orientation_string_map(binary_list):
 
         binary_to_orientation_dict = {0: ">", 1: "<"}
@@ -256,13 +284,11 @@ def generate_all_orientation_strings(N):
     ]
 
 
-def add_orientation(
-    seq_coords_df, orientation_strings, all_permutations
-):
-    
-    '''
+def add_orientation(seq_coords_df, orientation_strings, all_permutations):
+
+    """
     Function adds an additional column named 'orientation', to the given dataframe where each row corresponds to one CTCF-binding site.
-    '''
+    """
 
     df_len = len(seq_coords_df)
 
@@ -306,8 +332,6 @@ def add_orientation(
             orientation_ls = orientation_strings * df_len
 
             seq_coords_df["orientation"] = orientation_ls
-
-    # seq_coords_df = seq_coords_df.drop(["index"], axis=1)
 
     return seq_coords_df
 
