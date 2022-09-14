@@ -1,8 +1,0 @@
-# GimmeMotifs version 0.17.1
-# Input: Strong.fasta
-# Motifs: /tmp/tmpw1e_ia7i
-# FPR: 0.01 (hg38)
-# Scoring: GC frequency normalized z-score
- StrongFlank_102	22	28	GimmeMotifs_6	1.8703033767946768	+
- StrongFlank_132	6	12	GimmeMotifs_6	1.617916224432014	+
- StrongFlank_144	13	19	GimmeMotifs_6	1.578245272555095	+
