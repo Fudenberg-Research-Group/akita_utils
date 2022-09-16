@@ -242,7 +242,7 @@ def main():
     # dummy target info
     if options.targets_file is None:
         num_targets = seqnn_model.num_targets()
-        target_ids = ["t%d" % ti for ti in range(num_targets)]
+        target_ids = ["t%d" % ti for ti in range(num_targets)]      # checkpoint? to be sure that the langth of given targets_file is compatibile with the requested head?
         target_labels = [""] * len(target_ids)
 
     #################################################################
@@ -284,208 +284,206 @@ def main():
     if len(background_seqs) < num_insert_backgrounds:
         raise ValueError(
             "must provide a background file with at least as many"
-            + "backgrounds as those specified in the insert seq_coords tsv"
+            + "backgrounds as those specified in the insert seq_coords tsv."
+            + "\nThe provided background file has {len(background_seqs)} sequences."
         )
         
     
-    seqs_gen(seq_coords_df, background_seqs, genome_open)
-
-
-    ################################################################################
-    # functions
-    ################################################################################
-
     def seqs_gen(seq_coords_df, background_seqs, genome_open):
         """ sequence generator for making insertions from tsvs
             construct an iterator that yields a one-hot encoded sequence
             that can be used as input to akita via PredStreamGen
         """
         for s in seq_coords_df.itertuples():
+            
             flank_bp = s.flank_bp
             spacer_bp = s.spacer_bp
+            num_inserts = len(s.orientation)
+            
             seq_1hot_insertion = dna_io.dna_1hot(
                 genome_open.fetch(s.chrom, s.start - flank_bp, s.end + flank_bp).upper()
             )
             if s.strand == "-":
                 seq_1hot_insertion = dna_io.hot1_rc(seq_1hot_insertion)
+            
             seq_1hot = background_seqs[s.background_index].copy()
             insert_bp = len(seq_1hot_insertion)
-            insert_plus_spacer_bp = insert_bp + spacer_bp
-            num_inserts = len(s.orientation)
+            insert_plus_spacer_bp = insert_bp + 2 * spacer_bp
             multi_insert_bp = num_inserts * insert_plus_spacer_bp
             insert_start_bp = seq_length // 2 - multi_insert_bp // 2
+            
             for i in range(num_inserts):
                 offset = insert_start_bp + i * insert_plus_spacer_bp
                 seq_1hot[offset : offset + insert_bp] = seq_1hot_insertion
             yield seq_1hot
-
-
     
     #################################################################
     # setup output
 
-#     scd_out = initialize_output_h5(
-#         options.out_dir,
-#         options.scd_stats,
-#         seq_coords_df,
-#         target_ids,
-#         target_labels,
-#     )
+    scd_out = initialize_output_h5(
+        options.out_dir,
+        options.scd_stats,
+        seq_coords_df,
+        target_ids,
+        target_labels,
+    )
 
-#     print("initialized")
+    print("initialized")
 
-#     #################################################################
-#     # predict SNP scores, write output
+    #################################################################
+    # predict SNP scores, write output
 
-#     # initialize predictions stream
-#     preds_stream = stream.PredStreamGen(
-#         seqnn_model, seqs_gen(seq_coords_df, background_seqs, genome_open), batch_size
-#     )
-#     for si in range(num_experiments):
-#         # get predictions
-#         preds = preds_stream[si]
-#         # process SNP
-#         write_snp(
-#             preds,
-#             scd_out,
-#             si,
-#             seqnn_model.diagonal_offset,
-#             options.scd_stats,
-#             plot_dir,
-#             options.plot_lim_min,
-#             options.plot_freq,
-#         )
-#     genome_open.close()
-#     scd_out.close()
-
-
-# def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_labels):
-#     """Initialize an output HDF5 file for SCD stats."""
-
-#     num_targets = len(target_ids)
-#     num_experiments = len(seq_coords_df)
-#     scd_out = h5py.File("%s/scd.h5" % out_dir, "w")
-#     seq_coords_df_dtypes = seq_coords_df.dtypes
-
-#     for key in seq_coords_df:
-#         if seq_coords_df_dtypes[key] is np.dtype("O"):
-#             scd_out.create_dataset(key, data=seq_coords_df[key].values.astype("S"))
-#         else:
-#             scd_out.create_dataset(key, data=seq_coords_df[key])
-
-#     # initialize scd stats
-#     for scd_stat in scd_stats:
-#         if scd_stat in seq_coords_df.keys():
-#             raise KeyError("check input tsv for clashing score name")
-#         scd_out.create_dataset(
-#             scd_stat,
-#             shape=(num_experiments, num_targets),
-#             dtype="float16",
-#             compression=None,
-#         )
-
-#     return scd_out
+    # initialize predictions stream
+    preds_stream = stream.PredStreamGen(
+        seqnn_model, seqs_gen(seq_coords_df, background_seqs, genome_open), batch_size
+    )
+    
+    for exp in range(num_experiments):
+        # get predictions
+        preds = preds_stream[exp]
+        # process SNP
+        write_snp(
+            preds,
+            scd_out,
+            exp,
+            seqnn_model.diagonal_offset,
+            options.scd_stats,
+            plot_dir,
+            options.plot_lim_min,
+            options.plot_freq,
+        )
+    
+    genome_open.close()
+    scd_out.close()
 
 
-# def write_snp(
-#     ref_preds,
-#     scd_out,
-#     si,
-#     diagonal_offset,
-#     scd_stats=["SCD"],
-#     plot_dir=None,
-#     plot_lim_min=0.1,
-#     plot_freq=100,
-# ):
-#     """Write SNP predictions to HDF."""
+def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_labels):
+    """Initialize an output HDF5 file for SCD stats."""
 
-#     # increase dtype
-#     ref_preds = ref_preds.astype("float32")
+    num_targets = len(target_ids)
+    num_experiments = len(seq_coords_df)
+    scd_out = h5py.File("%s/scd.h5" % out_dir, "w")
+    seq_coords_df_dtypes = seq_coords_df.dtypes
 
-#     # compare reference to alternative via mean subtraction
-#     if "SCD" in scd_stats:
-#         # sum of squared diffs
-#         sd2_preds = np.sqrt((ref_preds**2).sum(axis=0))
-#         scd_out["SCD"][si, :] = sd2_preds.astype("float16")
+    for key in seq_coords_df:
+        if seq_coords_df_dtypes[key] is np.dtype("O"):
+            scd_out.create_dataset(key, data=seq_coords_df[key].values.astype("S"))
+        else:
+            scd_out.create_dataset(key, data=seq_coords_df[key])
 
-#     if np.any((["INS" in i for i in scd_stats])):
-#         ref_map = ut_dense(ref_preds, diagonal_offset)
-#         for stat in scd_stats:
-#             if "INS" in stat:
-#                 insul_window = int(stat.split("-")[1])
-#                 scd_out[stat][si, :] = insul_diamonds_scores(
-#                     ref_map, window=insul_window
-#                 )
+    # initialize scd stats
+    for scd_stat in scd_stats:
+        if scd_stat in seq_coords_df.keys():
+            raise KeyError("check input tsv for clashing score name")
+        scd_out.create_dataset(
+            scd_stat,
+            shape=(num_experiments, num_targets),
+            dtype="float16",
+            compression=None,
+        )
 
-#     if (plot_dir is not None) and (np.mod(si, plot_freq) == 0):
-#         print("plotting ", si)
-#         # convert back to dense
-#         ref_map = ut_dense(ref_preds, diagonal_offset)
-#         _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4))
-#         for ti in range(ref_preds.shape[-1]):
-#             ref_map_ti = ref_map[..., ti]
-#             # TEMP: reduce resolution
-#             ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
-#             vmin = min(ref_map_ti.min(), ref_map_ti.min())
-#             vmax = max(ref_map_ti.max(), ref_map_ti.max())
-#             vmin = min(-plot_lim_min, vmin)
-#             vmax = max(plot_lim_min, vmax)
-#             sns.heatmap(
-#                 ref_map_ti,
-#                 ax=axs[ti],
-#                 center=0,
-#                 vmin=vmin,
-#                 vmax=vmax,
-#                 cmap="RdBu_r",
-#                 xticklabels=False,
-#                 yticklabels=False,
-#             )
-
-#         plt.tight_layout()
-#         plt.savefig("%s/s%d.pdf" % (plot_dir, si))
-#         plt.close()
+    return scd_out
 
 
-# def _insul_diamond_central(mat, window=10):
-#     """calculate insulation in a diamond around the central pixel"""
-#     N = mat.shape[0]
-#     if window > N // 2:
-#         raise ValueError("window cannot be larger than matrix")
-#     mid = N // 2
-#     lo = max(0, mid + 1 - window)
-#     hi = min(mid + window, N)
-#     score = np.nanmean(mat[lo : (mid + 1), mid:hi])
-#     return score
+def write_snp(
+    ref_preds,
+    scd_out,
+    si,
+    diagonal_offset,
+    scd_stats=["SCD"],
+    plot_dir=None,
+    plot_lim_min=0.1,
+    plot_freq=100,
+):
+    """Write SNP predictions to HDF."""
+
+    # increase dtype
+    ref_preds = ref_preds.astype("float32")
+
+    # compare reference to alternative via mean subtraction
+    if "SCD" in scd_stats:
+        # sum of squared diffs
+        sd2_preds = np.sqrt((ref_preds**2).sum(axis=0))
+        scd_out["SCD"][si, :] = sd2_preds.astype("float16")
+
+    if np.any((["INS" in i for i in scd_stats])):
+        ref_map = ut_dense(ref_preds, diagonal_offset)
+        for stat in scd_stats:
+            if "INS" in stat:
+                insul_window = int(stat.split("-")[1])
+                scd_out[stat][si, :] = insul_diamonds_scores(
+                    ref_map, window=insul_window
+                )
+
+    if (plot_dir is not None) and (np.mod(si, plot_freq) == 0):
+        print("plotting ", si)
+        # convert back to dense
+        ref_map = ut_dense(ref_preds, diagonal_offset)
+        _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4))
+        for ti in range(ref_preds.shape[-1]):
+            ref_map_ti = ref_map[..., ti]
+            # TEMP: reduce resolution
+            ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
+            vmin = min(ref_map_ti.min(), ref_map_ti.min())
+            vmax = max(ref_map_ti.max(), ref_map_ti.max())
+            vmin = min(-plot_lim_min, vmin)
+            vmax = max(plot_lim_min, vmax)
+            sns.heatmap(
+                ref_map_ti,
+                ax=axs[ti],
+                center=0,
+                vmin=vmin,
+                vmax=vmax,
+                cmap="RdBu_r",
+                xticklabels=False,
+                yticklabels=False,
+            )
+
+        plt.tight_layout()
+        plt.savefig("%s/s%d.pdf" % (plot_dir, si))
+        plt.close()
 
 
-# def insul_diamonds_scores(mats, window=10):
-#     num_targets = mats.shape[-1]
-#     scores = np.zeros((num_targets,))
-#     for ti in range(num_targets):
-#         scores[ti] = _insul_diamond_central(mats[:, :, ti], window=window)
-#     return scores
+def _insul_diamond_central(mat, window=10):
+    """calculate insulation in a diamond around the central pixel"""
+    N = mat.shape[0]
+    if window > N // 2:
+        raise ValueError("window cannot be larger than matrix")
+    mid = N // 2
+    lo = max(0, mid + 1 - window)
+    hi = min(mid + window, N)
+    score = np.nanmean(mat[lo : (mid + 1), mid:hi])
+    return score
 
 
-# def ut_dense(preds_ut, diagonal_offset):
-#     """Construct dense prediction matrix from upper triangular."""
-#     ut_len, num_targets = preds_ut.shape
+def insul_diamonds_scores(mats, window=10):
+    num_targets = mats.shape[-1]
+    scores = np.zeros((num_targets,))
+    for ti in range(num_targets):
+        scores[ti] = _insul_diamond_central(mats[:, :, ti], window=window)
+    return scores
 
-#     # infer original sequence length
-#     seq_len = int(np.sqrt(2 * ut_len + 0.25) - 0.5)
-#     seq_len += diagonal_offset
 
-#     # get triu indexes
-#     ut_indexes = np.triu_indices(seq_len, diagonal_offset)
-#     assert len(ut_indexes[0]) == ut_len
+def ut_dense(preds_ut, diagonal_offset):
+    """Construct dense prediction matrix from upper triangular."""
+    ut_len, num_targets = preds_ut.shape
 
-#     # assign to dense matrix
-#     preds_dense = np.zeros(shape=(seq_len, seq_len, num_targets), dtype=preds_ut.dtype)
-#     preds_dense[ut_indexes] = preds_ut
+    # infer original sequence length
+    seq_len = int(np.sqrt(2 * ut_len + 0.25) - 0.5)
+    seq_len += diagonal_offset
 
-#     # symmetrize
-#     preds_dense += np.transpose(preds_dense, axes=[1, 0, 2])
+    # get triu indexes
+    ut_indexes = np.triu_indices(seq_len, diagonal_offset)
+    assert len(ut_indexes[0]) == ut_len
 
-#     return preds_dense
+    # assign to dense matrix
+    preds_dense = np.zeros(shape=(seq_len, seq_len, num_targets), dtype=preds_ut.dtype)
+    preds_dense[ut_indexes] = preds_ut
+
+    # symmetrize
+    preds_dense += np.transpose(preds_dense, axes=[1, 0, 2])
+
+    return preds_dense
 
 
 ################################################################################
