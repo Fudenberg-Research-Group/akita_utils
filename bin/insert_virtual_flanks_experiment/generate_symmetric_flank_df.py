@@ -102,7 +102,8 @@ def main():
         dest="flank_spacer_sum",
         default=90,
         type="int",
-        help="Specify sum of flank and spacer so that distances between CTCFs binding sites are kept constant. \n2xflank-spacer-sum=distance between two consecutive CTCFs.",
+        help="Specify sum of flank and spacer so that distances between CTCFs binding sites are kept constant. 
+        \n2xflank-spacer-sum=distance between two consecutive CTCFs.",
     )
     parser.add_option(
         "--number-backgrounds",
@@ -261,12 +262,10 @@ def main():
 
 
 def generate_all_orientation_strings(N):
-
     """
     Function generates all possible orientations of N-long string consisting of binary characters (> and <) only.
     Example: for N=2 the result is ['>>', '><', '<>', '<<'].
     """
-
     def _binary_to_orientation_string_map(binary_list):
 
         binary_to_orientation_dict = {0: ">", 1: "<"}
