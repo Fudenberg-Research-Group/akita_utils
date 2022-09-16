@@ -18,11 +18,37 @@
 ###################################################
 
 """
-akita_insert.py, derived from akita_scd.py (https://github.com/calico/basenji/blob/master/bin/akita_scd.py)
+virtual_symmetric_experiment.py
+derived from akita_insert.py (https://github.com/Fudenberg-Research-Group/akita_utils/blob/flank_experiment/bin/akita_insert.py)
 
 
-Compute insertion scores for motif insertions from a tsv file with:
-chrom	start	end	strand	genomic_SCD	orientation	background_index	flank_bp	spacer_bp
+This scripts computes insertion scores for motif insertions from a tsv file with:
+chrom | start | end | strand | genomic_SCD | orientation | background_index | flank_bp | spacer_bp
+where one row represents a single experiment.
+The insertion scores are added as next keys in the h5 format file.
+
+The script requires the following input:
+
+Parameters:
+-----------
+<params_file> - parameters for the akita model
+<model_file> - model in the h5 format
+<motifs_file> - tsv/csv table specifying designed experiemensts
+
+Options:
+-----------
+- path to the mouse or human genome in the fasta format
+- comma-separated list of statistic scores (stats, e.g. --stats SCD,INS-16)
+- head index (depending if predictions are to be made in the mouse (--head_index 0) or human genome-context (--head_index 1))
+- model index (same as specified one by the model_file)
+- batch size 
+- path to the background file (in the fasta format)
+- output directory for tables and plots
+- flag -m to plot contact map for some of the performed experiments
+- (optional, specific for plotting) heatmap plot limit
+- (optional, specific for plotting) heatmap plot frequency
+- (optional) add option --rc to average forward and reverse complement predictions
+- (optional) adding --shifts k ensembles prediction shifts by k
 
 
 """
@@ -133,16 +159,9 @@ def main():
         help="Comma-separated list of stats to save. [Default: %default]",
     )
     parser.add_option(
-        "-t",
-        dest="targets_file",
-        default=None,
-        type="str",
-        help="File specifying target indexes and labels in table format",
-    )
-    parser.add_option(
         "--batch-size",
         dest="batch_size",
-        default=None,
+        default=4,
         type="int",
         help="Specify batch size",
     )
@@ -151,9 +170,15 @@ def main():
         dest="head_index",
         default=0,
         type="int",
-        help="Specify head index (0=human 1=mus) ",
+        help="Specify head index (0=human 1=mus)",
     )
-
+    parser.add_option(
+        "--model-index",
+        dest="model_index",
+        default=0,
+        type="int",
+        help="Specify model index (from 0 to 7)",
+    )
     ## insertion-specific options
     parser.add_option(
         "--background-file",
@@ -210,7 +235,7 @@ def main():
     options.scd_stats = options.scd_stats.split(",")
 
     random.seed(44)
-
+    
     #################################################################
     # read parameters and targets
 
@@ -232,10 +257,12 @@ def main():
 
     #################################################################
     # setup model
-
+    head_index = options.head_index
+    model_index = options.model_index
+    
     # load model
     seqnn_model = seqnn.SeqNN(params_model)
-    seqnn_model.restore(model_file, head_i=options.head_index)
+    seqnn_model.restore(model_file, head_i=head_index)
     seqnn_model.build_ensemble(options.rc, options.shifts)
     seq_length = int(params_model["seq_length"])
 
@@ -326,6 +353,8 @@ def main():
         seq_coords_df,
         target_ids,
         target_labels,
+        head_index,
+        model_index
     )
 
     print("initialized")
@@ -346,6 +375,8 @@ def main():
             preds,
             scd_out,
             exp,
+            head_index,
+            model_index,
             seqnn_model.diagonal_offset,
             options.scd_stats,
             plot_dir,
@@ -357,7 +388,7 @@ def main():
     scd_out.close()
 
 
-def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_labels):
+def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_labels, head_index, model_index):
     """Initialize an output HDF5 file for SCD stats."""
 
     num_targets = len(target_ids)
@@ -373,14 +404,17 @@ def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_l
 
     # initialize scd stats
     for scd_stat in scd_stats:
+        
         if scd_stat in seq_coords_df.keys():
             raise KeyError("check input tsv for clashing score name")
-        scd_out.create_dataset(
-            scd_stat,
-            shape=(num_experiments, num_targets),
-            dtype="float16",
-            compression=None,
-        )
+        
+        for target_ind in range(num_targets):
+            scd_out.create_dataset(
+                f"{scd_stat}_h{head_index}_m{model_index}_t{target_ind}",
+                shape=(num_experiments,),
+                dtype="float16",
+                compression=None,
+            )
 
     return scd_out
 
@@ -389,6 +423,8 @@ def write_snp(
     ref_preds,
     scd_out,
     si,
+    head_index,
+    model_index,
     diagonal_offset,
     scd_stats=["SCD"],
     plot_dir=None,
@@ -399,21 +435,25 @@ def write_snp(
 
     # increase dtype
     ref_preds = ref_preds.astype("float32")
-
+    
+#     print(ref_preds)
+#     print(ref_preds.shape)
+    
     # compare reference to alternative via mean subtraction
     if "SCD" in scd_stats:
         # sum of squared diffs
         sd2_preds = np.sqrt((ref_preds**2).sum(axis=0))
-        scd_out["SCD"][si, :] = sd2_preds.astype("float16")
+        for target_ind in range(ref_preds.shape[1]):
+            scd_out[f"SCD_h{head_index}_m{model_index}_t{target_ind}"][si] = sd2_preds[target_ind].astype("float16")
 
     if np.any((["INS" in i for i in scd_stats])):
         ref_map = ut_dense(ref_preds, diagonal_offset)
         for stat in scd_stats:
             if "INS" in stat:
                 insul_window = int(stat.split("-")[1])
-                scd_out[stat][si, :] = insul_diamonds_scores(
-                    ref_map, window=insul_window
-                )
+                
+                for target_ind in range(ref_preds.shape[1]):
+                    scd_out[f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][si] = insul_diamonds_scores(ref_map, window=insul_window)[target_ind]
 
     if (plot_dir is not None) and (np.mod(si, plot_freq) == 0):
         print("plotting ", si)

@@ -29,7 +29,7 @@ This way one row represents a single experiment.
 
 At the next step - while running virtual_symmetric_flank_experiment.py, calculated statistics metrics e.g. SCD, INS-16, will be added as next columns. 
 
-The script requires the following inputs:
+The script requires the following input:
 - number of strong CTCF binding sites
 - number of weak CTCF binding sites
 - orientation string
