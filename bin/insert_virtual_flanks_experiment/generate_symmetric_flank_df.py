@@ -29,7 +29,7 @@ This way one row represents a single experiment.
 
 At the next step - while running virtual_symmetric_flank_experiment.py, calculated statistics metrics e.g. SCD, INS-16, will be added as next columns. 
 
-The script requires the following inputs:
+The script requires the following input:
 - number of strong CTCF binding sites
 - number of weak CTCF binding sites
 - orientation string
@@ -102,7 +102,8 @@ def main():
         dest="flank_spacer_sum",
         default=90,
         type="int",
-        help="Specify sum of flank and spacer so that distances between CTCFs binding sites are kept constant",
+        help="Specify sum of flank and spacer so that distances between CTCFs binding sites are kept constant. 
+        \n2xflank-spacer-sum=distance between two consecutive CTCFs.",
     )
     parser.add_option(
         "--number-backgrounds",
@@ -265,7 +266,6 @@ def generate_all_orientation_strings(N):
     Function generates all possible orientations of N-long string consisting of binary characters (> and <) only.
     Example: for N=2 the result is ['>>', '><', '<>', '<<'].
     """
-    
     def _binary_to_orientation_string_map(binary_list):
 
         binary_to_orientation_dict = {0: ">", 1: "<"}
