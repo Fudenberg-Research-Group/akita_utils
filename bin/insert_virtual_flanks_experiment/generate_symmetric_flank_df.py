@@ -102,8 +102,9 @@ def main():
         dest="flank_spacer_sum",
         default=90,
         type="int",
-        help="Specify sum of flank and spacer so that distances between CTCFs binding sites are kept constant. 
-        \n2xflank-spacer-sum=distance between two consecutive CTCFs.",
+        help="""Specify sum of flank and spacer so that distances between 
+        CTCFs binding sites are kept constant.  
+        flank-spacer-sum=distance between two consecutive CTCFs.""",
     )
     parser.add_option(
         "--number-backgrounds",
@@ -170,6 +171,12 @@ def main():
         h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
         score_key=score_key,
         threshold_all_ctcf=5,
+    )
+
+    sites = akita_utils.filter_by_rmsk(
+        sites,
+        rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz", 
+        verbose=True
     )
 
     strong_sites, weak_sites = akita_utils.filter_sites_by_score(
