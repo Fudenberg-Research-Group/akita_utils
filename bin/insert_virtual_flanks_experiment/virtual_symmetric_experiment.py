@@ -159,6 +159,13 @@ def main():
         help="Comma-separated list of stats to save. [Default: %default]",
     )
     parser.add_option(
+        "-t",
+        dest="targets_file",
+        default=None,
+        type="str",
+        help="File specifying target indexes and labels in table format",
+    )
+    parser.add_option(
         "--batch-size",
         dest="batch_size",
         default=4,
@@ -205,7 +212,7 @@ def main():
         model_file = args[1]
         motif_file = args[2]
 
-    elif len(args) == 6:                 # muliti-GPU option
+    elif len(args) == 5:                 # muliti-GPU option
         # multi worker
         options_pkl_file = args[0]
         params_file = args[1]
