@@ -30,7 +30,24 @@ def smooth(y, box_pts):
 
 
 def ut_dense(preds_ut, diagonal_offset):
-    """Construct dense prediction matrix from upper triangular."""
+    """Construct symmetric dense prediction matrices from upper triangular vectors. 
+    
+    Parameters
+    -----------
+    preds_ut : ( M x O) numpy array
+        Upper triangular matrix to convert. M is the number of upper triangular entries,
+        and O corresponds to the number of different targets.
+    diagonal_offset : int
+        Number of diagonals that are added as zeros in the conversion. 
+        Typically 2 diagonals are ignored in Hi-C data processing.
+        
+    Returns
+    --------
+    preds_dense : (D x D x O) numpy array
+        Each output upper-triangular vector is converted to a D x D matrix. 
+        Output matrices have zeros at the diagonal for `diagonal_offset` number of diagonals.
+    
+    """
     ut_len, num_targets = preds_ut.shape
 
     # infer original sequence length
