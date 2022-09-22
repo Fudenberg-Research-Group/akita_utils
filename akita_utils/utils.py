@@ -5,13 +5,12 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 from basenji import dna_io
+import glob
+from io import StringIO
+import h5py
 
 
 ### numeric utilites
-
-from scipy.stats import spearmanr, pearsonr
-
-
 def absmaxND(a, axis=None):
     """
     https://stackoverflow.com/a/39152275
@@ -19,9 +18,6 @@ def absmaxND(a, axis=None):
     amax = a.max(axis)
     amin = a.min(axis)
     return np.where(-amin > amax, amin, amax)
-
-
-import scipy.signal
 
 
 def smooth(y, box_pts):
@@ -70,7 +66,6 @@ def ut_dense(preds_ut, diagonal_offset):
 
 
 ### score i/o
-import h5py
 
 
 def h5_to_df(
@@ -130,7 +125,7 @@ def h5_to_df(
 
     if drop_duplicates_key is not None:
         len_orig = len(df_out)
-        if not drop_duplicates_key in df_out.keys():
+        if drop_duplicates_key not in df_out.keys():
             raise ValueError("duplicate removal key must be present in dataFrame")
         df_out.drop_duplicates(drop_duplicates_key, inplace=True)
         if verbose:
@@ -138,10 +133,6 @@ def h5_to_df(
         df_out.reset_index(inplace=True, drop=True)
 
     return df_out
-
-
-import glob
-from io import StringIO
 
 
 def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
@@ -180,7 +171,7 @@ def filter_boundary_ctcfs_from_h5(
     df = dfs[0].copy()
     df[score_key] = np.mean([df[score_key] for df in dfs], axis=0)
 
-    ## append scores for full mut and all ctcf mut to table
+    # append scores for full mut and all ctcf mut to table
     print("annotating each site with boundary-wide scores")
     score_10k = np.zeros((len(df),))
     score_all_ctcf = np.zeros((len(df),))
@@ -218,6 +209,19 @@ def filter_by_rmsk(
     """
     Filter out sites that overlap any entry in rmsk.
     This is important for sineB2 in mice, and perhaps for other repetitive elements as well.
+
+    Parameters
+    -----------
+    sites : dataFrame
+        Set of genomic intervals, currently with columns "chrom","start_2","end_2"
+        TODO: update this and allow columns to be passed
+    rmsk_file : str
+        File in repeatmasker format used for filtering sites.
+
+    Returns
+    --------
+    sites : dataFrame
+        Subset of sites that do not have overlaps with repeats in the rmsk_file.
 
     """
     if verbose:
@@ -393,9 +397,7 @@ def prepare_paired_insertion_df(
     return df_site_pairs
 
 
-### sequence handling
-
-
+# sequence handling
 def dna_rc(seq):
     return seq.translate(str.maketrans("ATCGatcg", "TAGCtagc"))[::-1]
 
@@ -421,7 +423,7 @@ def permute_seq_k(seq_1hot, k=2):
     return seq_1hot_perm
 
 
-### motif handling
+# motif handling
 def scan_motif(seq_1hot, motif, strand=None):
     if motif.shape[-1] != 4:
         raise ValueError("motif should be n_postions x 4 bases, A=0, C=1, G=2, T=3")
@@ -475,7 +477,7 @@ def read_jaspar_to_numpy(
             else:
                 motif.append(line.strip().replace("[", "").replace("]", "").split())
     motif = pd.DataFrame(motif).set_index(0).astype(float).values.T
-    if normalize == True:
+    if normalize is True:
         motif /= motif.sum(axis=1)[:, None]
     if motif.shape[1] != 4:
         raise ValueError("motif returned should be have n_positions x 4 bases")

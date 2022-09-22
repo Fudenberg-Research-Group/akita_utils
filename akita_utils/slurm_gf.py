@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from optparse import OptionParser
-import os, pdb, sys, subprocess, tempfile, time
+import sys
+import subprocess
+import tempfile
+import time
 
 ################################################################################
 # slurm.py
@@ -170,7 +173,7 @@ def multi_update_status(jobs, max_attempts=3, sleep_attempt=5):
 
     # try multiple times because sometimes it fails
     attempt = 0
-    while attempt < max_attempts and [j for j in jobs if j.status == None]:
+    while attempt < max_attempts and [j for j in jobs if j.status is None]:
         if attempt > 0:
             time.sleep(sleep_attempt)
 
@@ -184,7 +187,8 @@ def multi_update_status(jobs, max_attempts=3, sleep_attempt=5):
 
             try:
                 line_id = int(a[0])
-            except:
+            except Exception as ex:
+                print(ex)
                 line_id = None
 
             # check call jobs for a match
@@ -305,7 +309,7 @@ class Job:
         status = None
 
         attempt = 0
-        while attempt < max_attempts and status == None:
+        while (attempt < max_attempts) and (status is None):
             if attempt > 0:
                 time.sleep(sleep_attempt)
 
@@ -318,7 +322,8 @@ class Job:
 
                 try:
                     line_id = int(a[0])
-                except:
+                except Exception as ex:
+                    print(ex)
                     line_id = None
 
                 if line_id == self.id:
@@ -326,7 +331,7 @@ class Job:
 
             attempt += 1
 
-        if status == None:
+        if status is None:
             return False
         else:
             self.status = status

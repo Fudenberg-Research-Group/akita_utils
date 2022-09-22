@@ -1,7 +1,7 @@
-basenji
 numpy
 pandas
 scipy
 tensorflow
 h5py
 bioframe
+basenji
