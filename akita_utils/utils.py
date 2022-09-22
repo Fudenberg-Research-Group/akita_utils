@@ -4,7 +4,6 @@ import bioframe
 import pandas as pd
 import numpy as np
 import tensorflow as tf
-from basenji import dna_io
 import glob
 from io import StringIO
 import h5py
@@ -424,6 +423,35 @@ def permute_seq_k(seq_1hot, k=2):
 
 
 # motif handling
+
+def hot1_rc(seqs_1hot):
+  """ Reverse complement a batch of one hot coded sequences,
+       while being robust to additional tracks beyond the four
+       nucleotides. """
+
+  if seqs_1hot.ndim == 2:
+    singleton = True
+    seqs_1hot = np.expand_dims(seqs_1hot, axis=0)
+  else:
+    singleton = False
+
+  seqs_1hot_rc = seqs_1hot.copy()
+
+  # reverse
+  seqs_1hot_rc = seqs_1hot_rc[:, ::-1, :]
+
+  # swap A and T
+  seqs_1hot_rc[:, :, [0, 3]] = seqs_1hot_rc[:, :, [3, 0]]
+
+  # swap C and G
+  seqs_1hot_rc[:, :, [1, 2]] = seqs_1hot_rc[:, :, [2, 1]]
+
+  if singleton:
+    seqs_1hot_rc = seqs_1hot_rc[0]
+
+  return seqs_1hot_rc
+
+
 def scan_motif(seq_1hot, motif, strand=None):
     if motif.shape[-1] != 4:
         raise ValueError("motif should be n_postions x 4 bases, A=0, C=1, G=2, T=3")
@@ -439,7 +467,7 @@ def scan_motif(seq_1hot, motif, strand=None):
         return scan_forward
     scan_reverse = tf.nn.conv1d(
         np.expand_dims(seq_1hot, 0).astype(float),
-        np.expand_dims(dna_io.hot1_rc(motif), -1).astype(float),
+        np.expand_dims(hot1_rc(motif), -1).astype(float),
         stride=1,
         padding="SAME",
     ).numpy()[0]
