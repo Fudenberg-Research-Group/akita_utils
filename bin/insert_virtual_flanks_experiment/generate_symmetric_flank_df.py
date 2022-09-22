@@ -52,6 +52,9 @@ If the orientation_string is a comma-separated list of multiple string, e.g. ori
 ################################################################################
 
 from __future__ import print_function
+import os
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+
 import math
 import random
 from optparse import OptionParser
