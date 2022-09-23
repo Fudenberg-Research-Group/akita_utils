@@ -47,6 +47,7 @@ from basenji import seqnn
 from basenji import stream
 from basenji import dna_io
 
+from akita_utils import ut_dense
 
 """
 akita_insert.py, derived from akita_scd.py (https://github.com/calico/basenji/blob/master/bin/akita_scd.py)
@@ -435,26 +436,7 @@ def insul_diamonds_scores(mats, window=10):
     return scores
 
 
-def ut_dense(preds_ut, diagonal_offset):
-    """Construct dense prediction matrix from upper triangular."""
-    ut_len, num_targets = preds_ut.shape
 
-    # infer original sequence length
-    seq_len = int(np.sqrt(2 * ut_len + 0.25) - 0.5)
-    seq_len += diagonal_offset
-
-    # get triu indexes
-    ut_indexes = np.triu_indices(seq_len, diagonal_offset)
-    assert len(ut_indexes[0]) == ut_len
-
-    # assign to dense matrix
-    preds_dense = np.zeros(shape=(seq_len, seq_len, num_targets), dtype=preds_ut.dtype)
-    preds_dense[ut_indexes] = preds_ut
-
-    # symmetrize
-    preds_dense += np.transpose(preds_dense, axes=[1, 0, 2])
-
-    return preds_dense
 
 
 ################################################################################
