@@ -163,7 +163,7 @@ def main():
     N = len(orient_list[0])
     all_permutations = options.all_permutations
     
-    l, h = [int(num) for num in options.flank_range.split(",")]
+    flank_range_from, flank_range_to = [int(num) for num in options.flank_range.split(",")]
     
     if options.all_permutations == True:
         assert len(orient_list) == 1
@@ -178,7 +178,7 @@ def main():
 
     while motifs_df_ready == False:
         seq_coords_df = sample_motifs(num_weak_motifs=options.num_weak_motifs, num_strong_motifs=options.num_strong_motifs)
-        motifs_df_ready = flanks_without_motifs(seq_coords_df, ctcf_motifs, h)
+        motifs_df_ready = flanks_without_motifs(seq_coords_df, ctcf_motifs, flank_range_to)
     
     # adding orientation, background index, information about flanks and spacers
     df_with_orientation = add_orientation(
@@ -192,7 +192,7 @@ def main():
     )
 
     df_with_flanks_spacers = add_flanks_and_spacers(
-        df_with_background, l, h, options.flank_spacer_sum
+        df_with_background, flank_range_from, flank_range_to, options.flank_spacer_sum
     )
 
     df_with_flanks_spacers = df_with_flanks_spacers.drop(columns="index")
@@ -203,8 +203,8 @@ def main():
         * num_orients
         * options.number_backgrounds
         * (
-            h
-            - l
+            flank_range_to
+            - flank_range_from
             + 1
         )
     )
@@ -296,7 +296,10 @@ def sample_motifs(num_weak_motifs,
 
 
 
-def flanks_without_motifs(seq_coords_df, ctcf_motifs, h):
+def flanks_without_motifs(seq_coords_df, ctcf_motifs, flank_range_to):
+    """
+    Function checks if there is overlap between left and right flanks and any know CTCF-motif in the tested genome. 
+    """
     
     i = 0
     motif_found_left = False
@@ -307,8 +310,8 @@ def flanks_without_motifs(seq_coords_df, ctcf_motifs, h):
         start = seq_coords_df["start"][i]
         end = seq_coords_df["end"][i]
 
-        selected_left = ctcf_motifs[(ctcf_motifs["chrom"] == chrom) & (ctcf_motifs["start"] > start-h) & (ctcf_motifs["end"] < start)]
-        selected_right = ctcf_motifs[(ctcf_motifs["chrom"] == chrom) & (ctcf_motifs["start"] > end) & (ctcf_motifs["end"] < end + h)]
+        selected_left = ctcf_motifs[(ctcf_motifs["chrom"] == chrom) & (ctcf_motifs["start"] > start-flank_range_to) & (ctcf_motifs["end"] < start)]
+        selected_right = ctcf_motifs[(ctcf_motifs["chrom"] == chrom) & (ctcf_motifs["start"] > end) & (ctcf_motifs["end"] < end + flank_range_to)]
 
         motif_found_left = not selected_left.empty
         motif_found_right = not selected_right.empty
