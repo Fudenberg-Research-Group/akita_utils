@@ -116,6 +116,12 @@ def main():
         help="Specify number of background sequences that CTCFs will be inserted into",
     )
     parser.add_option(
+        "--jaspar-file",
+        dest="jaspar_file",
+        default="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
+        help="Specify path to the file with coordinates of CTCF-binding sites within the tested genome",
+    )
+    parser.add_option(
         "--all-permutations",
         dest="all_permutations",
         default=False,
@@ -156,51 +162,24 @@ def main():
     num_orients = len(orient_list)
     N = len(orient_list[0])
     all_permutations = options.all_permutations
-
+    
+    l, h = [int(num) for num in options.flank_range.split(",")]
+    
     if options.all_permutations == True:
         assert len(orient_list) == 1
         num_orients = 2**N
 
     random.seed(44)
+    
+    # motifs loading & checking if there is no more (untracked) CTCF-binding sites within the flanks
+    ctcf_motifs = bioframe.read_table(options.jaspar_file, schema="jaspar", skiprows=1)
+    
+    motifs_df_ready = False
 
-    # loading motifs
-    score_key = "SCD"
-    weak_thresh_pct = 1
-    strong_thresh_pct = 99
-    pad_flank = 0
-
-    sites = akita_utils.filter_boundary_ctcfs_from_h5(
-        h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
-        score_key=score_key,
-        threshold_all_ctcf=5,
-    )
-
-    strong_sites, weak_sites = akita_utils.filter_sites_by_score(
-        sites,
-        score_key=score_key,
-        weak_thresh_pct=weak_thresh_pct,
-        weak_num=options.num_strong_motifs,
-        strong_thresh_pct=strong_thresh_pct,
-        strong_num=options.num_strong_motifs,
-    )
-
-    site_df = pd.concat([strong_sites.copy(), weak_sites.copy()])
-    seq_coords_df = (
-        site_df[["chrom", "start_2", "end_2", "strand_2", score_key]]
-        .copy()
-        .rename(
-            columns={
-                "start_2": "start",
-                "end_2": "end",
-                "strand_2": "strand",
-                score_key: "genomic_" + score_key,
-            }
-        )
-    )
-    seq_coords_df.reset_index(drop=True, inplace=True)
-    seq_coords_df.reset_index(inplace=True)
-    seq_coords_df = bioframe.expand(seq_coords_df, pad=pad_flank)
-
+    while motifs_df_ready == False:
+        seq_coords_df = sample_motifs(num_weak_motifs=options.num_weak_motifs, num_strong_motifs=options.num_strong_motifs)
+        motifs_df_ready = flanks_without_motifs(seq_coords_df, ctcf_motifs, h)
+    
     # adding orientation, background index, information about flanks and spacers
     df_with_orientation = add_orientation(
         seq_coords_df,
@@ -213,7 +192,7 @@ def main():
     )
 
     df_with_flanks_spacers = add_flanks_and_spacers(
-        df_with_background, options.flank_range, options.flank_spacer_sum
+        df_with_background, l, h, options.flank_spacer_sum
     )
 
     df_with_flanks_spacers = df_with_flanks_spacers.drop(columns="index")
@@ -224,8 +203,8 @@ def main():
         * num_orients
         * options.number_backgrounds
         * (
-            int(options.flank_range.split(",")[1])
-            - int(options.flank_range.split(",")[0])
+            h
+            - l
             + 1
         )
     )
@@ -243,8 +222,8 @@ def main():
         print("Number of background sequences: ", options.number_backgrounds)
         print(
             "Number of flanks: ",
-            int(options.flank_range.split(",")[1])
-            - int(options.flank_range.split(",")[0])
+            h
+            - l
             + 1,
         )
         print("===============")
@@ -262,6 +241,85 @@ def main():
 
 
 #################################################################
+
+
+def sample_motifs(num_weak_motifs,
+                 num_strong_motifs,
+                  score_key = "SCD",
+                 weak_thresh_pct = 1,
+                 strong_thresh_pct = 99,
+                 pad_flank = 0,
+                  threshold_all_ctcf=5,
+                  h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
+                  rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz"):
+    
+
+    sites = akita_utils.filter_boundary_ctcfs_from_h5(
+        h5_dirs=h5_dirs,
+        score_key=score_key,
+        threshold_all_ctcf=threshold_all_ctcf,
+    )
+
+    sites = akita_utils.filter_by_rmsk(
+        sites,
+        rmsk_file=rmsk_file, 
+        verbose=False
+    )
+
+    strong_sites, weak_sites = akita_utils.filter_sites_by_score(
+        sites,
+        score_key=score_key,
+        weak_thresh_pct=weak_thresh_pct,
+        weak_num=num_weak_motifs,
+        strong_thresh_pct=strong_thresh_pct,
+        strong_num=num_strong_motifs,
+    )
+    
+    site_df = pd.concat([strong_sites.copy(), weak_sites.copy()])
+    seq_coords_df = (
+        site_df[["chrom", "start_2", "end_2", "strand_2", score_key]]
+        .copy()
+        .rename(
+            columns={
+                "start_2": "start",
+                "end_2": "end",
+                "strand_2": "strand",
+                score_key: "genomic_" + score_key,
+            }
+        )
+    )
+    seq_coords_df.reset_index(drop=True, inplace=True)
+    seq_coords_df.reset_index(inplace=True)
+    seq_coords_df = bioframe.expand(seq_coords_df, pad=pad_flank)
+    
+    return seq_coords_df
+
+
+
+def flanks_without_motifs(seq_coords_df, ctcf_motifs, h):
+    
+    i = 0
+    motif_found_left = False
+    motif_found_right = False
+
+    while (motif_found_left == False and motif_found_right == False and i < len(seq_coords_df)):
+        chrom = seq_coords_df["chrom"][i]
+        start = seq_coords_df["start"][i]
+        end = seq_coords_df["end"][i]
+
+        selected_left = ctcf_motifs[(ctcf_motifs["chrom"] == chrom) & (ctcf_motifs["start"] > start-h) & (ctcf_motifs["end"] < start)]
+        selected_right = ctcf_motifs[(ctcf_motifs["chrom"] == chrom) & (ctcf_motifs["start"] > end) & (ctcf_motifs["end"] < end + h)]
+
+        motif_found_left = not selected_left.empty
+        motif_found_right = not selected_right.empty
+
+        i += 1
+    
+    if motif_found_left or motif_found_right:
+        return False
+    elif i == len(seq_coords_df) - 1:
+        return True
+    
 
 
 def generate_all_orientation_strings(N):
@@ -338,9 +396,7 @@ def add_orientation(seq_coords_df, orientation_strings, all_permutations):
     return seq_coords_df
 
 
-def add_flanks_and_spacers(seq_coords_df, flank_range, flank_spacer_sum):
-
-    l, h = [int(num) for num in flank_range.split(",")]
+def add_flanks_and_spacers(seq_coords_df, l, h, flank_spacer_sum):
 
     rep_unit = seq_coords_df
     df_len = len(rep_unit)
