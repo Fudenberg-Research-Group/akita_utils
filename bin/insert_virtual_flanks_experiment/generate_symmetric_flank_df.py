@@ -53,9 +53,9 @@ If the orientation_string is a comma-separated list of multiple string, e.g. ori
 
 from __future__ import print_function
 import os
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
-import math
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+
 import random
 from optparse import OptionParser
 import pandas as pd
@@ -63,6 +63,8 @@ import itertools
 
 import bioframe
 import akita_utils
+
+from io import StringIO
 
 ################################################################################
 # main
@@ -162,24 +164,63 @@ def main():
     num_orients = len(orient_list)
     N = len(orient_list[0])
     all_permutations = options.all_permutations
-    
-    flank_range_from, flank_range_to = [int(num) for num in options.flank_range.split(",")]
-    
+
+    flank_range_from, flank_range_to = [
+        int(num) for num in options.flank_range.split(",")
+    ]
+
     if options.all_permutations == True:
         assert len(orient_list) == 1
         num_orients = 2**N
 
     random.seed(44)
-    
-    # motifs loading & checking if there is no more (untracked) CTCF-binding sites within the flanks
-    ctcf_motifs = bioframe.read_table(options.jaspar_file, schema="jaspar", skiprows=1)
-    
-    motifs_df_ready = False
 
-    while motifs_df_ready == False:
-        seq_coords_df = sample_motifs(num_weak_motifs=options.num_weak_motifs, num_strong_motifs=options.num_strong_motifs)
-        motifs_df_ready = flanks_without_motifs(seq_coords_df, ctcf_motifs, flank_range_to)
-    
+    # loading motifs
+    score_key = "SCD"
+    weak_thresh_pct = 1
+    strong_thresh_pct = 99
+    pad_flank = 0
+
+    sites = akita_utils.filter_boundary_ctcfs_from_h5(
+        h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
+        score_key=score_key,
+        threshold_all_ctcf=5,
+    )
+
+    sites = akita_utils.filter_by_rmsk(
+        sites,
+        rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz",
+        verbose=True,
+    )
+
+    sites = filter_by_ctcf(sites)
+
+    strong_sites, weak_sites = akita_utils.filter_sites_by_score(
+        sites,
+        score_key=score_key,
+        weak_thresh_pct=weak_thresh_pct,
+        weak_num=options.num_strong_motifs,
+        strong_thresh_pct=strong_thresh_pct,
+        strong_num=options.num_strong_motifs,
+    )
+
+    site_df = pd.concat([strong_sites.copy(), weak_sites.copy()])
+    seq_coords_df = (
+        site_df[["chrom", "start_2", "end_2", "strand_2", score_key]]
+        .copy()
+        .rename(
+            columns={
+                "start_2": "start",
+                "end_2": "end",
+                "strand_2": "strand",
+                score_key: "genomic_" + score_key,
+            }
+        )
+    )
+    seq_coords_df.reset_index(drop=True, inplace=True)
+    seq_coords_df.reset_index(inplace=True)
+    seq_coords_df = bioframe.expand(seq_coords_df, pad=pad_flank)
+
     # adding orientation, background index, information about flanks and spacers
     df_with_orientation = add_orientation(
         seq_coords_df,
@@ -192,7 +233,10 @@ def main():
     )
 
     df_with_flanks_spacers = add_flanks_and_spacers(
-        df_with_background, flank_range_from, flank_range_to, options.flank_spacer_sum
+        df_with_background,
+        flank_range_from,
+        flank_range_to,
+        options.flank_spacer_sum,
     )
 
     df_with_flanks_spacers = df_with_flanks_spacers.drop(columns="index")
@@ -202,11 +246,7 @@ def main():
         (options.num_strong_motifs + options.num_weak_motifs)
         * num_orients
         * options.number_backgrounds
-        * (
-            flank_range_to
-            - flank_range_from
-            + 1
-        )
+        * (flank_range_to - flank_range_from + 1)
     )
     observed = len(df_with_flanks_spacers)
 
@@ -222,9 +262,7 @@ def main():
         print("Number of background sequences: ", options.number_backgrounds)
         print(
             "Number of flanks: ",
-            h
-            - l
-            + 1,
+            h - l + 1,
         )
         print("===============")
 
@@ -243,86 +281,50 @@ def main():
 #################################################################
 
 
-def sample_motifs(num_weak_motifs,
-                 num_strong_motifs,
-                  score_key = "SCD",
-                 weak_thresh_pct = 1,
-                 strong_thresh_pct = 99,
-                 pad_flank = 0,
-                  threshold_all_ctcf=5,
-                  h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
-                  rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz"):
-    
+def filter_by_ctcf(
+    sites,
+    ctcf_file="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
+    verbose=True,
+):
+    """
+    Filter out sites that overlap any entry in ctcf.
+    This is important for sineB2 in mice, and perhaps for other repetitive elements as well.
+    Parameters
+    -----------
+    sites : dataFrame
+        Set of genomic intervals, currently with columns "chrom","start_2","end_2"
+        TODO: update this and allow columns to be passed
+    ctcf_file : str
+        File in repeatmasker format used for filtering sites.
+    Returns
+    --------
+    sites : dataFrame
+        Subset of sites that do not have overlaps with repeats in the rmsk_file.
+    """
+    if verbose:
+        print("filtering sites by overlap with ctcfs")
 
-    sites = akita_utils.filter_boundary_ctcfs_from_h5(
-        h5_dirs=h5_dirs,
-        score_key=score_key,
-        threshold_all_ctcf=threshold_all_ctcf,
-    )
-
-    sites = akita_utils.filter_by_rmsk(
-        sites,
-        rmsk_file=rmsk_file, 
-        verbose=False
-    )
-
-    strong_sites, weak_sites = akita_utils.filter_sites_by_score(
-        sites,
-        score_key=score_key,
-        weak_thresh_pct=weak_thresh_pct,
-        weak_num=num_weak_motifs,
-        strong_thresh_pct=strong_thresh_pct,
-        strong_num=num_strong_motifs,
-    )
-    
-    site_df = pd.concat([strong_sites.copy(), weak_sites.copy()])
-    seq_coords_df = (
-        site_df[["chrom", "start_2", "end_2", "strand_2", score_key]]
-        .copy()
-        .rename(
-            columns={
-                "start_2": "start",
-                "end_2": "end",
-                "strand_2": "strand",
-                score_key: "genomic_" + score_key,
-            }
+    ctcf_cols = list(
+        pd.read_csv(
+            StringIO("""chrom start end name score pval strand"""),
+            sep=" ",
         )
     )
-    seq_coords_df.reset_index(drop=True, inplace=True)
-    seq_coords_df.reset_index(inplace=True)
-    seq_coords_df = bioframe.expand(seq_coords_df, pad=pad_flank)
-    
-    return seq_coords_df
 
+    ctcf_motifs = pd.read_table(
+        ctcf_file,
+        names=ctcf_cols,
+    )
 
+    sites = bioframe.count_overlaps(
+        sites,
+        ctcf_motifs[["chrom", "start", "end"]],
+        cols1=["chrom", "start_2", "end_2"],
+    )
+    sites = sites.iloc[sites["count"].values == 0]
+    sites.reset_index(inplace=True, drop=True)
 
-def flanks_without_motifs(seq_coords_df, ctcf_motifs, flank_range_to):
-    """
-    Function checks if there is overlap between left and right flanks and any know CTCF-motif in the tested genome. 
-    """
-    
-    i = 0
-    motif_found_left = False
-    motif_found_right = False
-
-    while (motif_found_left == False and motif_found_right == False and i < len(seq_coords_df)):
-        chrom = seq_coords_df["chrom"][i]
-        start = seq_coords_df["start"][i]
-        end = seq_coords_df["end"][i]
-
-        selected_left = ctcf_motifs[(ctcf_motifs["chrom"] == chrom) & (ctcf_motifs["start"] > start-flank_range_to) & (ctcf_motifs["end"] < start)]
-        selected_right = ctcf_motifs[(ctcf_motifs["chrom"] == chrom) & (ctcf_motifs["start"] > end) & (ctcf_motifs["end"] < end + flank_range_to)]
-
-        motif_found_left = not selected_left.empty
-        motif_found_right = not selected_right.empty
-
-        i += 1
-    
-    if motif_found_left or motif_found_right:
-        return False
-    elif i == len(seq_coords_df) - 1:
-        return True
-    
+    return sites
 
 
 def generate_all_orientation_strings(N):
@@ -330,6 +332,7 @@ def generate_all_orientation_strings(N):
     Function generates all possible orientations of N-long string consisting of binary characters (> and <) only.
     Example: for N=2 the result is ['>>', '><', '<>', '<<'].
     """
+
     def _binary_to_orientation_string_map(binary_list):
 
         binary_to_orientation_dict = {0: ">", 1: "<"}
