@@ -53,8 +53,7 @@ If the orientation_string is a comma-separated list of multiple string, e.g. ori
 
 from __future__ import print_function
 import os
-
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
 import random
 from optparse import OptionParser
@@ -164,17 +163,15 @@ def main():
     num_orients = len(orient_list)
     N = len(orient_list[0])
     all_permutations = options.all_permutations
-
-    flank_range_from, flank_range_to = [
-        int(num) for num in options.flank_range.split(",")
-    ]
-
+    
+    flank_range_from, flank_range_to = [int(num) for num in options.flank_range.split(",")]
+    
     if options.all_permutations == True:
         assert len(orient_list) == 1
         num_orients = 2**N
 
     random.seed(44)
-
+    
     # loading motifs
     score_key = "SCD"
     weak_thresh_pct = 1
@@ -189,12 +186,12 @@ def main():
 
     sites = akita_utils.filter_by_rmsk(
         sites,
-        rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz",
-        verbose=True,
+        rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz", 
+        verbose=True
     )
-
+    
     sites = filter_by_ctcf(sites)
-
+    
     strong_sites, weak_sites = akita_utils.filter_sites_by_score(
         sites,
         score_key=score_key,
@@ -220,7 +217,8 @@ def main():
     seq_coords_df.reset_index(drop=True, inplace=True)
     seq_coords_df.reset_index(inplace=True)
     seq_coords_df = bioframe.expand(seq_coords_df, pad=pad_flank)
-
+    
+    
     # adding orientation, background index, information about flanks and spacers
     df_with_orientation = add_orientation(
         seq_coords_df,
@@ -233,10 +231,7 @@ def main():
     )
 
     df_with_flanks_spacers = add_flanks_and_spacers(
-        df_with_background,
-        flank_range_from,
-        flank_range_to,
-        options.flank_spacer_sum,
+        df_with_background, flank_range_from, flank_range_to, options.flank_spacer_sum
     )
 
     df_with_flanks_spacers = df_with_flanks_spacers.drop(columns="index")
@@ -246,7 +241,11 @@ def main():
         (options.num_strong_motifs + options.num_weak_motifs)
         * num_orients
         * options.number_backgrounds
-        * (flank_range_to - flank_range_from + 1)
+        * (
+            flank_range_to
+            - flank_range_from
+            + 1
+        )
     )
     observed = len(df_with_flanks_spacers)
 
@@ -262,7 +261,9 @@ def main():
         print("Number of background sequences: ", options.number_backgrounds)
         print(
             "Number of flanks: ",
-            h - l + 1,
+            flank_range_to
+            - flank_range_from
+            + 1,
         )
         print("===============")
 
@@ -280,12 +281,12 @@ def main():
 
 #################################################################
 
-
+    
 def filter_by_ctcf(
     sites,
-    ctcf_file="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
+    ctcf_file = "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
     verbose=True,
-):
+    ):
     """
     Filter out sites that overlap any entry in ctcf.
     This is important for sineB2 in mice, and perhaps for other repetitive elements as well.
@@ -306,7 +307,9 @@ def filter_by_ctcf(
 
     ctcf_cols = list(
         pd.read_csv(
-            StringIO("""chrom start end name score pval strand"""),
+            StringIO(
+                """chrom start end name score pval strand"""
+            ),
             sep=" ",
         )
     )
@@ -315,24 +318,21 @@ def filter_by_ctcf(
         ctcf_file,
         names=ctcf_cols,
     )
-
+    
     sites = bioframe.count_overlaps(
-        sites,
-        ctcf_motifs[["chrom", "start", "end"]],
-        cols1=["chrom", "start_2", "end_2"],
+        sites, ctcf_motifs[["chrom", "start", "end"]], cols1=["chrom", "start_2", "end_2"]
     )
     sites = sites.iloc[sites["count"].values == 0]
     sites.reset_index(inplace=True, drop=True)
 
     return sites
-
+    
 
 def generate_all_orientation_strings(N):
     """
     Function generates all possible orientations of N-long string consisting of binary characters (> and <) only.
     Example: for N=2 the result is ['>>', '><', '<>', '<<'].
     """
-
     def _binary_to_orientation_string_map(binary_list):
 
         binary_to_orientation_dict = {0: ">", 1: "<"}
