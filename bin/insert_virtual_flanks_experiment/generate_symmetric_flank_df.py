@@ -120,7 +120,13 @@ def main():
         "--jaspar-file",
         dest="jaspar_file",
         default="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
-        help="Specify path to the file with coordinates of CTCF-binding sites within the tested genome",
+        help="Specify path to the file with coordinates of CTCF-binding sites in the tested genome",
+    )
+    parser.add_option(
+        "--rmsk-file",
+        dest="rmsk_file",
+        default="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz",
+        help="Specify path to the file with coordinates of repeated elements in the tested genome",
     )
     parser.add_option(
         "--all-permutations",
@@ -158,13 +164,16 @@ def main():
     )
 
     (options, args) = parser.parse_args()
-
+        
     orient_list = options.orientation_string.split(",")
     num_orients = len(orient_list)
     N = len(orient_list[0])
     all_permutations = options.all_permutations
     
-    flank_range_from, flank_range_to = [int(num) for num in options.flank_range.split(",")]
+    flank_start, flank_end = unpack_flank_range(options.flank_range)
+    
+    rmsk_exclude_window = flank_end
+    ctcf_exclude_window = 2 * flank_end
     
     if options.all_permutations == True:
         assert len(orient_list) == 1
@@ -184,13 +193,17 @@ def main():
         threshold_all_ctcf=5,
     )
 
-    sites = akita_utils.filter_by_rmsk(
+    sites = filter_by_rmsk(
         sites,
-        rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz", 
+        rmsk_file = options.rmsk_file, 
+        exclude_window = rmsk_exclude_window,
         verbose=True
     )
     
-    sites = filter_by_ctcf(sites)
+    sites = filter_by_ctcf(sites,
+        ctcf_file = options.jaspar_file,
+        exclude_window = ctcf_exclude_window,
+        verbose=True)
     
     strong_sites, weak_sites = akita_utils.filter_sites_by_score(
         sites,
@@ -216,7 +229,6 @@ def main():
     )
     seq_coords_df.reset_index(drop=True, inplace=True)
     seq_coords_df.reset_index(inplace=True)
-    seq_coords_df = bioframe.expand(seq_coords_df, pad=pad_flank)
     
     
     # adding orientation, background index, information about flanks and spacers
@@ -231,25 +243,13 @@ def main():
     )
 
     df_with_flanks_spacers = add_flanks_and_spacers(
-        df_with_background, flank_range_from, flank_range_to, options.flank_spacer_sum
+        df_with_background, options.flank_range, options.flank_spacer_sum
     )
 
     df_with_flanks_spacers = df_with_flanks_spacers.drop(columns="index")
     df_with_flanks_spacers.index.name = "experiment_id"
-
-    expected = (
-        (options.num_strong_motifs + options.num_weak_motifs)
-        * num_orients
-        * options.number_backgrounds
-        * (
-            flank_range_to
-            - flank_range_from
-            + 1
-        )
-    )
-    observed = len(df_with_flanks_spacers)
-
-    assert expected == observed
+    
+    (expected_df_len, observed_df_len) = validate_df_lenght(options.num_strong_motifs, options.num_weak_motifs, num_orients, options.number_backgrounds, options.flank_range, df_with_flanks_spacers)
 
     if options.verbose:
         print("\nSummary")
@@ -261,14 +261,14 @@ def main():
         print("Number of background sequences: ", options.number_backgrounds)
         print(
             "Number of flanks: ",
-            flank_range_to
-            - flank_range_from
-            + 1,
+            flank_end
+            - flank_start
+            +1,
         )
         print("===============")
 
-        print("Expected length of dataframe: ", expected)
-        print("True length of dataframe: ", observed, "\n")
+        print("Expected length of dataframe: ", expected_df_len)
+        print("True length of dataframe: ", observed_df_len, "\n")
 
     if options.csv:
         df_with_flanks_spacers.to_csv(f"./{options.filename}.csv", index=True)
@@ -281,26 +281,89 @@ def main():
 
 #################################################################
 
+def unpack_flank_range(flank_range):
     
-def filter_by_ctcf(
+    flank_start, flank_end = [int(num) for num in flank_range.split(",")]
+    return (flank_start, flank_end)
+
+
+def filter_by_rmsk(
     sites,
-    ctcf_file = "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
+    rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz",
+    exclude_window = 60,
+    site_cols = ["chrom", "start", "end"],
     verbose=True,
-    ):
+):
     """
-    Filter out sites that overlap any entry in ctcf.
+    Filter out sites that overlap any entry in rmsk.
     This is important for sineB2 in mice, and perhaps for other repetitive elements as well.
+
     Parameters
     -----------
     sites : dataFrame
         Set of genomic intervals, currently with columns "chrom","start_2","end_2"
         TODO: update this and allow columns to be passed
-    ctcf_file : str
+    rmsk_file : str
         File in repeatmasker format used for filtering sites.
+
     Returns
     --------
     sites : dataFrame
         Subset of sites that do not have overlaps with repeats in the rmsk_file.
+
+    """
+    if verbose:
+        print("filtering sites by overlap with rmsk")
+
+    rmsk_cols = list(
+        pd.read_csv(
+            StringIO(
+                """bin swScore milliDiv milliDel milliIns genoName genoStart genoEnd genoLeft strand repName repClass repFamily repStart repEnd repLeft id"""
+            ),
+            sep=" ",
+        )
+    )
+
+    rmsk = pd.read_table(
+        rmsk_file,
+        names=rmsk_cols,
+    )
+    rmsk.rename(
+        columns={"genoName": "chrom", "genoStart": "start", "genoEnd": "end"},
+        inplace=True,
+    )
+    
+    rmsk = bioframe.expand(rmsk, pad=exclude_window)
+    
+    sites = bioframe.count_overlaps(
+        sites, rmsk[site_cols], cols1=["chrom", "start_2", "end_2"]
+    )
+    
+    sites = sites.iloc[sites["count"].values == 0]
+    sites.reset_index(inplace=True, drop=True)
+
+    return sites
+
+
+def filter_by_ctcf(
+    sites,
+    ctcf_file = "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
+    exclude_window = 60,
+    site_cols = ["chrom", "start", "end"],
+    verbose=True,
+    ):
+    """
+    Filter out sites that overlap any entry in ctcf within a window of 60bp up- and downstream.
+    Parameters
+    -----------
+    sites : dataFrame
+        Set of genomic intervals, currently with columns "chrom","start_2","end_2"
+    ctcf_file : str
+        File in tsv format used for filtering ctcf binding sites.
+    Returns
+    --------
+    sites : dataFrame
+        Subset of sites that do not have overlaps with ctcf binding sites in the ctcf_file.
     """
     if verbose:
         print("filtering sites by overlap with ctcfs")
@@ -319,8 +382,10 @@ def filter_by_ctcf(
         names=ctcf_cols,
     )
     
+    ctct_motifs = bioframe.expand(ctcf_motifs, pad=exclude_window)
+    
     sites = bioframe.count_overlaps(
-        sites, ctcf_motifs[["chrom", "start", "end"]], cols1=["chrom", "start_2", "end_2"]
+        sites, ctcf_motifs[site_cols], cols1=["chrom", "start_2", "end_2"]
     )
     sites = sites.iloc[sites["count"].values == 0]
     sites.reset_index(inplace=True, drop=True)
@@ -328,6 +393,27 @@ def filter_by_ctcf(
     return sites
     
 
+def validate_df_lenght(num_strong, num_weak, num_orientations, num_backgrounds, flank_range, df):
+    
+    flank_start, flank_end = unpack_flank_range(flank_range)
+    
+    expected_df_len = (
+            (num_strong + num_weak)
+            * num_orientations
+            * num_backgrounds
+            * (
+                flank_end
+                - flank_start
+                + 1
+            )
+        )
+    observed_df_len = len(df)
+
+    assert expected_df_len == observed_df_len
+    
+    return (expected_df_len, observed_df_len)
+
+    
 def generate_all_orientation_strings(N):
     """
     Function generates all possible orientations of N-long string consisting of binary characters (> and <) only.
@@ -402,15 +488,17 @@ def add_orientation(seq_coords_df, orientation_strings, all_permutations):
     return seq_coords_df
 
 
-def add_flanks_and_spacers(seq_coords_df, l, h, flank_spacer_sum):
-
+def add_flanks_and_spacers(seq_coords_df, flank_range, flank_spacer_sum):
+    
+    flank_start, flank_end = unpack_flank_range(flank_range)
+    
     rep_unit = seq_coords_df
     df_len = len(rep_unit)
 
     flank_ls = []
     spacer_ls = []
 
-    for flank in range(l, h + 1):
+    for flank in range(flank_start, flank_end + 1):
         spacer = flank_spacer_sum - flank
         flank_ls = flank_ls + [flank] * df_len
         spacer_ls = spacer_ls + [spacer] * df_len
