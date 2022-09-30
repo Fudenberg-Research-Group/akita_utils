@@ -210,7 +210,7 @@ def main():
 
     #######################################################
     # prep work
-
+    
     # output directory
     if not options.restart:
         if os.path.isdir(options.out_dir):
@@ -223,7 +223,7 @@ def main():
     options_pkl = open(options_pkl_file, "wb")
     pickle.dump(options, options_pkl)
     options_pkl.close()
-
+    
     #######################################################
     # launch worker threads
     jobs = []
@@ -236,6 +236,7 @@ def main():
             else:
                 cmd = 'eval "$(conda shell.bash hook)";'
                 cmd += "conda activate basenji-numba2;"      #changed
+                # cmd += "conda activate basenji;"      #changed
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
 
             cmd += " ${SLURM_SUBMIT_DIR}/virtual_symmetric_experiment.py %s %s %d" % (
@@ -264,16 +265,16 @@ def main():
                 constraint=options.constraint,
             )
             jobs.append(j)
-
+    
     slurm.multi_run(
-        jobs, max_proc=options.max_proc, verbose=True, launch_sleep=10, update_sleep=60
+        jobs, max_proc=options.max_proc, verbose=False, launch_sleep=10, update_sleep=60
     )
 
     #######################################################
     # collect output
 
     collect_h5("scd.h5", options.out_dir, options.processes)
-
+    
     # for pi in range(options.processes):
     #     shutil.rmtree('%s/job%d' % (options.out_dir,pi))
 
@@ -333,6 +334,7 @@ def collect_h5(file_name, out_dir, num_procs):
     # set values
     vi = 0
     for pi in range(num_procs):
+        print("collecting job", pi)
         # open job
         job_h5_file = "%s/job%d/%s" % (out_dir, pi, file_name)
         job_h5_open = h5py.File(job_h5_file, "r")

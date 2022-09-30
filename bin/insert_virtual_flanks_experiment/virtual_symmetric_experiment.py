@@ -294,7 +294,7 @@ def main():
         )
 
         seq_coords_df = seq_coords_full.loc[
-            worker_bounds[worker_index] : worker_bounds[worker_index + 1], :
+            worker_bounds[worker_index] : (worker_bounds[worker_index + 1]-1), :
         ]
 
     else:
@@ -341,6 +341,8 @@ def main():
             if s.strand == "-":
                 seq_1hot_insertion = dna_io.hot1_rc(seq_1hot_insertion)
             
+            # so now, all motifs are standarized to this orientation ">"
+            
             seq_1hot = background_seqs[s.background_index].copy()
             insert_bp = len(seq_1hot_insertion)
             insert_plus_spacer_bp = insert_bp + 2 * spacer_bp
@@ -349,7 +351,16 @@ def main():
             
             for i in range(num_inserts):
                 offset = insert_start_bp + i * insert_plus_spacer_bp
-                seq_1hot[offset : offset + insert_bp] = seq_1hot_insertion
+                # if *s.orientation[i] == ">":
+                #     seq_1hot[offset : offset + insert_bp] = seq_1hot_insertion
+                # else:
+                #     seq_1hot[offset : offset + insert_bp] = dna_io.hot1_rc(seq_1hot_insertion)
+                
+                for orientation_arrow in s.orientation[i]:
+                    if orientation_arrow == ">":
+                        seq_1hot[offset : offset + insert_bp] = seq_1hot_insertion
+                    else:
+                        seq_1hot[offset : offset + insert_bp] = dna_io.hot1_rc(seq_1hot_insertion)
             yield seq_1hot
     
     #################################################################
@@ -405,6 +416,7 @@ def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_l
     seq_coords_df_dtypes = seq_coords_df.dtypes
 
     for key in seq_coords_df:
+        print(key, seq_coords_df_dtypes[key])
         if seq_coords_df_dtypes[key] is np.dtype("O"):
             scd_out.create_dataset(key, data=seq_coords_df[key].values.astype("S"))
         else:
@@ -440,7 +452,9 @@ def write_snp(
     plot_freq=100,
 ):
     """Write SNP predictions to HDF."""
-
+    
+    print(si)
+    
     # increase dtype
     ref_preds = ref_preds.astype("float32")
     
@@ -461,7 +475,7 @@ def write_snp(
                 insul_window = int(stat.split("-")[1])
                 
                 for target_ind in range(ref_preds.shape[1]):
-                    scd_out[f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][si] = insul_diamonds_scores(ref_map, window=insul_window)[target_ind]
+                    scd_out[f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][si] = insul_diamonds_scores(ref_map, window=insul_window)[target_ind].astype("float16")
 
     if (plot_dir is not None) and (np.mod(si, plot_freq) == 0):
         print("plotting ", si)

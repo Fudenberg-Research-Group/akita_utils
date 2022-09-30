@@ -91,10 +91,10 @@ def multi_run(jobs, max_proc=None, verbose=False, launch_sleep=2, update_sleep=2
     finished = 0
     running = 0
     active_jobs = []
-
+    
     if max_proc is None:
         max_proc = len(jobs)
-
+    
     while finished + running < total:
         # launch jobs up to the max
         while running < max_proc and finished + running < total:
@@ -114,10 +114,10 @@ def multi_run(jobs, max_proc=None, verbose=False, launch_sleep=2, update_sleep=2
 
         # sleep
         time.sleep(update_sleep)
-
+        
         # update all statuses
         multi_update_status(active_jobs)
-
+        
         # update active jobs
         active_jobs_new = []
         for i in range(len(active_jobs)):
@@ -134,7 +134,7 @@ def multi_run(jobs, max_proc=None, verbose=False, launch_sleep=2, update_sleep=2
                 finished += 1
 
         active_jobs = active_jobs_new
-
+    
     # wait for all to finish
     while active_jobs:
         # sleep
@@ -159,7 +159,8 @@ def multi_run(jobs, max_proc=None, verbose=False, launch_sleep=2, update_sleep=2
                 finished += 1
 
         active_jobs = active_jobs_new
-
+    
+    time.sleep(100)
 
 ################################################################################
 # multi_update_status
@@ -168,37 +169,39 @@ def multi_run(jobs, max_proc=None, verbose=False, launch_sleep=2, update_sleep=2
 ################################################################################
 def multi_update_status(jobs, max_attempts=3, sleep_attempt=5):
     # reset all
+    
     for j in jobs:
         j.status = None
-
+    
     # try multiple times because sometimes it fails
     attempt = 0
     while attempt < max_attempts and [j for j in jobs if j.status is None]:
+
         if attempt > 0:
             time.sleep(sleep_attempt)
 
         sacct_str = subprocess.check_output("sacct", shell=True)
         sacct_str = sacct_str.decode("UTF-8")
-
+        
         # split into job lines
         sacct_lines = sacct_str.split("\n")
         for line in sacct_lines[2:]:
             a = line.split()
+            
+            if a != []:
+                try:
+                    line_id = int(a[0].split(".")[0])
+                except Exception as ex:
+                    print(ex)
+                    line_id = None
 
-            try:
-                line_id = int(a[0])
-            except Exception as ex:
-                print(ex)
-                line_id = None
-
-            # check call jobs for a match
-            for j in jobs:
-                if line_id == j.id:
-                    j.status = a[5]
-
+                # check call jobs for a match
+                for j in jobs:
+                    if line_id == j.id:
+                        j.status = a[5].split(".")[0]
+        
         attempt += 1
-
-
+    
 class Job:
     """class to manage SLURM jobs.
 
@@ -319,15 +322,16 @@ class Job:
             sacct_lines = sacct_str.split("\n")
             for line in sacct_lines[2:]:
                 a = line.split()
+                
+                if a != []:
+                    try:
+                        line_id = int(a[0])
+                    except Exception as ex:
+                        print(ex)
+                        line_id = None
 
-                try:
-                    line_id = int(a[0])
-                except Exception as ex:
-                    print(ex)
-                    line_id = None
-
-                if line_id == self.id:
-                    status = a[5]
+                    if line_id == self.id:
+                        status = a[5]
 
             attempt += 1
 
