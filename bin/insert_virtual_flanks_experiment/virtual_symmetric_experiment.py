@@ -91,7 +91,7 @@ from basenji import seqnn
 from basenji import stream
 from basenji import dna_io
 
-from akita_utils import ut_dense
+from akita_utils import ut_dense, split_df_equally
 
 ################################################################################
 # main
@@ -281,22 +281,14 @@ def main():
         target_labels = [""] * len(target_ids)
 
     #################################################################
-    # load motifs
-
+    # load motifs    
+    
     # filter for worker motifs
     if options.processes is not None:                    # multi-GPU option
         # determine boundaries from motif file
         seq_coords_full = pd.read_csv(motif_file, sep="\t")
-
-        num_experiments_total = len(seq_coords_full)
-        worker_bounds = np.linspace(
-            0, num_experiments_total, options.processes + 1, dtype="int"
-        )
-
-        seq_coords_df = seq_coords_full.loc[
-            worker_bounds[worker_index] : (worker_bounds[worker_index + 1]-1), :
-        ]
-
+        seq_coords_df = split_df_equally(seq_coords_full, options.processes, worker_index)
+        
     else:
         # read motif positions from csv
         seq_coords_df = pd.read_csv(motif_file, sep="\t")
