@@ -200,6 +200,40 @@ def filter_boundary_ctcfs_from_h5(
     return sites
 
 
+def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
+    """
+    filter a dataFrame of intervals by a such than none exceed supplied chromosome
+    sizes.
+
+    Parameters
+    ------------
+    df : dataFrame
+        Input dataframe
+    chrmsizes : chrmsizes file or dictionary that can be converted to a view
+        Input chromosome sizes for filtering
+    buffer_bp : int
+        Size of zone to exclude intervals at chrom starts or ends.
+
+    Returns
+    ---------
+    df_filtered : dataFrame
+        Subset of intervals that do not exceed chromosome size when extended
+    """
+    assert type(buffer_bp) is int
+    if (type(chrmsizes) is not dict) and (
+        type(chrmsizes) is not pd.core.frame.DataFrame
+    ):
+        chrmsizes = bioframe.read_chromsizes(chrmsizes)
+    view_df = bioframe.from_any(chrmsizes)
+    chromend_zones = view_df.copy()
+    chromend_zones["start"] = chromend_zones["end"] - buffer_bp
+    chromstart_zones = view_df.copy()
+    chromstart_zones["end"] = chromstart_zones["start"] + buffer_bp
+    filter_zones = pd.concat([chromend_zones, chromstart_zones]).reset_index(drop=True)
+    df_filtered = bioframe.setdiff(df, filter_zones)
+    return df_filtered
+
+
 def filter_by_rmsk(
     sites,
     rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz",
@@ -424,32 +458,33 @@ def permute_seq_k(seq_1hot, k=2):
 
 # motif handling
 
+
 def hot1_rc(seqs_1hot):
-  """ Reverse complement a batch of one hot coded sequences,
-       while being robust to additional tracks beyond the four
-       nucleotides. """
+    """Reverse complement a batch of one hot coded sequences,
+    while being robust to additional tracks beyond the four
+    nucleotides."""
 
-  if seqs_1hot.ndim == 2:
-    singleton = True
-    seqs_1hot = np.expand_dims(seqs_1hot, axis=0)
-  else:
-    singleton = False
+    if seqs_1hot.ndim == 2:
+        singleton = True
+        seqs_1hot = np.expand_dims(seqs_1hot, axis=0)
+    else:
+        singleton = False
 
-  seqs_1hot_rc = seqs_1hot.copy()
+    seqs_1hot_rc = seqs_1hot.copy()
 
-  # reverse
-  seqs_1hot_rc = seqs_1hot_rc[:, ::-1, :]
+    # reverse
+    seqs_1hot_rc = seqs_1hot_rc[:, ::-1, :]
 
-  # swap A and T
-  seqs_1hot_rc[:, :, [0, 3]] = seqs_1hot_rc[:, :, [3, 0]]
+    # swap A and T
+    seqs_1hot_rc[:, :, [0, 3]] = seqs_1hot_rc[:, :, [3, 0]]
 
-  # swap C and G
-  seqs_1hot_rc[:, :, [1, 2]] = seqs_1hot_rc[:, :, [2, 1]]
+    # swap C and G
+    seqs_1hot_rc[:, :, [1, 2]] = seqs_1hot_rc[:, :, [2, 1]]
 
-  if singleton:
-    seqs_1hot_rc = seqs_1hot_rc[0]
+    if singleton:
+        seqs_1hot_rc = seqs_1hot_rc[0]
 
-  return seqs_1hot_rc
+    return seqs_1hot_rc
 
 
 def scan_motif(seq_1hot, motif, strand=None):
