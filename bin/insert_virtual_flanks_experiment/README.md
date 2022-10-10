@@ -2,7 +2,7 @@
 1. flank0-30_10motifs_09.30.2022 (with both ">>" and "<<" orientations)
     - generating tsv table
         ```
-        python generate_symmetric_flank_df.py --num-strong 10 --num-weak 10 --orientation-string ">>" --flank-range 0,30 --number-backgrounds 10 --filename right_out.tsv --verbose
+        python generate_symmetric_flank_df.py --num-strong 10 --num-weak 10 --orientation-string ">>" --flank-range 0,30 --filename flank0-30_10motifs_09.30.2022_right.tsv --verbose
         ```
     - Akita predictions
         ```
@@ -12,7 +12,7 @@
 2. flank0-30_200motifs_10.10.2022 (all orientations)
     - generating tsv table
         ```
-        python generate_symmetric_flank_df.py --num-strong 100 --num-weak 100 --orientation-string ">>" --flank-range 0,30 --number-backgrounds 3 --filename right_big_experiment.tsv --verbose
+        python generate_symmetric_flank_df.py --num-strong 100 --num-weak 100 --orientation-string ">>" --flank-range 0,30 --backgrounds-indices 0,1,2 --filename flank0-30_200motifs_10.10.2022_right.tsv --verbose
         ```
     - Akita predictions
         ```

@@ -110,10 +110,10 @@ def main():
         \n2xflank-spacer-sum=distance between two consecutive CTCFs.",
     )
     parser.add_option(
-        "--number-backgrounds",
-        dest="number_backgrounds",
-        default=10,
-        type="int",
+        "--backgrounds-indices",
+        dest="backgrounds_indices",
+        default="0,1,2,3,4,5,6,7,8,9",
+        type="string",
         help="Specify number of background sequences that CTCFs will be inserted into",
     )
     parser.add_option(
@@ -174,6 +174,8 @@ def main():
     
     rmsk_exclude_window = flank_end
     ctcf_exclude_window = 2 * flank_end
+    
+    background_indices_list = options.backgrounds_indices.split(",")
     
     if options.all_permutations == True:
         assert len(orient_list) == 1
@@ -239,7 +241,7 @@ def main():
     )
 
     df_with_background = add_background(
-        df_with_orientation, options.number_backgrounds
+        df_with_orientation, background_indices_list
     )
 
     df_with_flanks_spacers = add_flanks_and_spacers(
@@ -249,7 +251,7 @@ def main():
     df_with_flanks_spacers = df_with_flanks_spacers.drop(columns="index")
     df_with_flanks_spacers.index.name = "experiment_id"
     
-    (expected_df_len, observed_df_len) = validate_df_lenght(options.num_strong_motifs, options.num_weak_motifs, num_orients, options.number_backgrounds, options.flank_range, df_with_flanks_spacers)
+    (expected_df_len, observed_df_len) = validate_df_lenght(options.num_strong_motifs, options.num_weak_motifs, num_orients, len(background_indices_list), options.flank_range, df_with_flanks_spacers)
 
     if options.verbose:
         print("\nSummary")
@@ -258,7 +260,7 @@ def main():
             options.num_strong_motifs + options.num_weak_motifs,
         )
         print("Number of orientations: ", num_orients)
-        print("Number of background sequences: ", options.number_backgrounds)
+        print("Number of background sequences: ", len(background_indices_list))
         print(
             "Number of flanks: ",
             flank_end
@@ -514,14 +516,14 @@ def add_flanks_and_spacers(seq_coords_df, flank_range, flank_spacer_sum):
     return seq_coords_df
 
 
-def add_background(seq_coords_df, number_backgrounds):
+def add_background(seq_coords_df, background_indices_list):
 
     rep_unit = seq_coords_df
     df_len = len(rep_unit)
 
     background_ls = []
 
-    for background_ind in range(number_backgrounds):
+    for background_ind in background_indices_list:
         background_ls = background_ls + [background_ind] * df_len
 
         if len(seq_coords_df) != len(background_ls):
