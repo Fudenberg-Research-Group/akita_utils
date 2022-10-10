@@ -32,6 +32,7 @@ import bioframe
 import numpy as np
 import pandas as pd
 import os
+from akita_utils import filter_by_chrmlen
 
 
 ################################################################################
@@ -122,7 +123,7 @@ def main():
     ]
 
     boundaries = boundaries[~boundaries.chrom.isin(["chrX", "chrY", "chrM"])]
-    boundaries = _filter_by_chrmlen(
+    boundaries = filter_by_chrmlen(
         boundaries,
         options.chrom_sizes_file,
         seq_length,
@@ -207,30 +208,6 @@ def _generate_boundary_mutation_df(df_overlap):
 
     df_out = pd.concat(df_list, axis=0)
     return df_out
-
-
-def _filter_by_chrmlen(
-    df, chrmsizes_file, seq_length, exclude_chroms=["chrX", "chrY", "chrM"]
-):
-    """
-    filter a dataFrame of intervals by a such than none exceed specified chromosome
-    sizes.
-    """
-
-    chrmlens = bioframe.read_chromsizes(chrmsizes_file)
-    df_filtered = []
-    for chrm in chrmlens.index:
-        if chrm in exclude_chroms:
-            continue
-        df_chrm = df.loc[df["chrom"] == chrm]
-        df_filtered.append(
-            df_chrm.loc[
-                (df_chrm["end"].values + seq_length // 2 + 100) < chrmlens[chrm], :
-            ]
-        )
-    df_filtered = pd.concat(df_filtered)
-    df_filtered.reset_index(inplace=True, drop=True)
-    return df_filtered
 
 
 ################################################################################

@@ -1,20 +1,19 @@
 import pandas as pd
 import numpy as np
-
-
-import akita_utils
+from akita_utils import filter_by_chrmlen, ut_dense
+from io import StringIO
 
 
 def test_ut_dense():
 
+    # toy output representing upper-triangular output for two targets
     ut_vecs = np.vstack(([4, 5, 6], [-2, -3, -4])).T
 
     # (3 entries) x (2 targets) input, two empty diagonals --> 4x4x2 output
-    assert np.shape(akita_utils.ut_dense(ut_vecs, 2)) == (4, 4, 2)
+    assert np.shape(ut_dense(ut_vecs, 2)) == (4, 4, 2)
 
     # (3 entries) x (2 targets) input, one empty diagonals --> 3x3x2 output
-    dense_mats = akita_utils.ut_dense(ut_vecs, 1)
-
+    dense_mats = ut_dense(ut_vecs, 1)
     assert np.shape(dense_mats) == (3, 3, 2)
 
     # outputs are symmetric dense matrices with the 3 original entries
@@ -33,5 +32,20 @@ def test_split_df_equally():
     assert (fifth_chunk["col1"].to_numpy() == np.linspace(25, 29, 5)).all() == True
 
     
-    
-        
+def test_filter_by_chrmlen():
+
+    df1 = pd.DataFrame(
+        [["chrX", 3, 8], ["chr1", 4, 5], ["chrX", 1, 5]],
+        columns=["chrom", "start", "end"],
+    )
+
+    # get the same result with chrmsizes provided as dict or via StringIO
+
+    # one interval is dropped for exceeding chrX len of 7
+    assert filter_by_chrmlen(df1, {"chr1": 10, "chrX": 7}, 0).shape == (2, 3)
+
+    # both chrX intervals are dropped if the buffer_bp are increased
+    assert filter_by_chrmlen(df1, {"chr1": 10, "chrX": 7}, 3).shape == (1, 3)
+
+    # no intervals remain if all of chr1 is excluded as well
+    assert filter_by_chrmlen(df1, {"chr1": 10, "chrX": 7}, 5).shape == (0, 3)
