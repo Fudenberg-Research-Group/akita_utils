@@ -545,3 +545,19 @@ def read_jaspar_to_numpy(
     if motif.shape[1] != 4:
         raise ValueError("motif returned should be have n_positions x 4 bases")
     return motif
+
+
+# dataframe utils
+def split_df_equally(df, num_chunks, chunk_idx):
+    
+    df_len = len(df)    # but indices are 0 -> 198
+
+    chunks_bounds = np.linspace(
+        0, df_len, num_chunks + 1, dtype="int"
+    )
+
+    df_chunk = df.loc[
+        chunks_bounds[chunk_idx] : (chunks_bounds[chunk_idx + 1]-1), :
+    ]
+    
+    return df_chunk
