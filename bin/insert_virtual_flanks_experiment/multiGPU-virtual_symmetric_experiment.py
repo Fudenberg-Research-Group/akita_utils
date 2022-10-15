@@ -186,7 +186,7 @@ def main():
     parser.add_option(
         "--time",
         dest="time",
-        default="1-0:0:0",
+        default="01:00:00",
         help="time to run job. [Default: %default]",
     )
     parser.add_option(

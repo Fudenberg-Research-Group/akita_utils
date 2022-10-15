@@ -91,6 +91,9 @@ from basenji import seqnn
 from basenji import stream
 from basenji import dna_io
 
+# import os
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+
 from akita_utils import ut_dense, split_df_equally
 
 ################################################################################
