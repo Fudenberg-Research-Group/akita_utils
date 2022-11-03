@@ -40,3 +40,16 @@ python multiGPU-virtual_experiment.py /project/fudenber_735/tensorflow_models/ak
 ```
 python multiGPU-virtual_experiment.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 /home1/smaruj/akita_utils/bin/insert_virtual_flanks_experiment/data/2022-10-10_flank0-30_200motifs_divergent.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o 2022-10-19_flank0-30_200motifs_divergent --head-index 1 --model-index 1 --batch-size 4  --stats SCD,INS-16,INS-64,INS-256 -p 7 --max_proc 7
 ```
+
+## grid-plotting
+(creating a grid of plots for one sequence and non-consecutive list of flanks)
+
+- grid-plotting version of generate_symmetric_flank_df.py
+```
+python grid-plotting_generate_symmetric_flank_df.py --seq-index 11 --backgrounds-indices 1,2 --orientation-string ">>" --all-permutations --filename 11_customize_test_test --verbose
+```
+
+- grid-plotting version of virtual_experiment.py
+```
+python grid_plotting_virtual_symmetric_experiment.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 11_customize_test_test.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o 11_customize_test_test --head-index 1 --model-index 1 --batch-size 4
+```
