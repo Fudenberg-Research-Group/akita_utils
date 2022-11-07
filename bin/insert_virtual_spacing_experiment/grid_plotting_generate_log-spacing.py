@@ -112,7 +112,7 @@ def main():
     parser.add_option(
         "--spacer-list",
         dest="spacer_list",
-        default="0,500,1000,2000,3500",
+        default="0,49980,99980,199980,349980",
         type="string",
         help="Specify flanks to be tested",
     )
