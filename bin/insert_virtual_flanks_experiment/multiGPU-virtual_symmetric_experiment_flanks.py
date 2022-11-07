@@ -16,7 +16,7 @@
 # =========================================================================
 
 """
-multiGPU-virtual_symmetric_experiment.py
+multiGPU-virtual_symmetric_experiment_flanks.py
 Derived from akita_motif_scd_multi.py (https://github.com/Fudenberg-Research-Group/akita_utils/blob/main/bin/disrupt_genomic_boundary_ctcfs/akita_motif_scd_multi.py)
 
 Compute scores for motifs in a TSV file, using multiple processes.
@@ -239,7 +239,7 @@ def main():
                 # cmd += "conda activate basenji;"      #changed
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
 
-            cmd += " ${SLURM_SUBMIT_DIR}/virtual_symmetric_experiment.py %s %s %d" % (
+            cmd += " ${SLURM_SUBMIT_DIR}/virtual_symmetric_experiment_flanks.py %s %s %d" % (
                 options_pkl_file,
                 " ".join(args),
                 pi,
