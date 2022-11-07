@@ -6,19 +6,19 @@
         ```
     - Akita predictions
 
-        - >>
+        - orientation: right
         ```
         python multiGPU-virtual_experiment.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 /home1/smaruj/akita_utils/bin/insert_virtual_flanks_experiment/data/2022-10-10_flank0-30_200motifs_right.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o 2022-10-19_flank0-30_200motifs_right --head-index 1 --model-index 1 --batch-size 4  --stats SCD,INS-16,INS-64,INS-256 -p 7 --max_proc 7
         ```
-        - <<
+        - orientation: left
         ```
         python multiGPU-virtual_experiment.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 /home1/smaruj/akita_utils/bin/insert_virtual_flanks_experiment/data/2022-10-10_flank0-30_200motifs_left.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o 2022-10-19_flank0-30_200motifs_left --head-index 1 --model-index 1 --batch-size 4  --stats SCD,INS-16,INS-64,INS-256 -p 7 --max_proc 7
         ```
-        - ><
+        - orientation: convergent
         ```
         python multiGPU-virtual_experiment.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 /home1/smaruj/akita_utils/bin/insert_virtual_flanks_experiment/data/2022-10-10_flank0-30_200motifs_convergent.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o 2022-10-19_flank0-30_200motifs_convergent --head-index 1 --model-index 1 --batch-size 4  --stats SCD,INS-16,INS-64,INS-256 -p 7 --max_proc 7
         ```
-        - <>
+        - orientation: divergent
         ```
         python multiGPU-virtual_experiment.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 /home1/smaruj/akita_utils/bin/insert_virtual_flanks_experiment/data/2022-10-10_flank0-30_200motifs_divergent.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o 2022-10-19_flank0-30_200motifs_divergent --head-index 1 --model-index 1 --batch-size 4  --stats SCD,INS-16,INS-64,INS-256 -p 7 --max_proc 7
         ```
