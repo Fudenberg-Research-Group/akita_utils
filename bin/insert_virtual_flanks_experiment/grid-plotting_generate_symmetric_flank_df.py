@@ -179,7 +179,6 @@ def main():
     all_permutations = options.all_permutations
 
     seq_index = int(options.seq_index)
-
     print("chosen seq_index: ", seq_index)
 
     flanks_list = [int(i) for i in options.flank_list.split(",")]

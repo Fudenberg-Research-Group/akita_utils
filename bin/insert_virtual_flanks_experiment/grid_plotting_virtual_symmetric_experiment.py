@@ -403,7 +403,7 @@ def write_snp(
     
     for target_ind in range(ref_preds.shape[1]):
         scd_out[f"pred_h{head_index}_m{model_index}_t{target_ind}"][si] = ref_preds[:,target_ind].astype("float16")
-ls    
+  
 def _insul_diamond_central(mat, window=10):
     """calculate insulation in a diamond around the central pixel"""
     N = mat.shape[0]
