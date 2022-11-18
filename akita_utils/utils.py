@@ -291,77 +291,79 @@ def filter_by_rmsk(
 def filter_sites_by_score(
     sites,
     score_key="SCD",
-    weak_thresh_pct=1,  # don't use sites weaker than this, might be artifacts
-    weak_num=500,
-    strong_thresh_pct=99,  # don't use sites stronger than this, might be artifacts
-    strong_num=500,
-):
-    """Chooses a specified number of strong and weak sites exluding low and/or high outliers which may contain more artifacts."""
-    if (weak_num < 1) or (strong_num < 1):
-        raise ValueError("must select a postive number of sites")
-    strong_thresh = np.percentile(sites[score_key].values, strong_thresh_pct)
-    weak_thresh = np.percentile(sites[score_key].values, weak_thresh_pct)
-    weak_sites = (
-        sites.loc[sites[score_key] > weak_thresh]
-        .copy()
-        .sort_values(score_key)[:weak_num]
-    )
-    strong_sites = (
-        sites.loc[sites[score_key] < strong_thresh]
-        .copy()
-        .sort_values(score_key)[-strong_num:][::-1]
-    )
-    strong_sites.reset_index(inplace=True, drop=True)
-    weak_sites.reset_index(inplace=True, drop=True)
-    return strong_sites, weak_sites
+    upper_threshold=100,
+    lower_threshold=0,
+    mode="head",
+    num_sites=None,    # if num_sites == None -> return all filtered sites
+    ):
+    
+    if mode not in ("head", "tail", "random"):
+        raise ValueError("a mode has to be one from: head, tail, random")
+    
+    upper_thresh = np.percentile(sites[score_key].values, upper_threshold)
+    lower_thresh = np.percentile(sites[score_key].values, lower_threshold)
+        
+    filtered_sites = (sites[(sites[score_key] >= lower_thresh) & (sites[score_key] <= upper_thresh)].copy().sort_values(score_key, ascending=False))
+    
+    if num_sites != None:
+        assert num_sites <= len(filtered_sites), "length of dataframe is smaller than requested number of sites, change contraints"
+        
+        if mode == "head":
+            filtered_sites = filtered_sites[:num_sites]
+        elif mode == "tail":
+            filtered_sites = filtered_sites[-num_sites:]
+        else:
+            filtered_sites = filtered_sites.sample(n=num_sites)
+    
+    return filtered_sites
 
 
-def prepare_insertion_tsv(
-    h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
-    score_key="SCD",
-    threshold_all_ctcf=5,  # reasonable cutoff for ctcf sites with impactful genomic SCD
-    pad_flank=60,  # how much flanking sequence around the sites to include
-    weak_thresh_pct=1,  # don't use sites weaker than this, might be artifacts
-    weak_num=500,
-    strong_thresh_pct=99,  # don't use sites stronger than this, might be artifacts
-    strong_num=500,
-    save_tsv=None,  # optional filename to save a tsv
-):
-    """creates a tsv with strong followed by weak sequences, which can be used as input to akita_insert.py or akita_flat_map.py"""
+# def prepare_insertion_tsv(
+#     h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
+#     score_key="SCD",
+#     threshold_all_ctcf=5,  # reasonable cutoff for ctcf sites with impactful genomic SCD
+#     pad_flank=60,  # how much flanking sequence around the sites to include
+#     weak_thresh_pct=1,  # don't use sites weaker than this, might be artifacts
+#     weak_num=500,
+#     strong_thresh_pct=99,  # don't use sites stronger than this, might be artifacts
+#     strong_num=500,
+#     save_tsv=None,  # optional filename to save a tsv
+# ):
+#     """creates a tsv with strong followed by weak sequences, which can be used as input to akita_insert.py or akita_flat_map.py"""
 
-    sites = filter_boundary_ctcfs_from_h5(
-        h5_dirs=h5_dirs, score_key=score_key, threshold_all_ctcf=threshold_all_ctcf
-    )
+#     sites = filter_boundary_ctcfs_from_h5(
+#         h5_dirs=h5_dirs, score_key=score_key, threshold_all_ctcf=threshold_all_ctcf
+#     )
 
-    strong_sites, weak_sites = filter_sites_by_score(
-        sites,
-        score_key=score_key,
-        weak_thresh_pct=weak_thresh_pct,
-        weak_num=weak_num,
-        strong_thresh_pct=strong_thresh_pct,
-        strong_num=strong_num,
-    )
+#     strong_sites, weak_sites = filter_sites_by_score(
+#         sites,
+#         score_key=score_key,
+#         weak_thresh_pct=weak_thresh_pct,
+#         weak_num=weak_num,
+#         strong_thresh_pct=strong_thresh_pct,
+#         strong_num=strong_num,
+#     )
 
-    site_df = pd.concat([strong_sites.copy(), weak_sites.copy()])
-    seq_coords_df = (
-        site_df[["chrom", "start_2", "end_2", "strand_2", score_key]]
-        .copy()
-        .rename(
-            columns={
-                "start_2": "start",
-                "end_2": "end",
-                "strand_2": "strand",
-                score_key: "genomic_" + score_key,
-            }
-        )
-    )
-    seq_coords_df.reset_index(drop=True, inplace=True)
-    seq_coords_df.reset_index(inplace=True)
-    seq_coords_df = bioframe.expand(seq_coords_df, pad=pad_flank)
-    print("df prepared")
-    if save_tsv is not None:
-        seq_coords_df.to_csv(save_tsv, sep="\t", index=False)
-    return seq_coords_df
+#     site_df = pd.concat([strong_sites.copy(), weak_sites.copy()])
+#     seq_coords_df = (
+#         site_df[["chrom", "start_2", "end_2", "strand_2", score_key]]
+#         .copy()
+#         .rename(
+#             columns={
+#                 "start_2": "start",
+#                 "end_2": "end",
+#                 "strand_2": "strand",
+#                 score_key: "genomic_" + score_key,
+#             }
+#         )
+#     )
+#     seq_coords_df.reset_index(drop=True, inplace=True)
+#     seq_coords_df.reset_index(inplace=True)
+#     seq_coords_df = bioframe.expand(seq_coords_df, pad=pad_flank)
+#     print("df prepared")
+#     if save_tsv is not None:
+#         seq_coords_df.to_csv(save_tsv, sep="\t", index=False)
+#     return seq_coords_df
 
 
 def _generate_paired_core_flank_df(site_df, pad_core=0, pad_flank=60):
@@ -668,53 +670,58 @@ def split_df_equally(df, num_chunks, chunk_idx):
 
 
 # insertion experiments utils
-def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open, test=False):
+def _insert_casette(seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string):
+        
+    seq_length = seq_1hot.shape[0]
+    insert_bp = len(seq_1hot_insertion)
+    num_inserts = len(orientation_string)
+
+    insert_plus_spacer_bp = insert_bp + 2 * spacer_bp
+    multi_insert_bp = num_inserts * insert_plus_spacer_bp
+    insert_start_bp = seq_length // 2 - multi_insert_bp // 2
+    
+    output_seq = seq_1hot.copy()
+    insertion_starting_positions = []
+    for i in range(num_inserts):
+        offset = insert_start_bp + i * insert_plus_spacer_bp + spacer_bp
+
+        insertion_starting_positions.append(offset)
+
+        for orientation_arrow in orientation_string[i]:
+            if orientation_arrow == ">":
+                output_seq[offset : offset + insert_bp] = seq_1hot_insertion
+            else:
+                output_seq[offset : offset + insert_bp] = dna_io.hot1_rc(seq_1hot_insertion)
+
+    return output_seq
+
+            
+# insertion experiments utils
+def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
     """ sequence generator for making insertions from tsvs
         construct an iterator that yields a one-hot encoded sequence
         that can be used as input to akita via PredStreamGen
     """
-    
-    if test:
-        seq_length = 1310720
+        
+    list_seq_1hot = []
     
     for s in seq_coords_df.itertuples():
-
+        
         flank_bp = s.flank_bp
         spacer_bp = s.spacer_bp
-        num_inserts = len(s.orientation)
-
+        orientation_string = s.orientation
+                
         seq_1hot_insertion = dna_io.dna_1hot(
             genome_open.fetch(s.chrom, s.start - flank_bp, s.end + flank_bp).upper()
         )
+        
         if s.strand == "-":
             seq_1hot_insertion = dna_io.hot1_rc(seq_1hot_insertion)
             # now, all motifs are standarized to this orientation ">"
 
         seq_1hot = background_seqs[s.background_index].copy()
-        insert_bp = len(seq_1hot_insertion)
-        insert_plus_spacer_bp = insert_bp + 2 * spacer_bp
-        multi_insert_bp = num_inserts * insert_plus_spacer_bp
-        insert_start_bp = seq_length // 2 - multi_insert_bp // 2
-
-        insertion_starting_positions = []
-
-        for i in range(num_inserts):
-            offset = insert_start_bp + i * insert_plus_spacer_bp + spacer_bp
-
-            insertion_starting_positions.append(offset)
-
-            for orientation_arrow in s.orientation[i]:
-                if orientation_arrow == ">":
-                    seq_1hot[offset : offset + insert_bp] = seq_1hot_insertion
-                else:
-                    seq_1hot[offset : offset + insert_bp] = dna_io.hot1_rc(seq_1hot_insertion)
-
-        if test:
-            yield insertion_starting_positions
-        else:
-            yield seq_1hot
-
-            
-            
+        seq_1hot = _insert_casette(seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string)
+        
+        yield seq_1hot          
             
 

@@ -3,6 +3,7 @@ import numpy as np
 from akita_utils import filter_by_chrmlen, ut_dense, split_df_equally, symmertic_insertion_seqs_gen
 from io import StringIO
 import pysam
+from basenji import dna_io
 
 def test_ut_dense():
 
