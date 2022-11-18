@@ -37,6 +37,8 @@ import tensorflow as tf
 if tf.__version__[0] == '1':
   tf.compat.v1.enable_eager_execution()
 gpus = tf.config.experimental.list_physical_devices('GPU')
+
+print(tf.config.list_physical_devices('GPU'))
 #for gpu in gpus:
 #  tf.config.experimental.set_memory_growth(gpu, True)
 print(gpus)
@@ -197,7 +199,7 @@ def main():
   super_set = []
   error = 0.001
 
-  for gc in np.percentile(df['GC'].dropna().values, np.linspace(1,99,100)):
+  for gc in np.percentile(df['GC'].dropna().values, np.linspace(1,99,)15):
     for i in range(df.shape[0]):
         if gc-error <= df['GC'].values[i] <= gc+error:
             super_set += [i]
@@ -398,8 +400,8 @@ def main():
     kde_1 = pd.DataFrame(random_masking, columns=["score"])
     kde_2 = pd.DataFrame(motif_masking, columns=["score"])
     kde_3 = pd.DataFrame(all_random, columns=["score"])
-    sns.kdeplot(data=kde_1, x="score", bw_adjust=.2, label='random masking', fill=True)  
-    sns.kdeplot(data=kde_2, x="score", bw_adjust=.2, label='motif masking', fill=True)    
+    sns.kdeplot(data=kde_1, x="score", bw_adjust=.2, label='randomly shuffle motif', fill=True)  
+    sns.kdeplot(data=kde_2, x="score", bw_adjust=.2, label='manually shuffle motif', fill=True)    
     sns.kdeplot(data=kde_3, x="score", bw_adjust=.2, label='no mask', fill=True)
     plt.legend()
     plt.savefig(f'{plot_dir}/muation_method_scores_results.pdf',dpi=300)
@@ -419,9 +421,9 @@ def main():
     kde_1 = pd.DataFrame(flat_pred_time_no_mask, columns=["success time (s)"])  
     kde_2 = pd.DataFrame(flat_pred_time_motif_masking, columns=["success time (s)"])
     kde_3 = pd.DataFrame(flat_pred_time_random_masking, columns=["success time (s)"])  
-    sns.kdeplot(data=kde_1, x="success time (s)", bw_adjust=.2, label='no mask', fill=True)    
-    sns.kdeplot(data=kde_2, x="success time (s)", bw_adjust=.2, label='motif mask', fill=True)  
-    sns.kdeplot(data=kde_3, x="success time (s)", bw_adjust=.2, label='random motif mask', fill=True)  
+    sns.kdeplot(data=kde_1, x="success time (s)", bw_adjust=.2, label='all random', fill=True)    
+    sns.kdeplot(data=kde_2, x="success time (s)", bw_adjust=.2, label='manually shuffle motif', fill=True) 
+    sns.kdeplot(data=kde_3, x="success time (s)", bw_adjust=.2, label='randomly shuffle motif', fill=True)  
     plt.legend()
     plt.savefig(f'{plot_dir}/muation_method_timing_results.pdf',dpi=300)
     plt.close()
