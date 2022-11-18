@@ -199,7 +199,7 @@ def main():
   super_set = []
   error = 0.001
 
-  for gc in np.percentile(df['GC'].dropna().values, np.linspace(1,99,)15):
+  for gc in np.percentile(df['GC'].dropna().values, np.linspace(1,99,10)):
     for i in range(df.shape[0]):
         if gc-error <= df['GC'].values[i] <= gc+error:
             super_set += [i]
