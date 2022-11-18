@@ -8,20 +8,16 @@ from basenji import dna_io
 from io import StringIO
 import pysam
 import time 
+from scipy.stats import spearmanr, pearsonr
+import scipy.signal
 
 
 ### numeric utilites
-
-from scipy.stats import spearmanr, pearsonr
-
 
 def absmaxND(a, axis=None):
     amax = a.max(axis)
     amin = a.min(axis)
     return np.where(-amin > amax, amin, amax)
-
-
-import scipy.signal
 
 
 def smooth(y, box_pts):
