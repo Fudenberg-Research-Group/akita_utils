@@ -273,12 +273,11 @@ def main():
         print("True length of dataframe: ", observed_df_len, "\n")
 
     if options.csv:
-        df_with_flanks_spacers.to_csv(f"./{options.filename}.csv", index=True)
+        df_with_flanks_spacers.to_csv(f"./{options.filename}.csv", index=False)
 
     if options.tsv:
         df_with_flanks_spacers.to_csv(
-            f"./{options.filename}.tsv", sep="\t", index=True
-        )
+            f"./{options.filename}.tsv", sep="\t", index=False)
 
 
 #################################################################

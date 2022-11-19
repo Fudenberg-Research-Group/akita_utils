@@ -225,16 +225,22 @@ def main():
         exclude_window = ctcf_exclude_window,
         verbose=True)
     
-    strong_sites, weak_sites = akita_utils.filter_sites_by_score(
+    strong_sites, weak_sites = filter_sites_by_score(
         sites,
         score_key=score_key,
         weak_thresh_pct=weak_thresh_pct,
-        weak_num=options.num_strong_motifs,
+        weak_num=options.num_weak_motifs,
         strong_thresh_pct=strong_thresh_pct,
         strong_num=options.num_strong_motifs,
     )
-
-    site_df = pd.concat([strong_sites.copy(), weak_sites.copy()])
+    
+    if options.num_weak_motifs == 0:
+        site_df = strong_sites.copy()
+    elif options.num_strong_motifs == 0:
+        site_df = weak_sites.copy()
+    else:
+        site_df = pd.concat([strong_sites.copy(), weak_sites.copy()])
+    
     seq_coords_df = (
         site_df[["chrom", "start_2", "end_2", "strand_2", score_key]]
         .copy()
@@ -247,9 +253,11 @@ def main():
             }
         )
     )
+    
     seq_coords_df.reset_index(drop=True, inplace=True)
     seq_coords_df.reset_index(inplace=True)
     
+    print(len(seq_coords_df))
     
     # adding orientation, background index, information about flanks and spacers
     df_with_orientation = add_orientation(
@@ -411,7 +419,13 @@ def filter_by_ctcf(
     
 
 def validate_df_lenght(num_strong, num_weak, num_orientations, num_backgrounds, num_spacings, df):
-        
+    
+    print("num_strong: ", num_strong)
+    print("num_weak: ", num_weak)
+    print("num_orientations: ", num_orientations)
+    print("num_backgrounds: ", num_backgrounds)
+    print("num_spacings: ", num_spacings)
+    
     expected_df_len = (
             (num_strong + num_weak)
             * num_orientations
@@ -419,7 +433,10 @@ def validate_df_lenght(num_strong, num_weak, num_orientations, num_backgrounds, 
             * num_spacings
         )
     observed_df_len = len(df)
-
+    
+    print("expected_df_len: ", expected_df_len)
+    print("observed_df_len: ", observed_df_len)
+    
     assert expected_df_len == observed_df_len
     
     return (expected_df_len, observed_df_len)
@@ -540,6 +557,41 @@ def add_background(seq_coords_df, background_indices_list):
     seq_coords_df["background_index"] = background_ls
 
     return seq_coords_df
+
+
+def filter_sites_by_score(
+    sites,
+    score_key="SCD",
+    weak_thresh_pct=1,  # don't use sites weaker than this, might be artifacts
+    weak_num=500,
+    strong_thresh_pct=99,  # don't use sites stronger than this, might be artifacts
+    strong_num=500,
+):
+    """Chooses a specified number of strong and weak sites exluding low and/or high outliers which may contain more artifacts."""
+    # if weak_num < 1) or (strong_num < 1):
+    #     raise ValueError("must select a postive number of sites")
+    strong_thresh = np.percentile(sites[score_key].values, strong_thresh_pct)
+    weak_thresh = np.percentile(sites[score_key].values, weak_thresh_pct)
+    weak_sites = (
+        sites.loc[sites[score_key] > weak_thresh]
+        .copy()
+        .sort_values(score_key)[:weak_num]
+    )
+    strong_sites = (
+        sites.loc[sites[score_key] < strong_thresh]
+        .copy()
+        .sort_values(score_key)[-strong_num:][::-1]
+    )
+    if weak_num == 0:
+        strong_sites.reset_index(inplace=True, drop=True)
+        return strong_sites, None
+    elif strong_num == 0:
+        weak_sites.reset_index(inplace=True, drop=True)
+        return None, weak_sites
+    else:
+        strong_sites.reset_index(inplace=True, drop=True)
+        weak_sites.reset_index(inplace=True, drop=True)
+        return strong_sites, weak_sites
 
 
 ################################################################################
