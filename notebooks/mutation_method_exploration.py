@@ -197,7 +197,7 @@ def main():
   #################################################################
   # Generating a sample for down stream analysis
   super_set = []
-  error = 0.001
+  error = 0.01
 
   for gc in np.percentile(df['GC'].dropna().values, np.linspace(1,99,150)):
     for i in range(df.shape[0]):
