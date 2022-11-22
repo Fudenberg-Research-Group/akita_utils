@@ -193,13 +193,13 @@ def main():
   dframe = dframe.reset_index()
   dframe.rename(columns = {'index' : 'chrom', 'length':'start'}, inplace = True)
   df = bioframe.frac_gc(dframe, bioframe.load_fasta(options.genome_fasta), return_input=True)
-
+  print('finished fetching chrom data')
   #################################################################
   # Generating a sample for down stream analysis
   super_set = []
   error = 0.001
 
-  for gc in np.percentile(df['GC'].dropna().values, np.linspace(1,99,10)):
+  for gc in np.percentile(df['GC'].dropna().values, np.linspace(1,99,150)):
     for i in range(df.shape[0]):
         if gc-error <= df['GC'].values[i] <= gc+error:
             super_set += [i]
@@ -208,6 +208,8 @@ def main():
   super_set = list(set(super_set)); print(f'Whole distribution: {super_set}')
   sample_set = super_set; print(f'Sampled datapoints: {sample_set}')
   new_dataframe = df.iloc[[ind for ind in set(sample_set)]]  
+
+  print('finished creating sample dataframe')
   #################################################################
   # calculating initial scores
     
@@ -346,7 +348,7 @@ def main():
                                                                             batch_size=options.batch_size,
                                                                             masking=0,
                                                                             timing = True)
-
+  print('first expt done')
 
   scores_storage_motif_masking, flat_seqs_motif_masking = mutation_search( seqnn_model=seqnn_model,
                                                                             genome_fasta=options.genome_fasta,
@@ -404,6 +406,7 @@ def main():
     sns.kdeplot(data=kde_2, x="score", bw_adjust=.2, label='manually shuffle motif', fill=True)    
     sns.kdeplot(data=kde_3, x="score", bw_adjust=.2, label='no mask', fill=True)
     plt.legend()
+    plt.title(f'Total number of sample seqs {len(sample_set)}')
     plt.savefig(f'{plot_dir}/muation_method_scores_results.pdf',dpi=300)
     plt.close()
     
@@ -425,6 +428,7 @@ def main():
     sns.kdeplot(data=kde_2, x="success time (s)", bw_adjust=.2, label='manually shuffle motif', fill=True) 
     sns.kdeplot(data=kde_3, x="success time (s)", bw_adjust=.2, label='randomly shuffle motif', fill=True)  
     plt.legend()
+    plt.title(f'Total number of sample seqs {len(sample_set)}')
     plt.savefig(f'{plot_dir}/muation_method_timing_results.pdf',dpi=300)
     plt.close()
 

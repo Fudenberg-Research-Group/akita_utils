@@ -191,62 +191,86 @@ def main():
   dframe = dframe.reset_index()
   dframe.rename(columns = {'index' : 'chrom', 'length':'start'}, inplace = True)
   df = bioframe.frac_gc(dframe, bioframe.load_fasta(options.genome_fasta), return_input=True)
-
+  print('finished fetching chrom data')
   #################################################################
   # Generating a sample for down stream analysis
 
   super_set = []
   error = 0.01
 
-  for gc in np.percentile(df['GC'].dropna().values, np.linspace(1,99,50)):
+  for gc in np.percentile(df['GC'].dropna().values, np.linspace(1,99,500)):
     for i in range(df.shape[0]):
         if gc-error <= df['GC'].values[i] <= gc+error:
             super_set += [i]
             break
 
   super_set = list(set(super_set)) 
-  sample_set = [28]#super_set[2:3]
-
-  #################################################################
-  # Making predictions for the sampled data
+  sample_set = super_set
+  print('new')
+#   #################################################################
+#   # Making predictions for the sampled data
     
-  predictions=[]
+    
+    
+#   # initialize predictions stream
 
-  for ind in set(sample_set):
-        chrom, start, end, gc = df.iloc[ind][['chrom','start','end','GC']]
-        genome_open = pysam.Fastafile(options.genome_fasta)
-        seq = genome_open.fetch(chrom, start, end).upper()
-        seq_1hot = dna_io.dna_1hot(seq)
-        predictions.append(seq_1hot)
+#   def seq_gen(df=df, sample_set=sample_set, genome_open):
+#         for ind in set(sample_set):
+#             chrom, start, end, gc = df.iloc[ind][['chrom','start','end','GC']]
+#             # genome_open = pysam.Fastafile(options.genome_fasta)
+#             seq = genome_open.fetch(chrom, start, end).upper()
+#             seq_1hot = dna_io.dna_1hot(seq)
+#         yield seq_1hot
+        
+        
+#   preds_stream = stream.PredStreamGen(seqnn_model, seq_gen(df, sample_set, genome_open=pysam.Fastafile(options.genome_fasta)), batch_size)
 
-  predictions = np.array(predictions)
-  predictions = seqnn_model.predict(predictions, batch_size=6)#len(sample_set)
+#   for ind in set(sample_set):
+#         # get predictions
+#         preds = preds_stream[ind]
+
+#     genome_open.close()
+#     scd_out.close()  
+
+    
+    
+# #   predictions=[]
+
+# #   for ind in set(sample_set):
+# #         chrom, start, end, gc = df.iloc[ind][['chrom','start','end','GC']]
+# #         genome_open = pysam.Fastafile(options.genome_fasta)
+# #         seq = genome_open.fetch(chrom, start, end).upper()
+# #         seq_1hot = dna_io.dna_1hot(seq)
+# #         predictions.append(seq_1hot)
+
+# #   predictions = np.array(predictions)
+# #   predictions = seqnn_model.predict(predictions, batch_size=6)#len(sample_set)
 
   #################################################################
   # For comparison further down
     
-  shuffle_set = [8] # shuffling basepairs to sample for comparison
-  scores_thresh_set = [3500,5500,7500]
+  shuffle_set = [4,8] # shuffling basepairs to sample for comparison
+  scores_thresh_set = [5500,7500]
     
   #################################################################
   # calculating initial scores
     
-  # scores_before = {}
-  # for gc in sample_set:
-  #   new_dataframe = df.iloc[[gc]]
-  #   for k in shuffle_set:
-  #       print(gc,k)
-  #       scores_before[gc,k] = akita_utils.custom_calculate_scores(seqnn_model=seqnn_model, 
-  #                                                       genome_fasta=options.genome_fasta, 
-  #                                                       seq_length=seq_length, 
-  #                                                       dataframe=new_dataframe, 
-  #                                                       max_iters = options.max_iters, 
-  #                                                       batch_size = options.batch_size, 
-  #                                                       shuffle_k = k, 
-  #                                                       ctcf_thresh = options.ctcf_thresh, 
-  #                                                       scores_thresh = options.scores_thresh, 
-  #                                                       scores_pixelwise_thresh = options.scores_pixelwise_thresh,
-  #                                                       )
+#   scores_before = {}
+#   for gc in sample_set:
+#     new_dataframe = df.iloc[[gc]]
+#     for k in shuffle_set:
+#         print(gc,k)
+#         scores_before[gc,k] = akita_utils.custom_calculate_scores(seqnn_model=seqnn_model, 
+#                                                         genome_fasta=options.genome_fasta, 
+#                                                         seq_length=seq_length, 
+#                                                         dataframe=new_dataframe, 
+#                                                         max_iters = options.max_iters, 
+#                                                         batch_size = options.batch_size, 
+#                                                         shuffle_k = k, 
+#                                                         ctcf_thresh = options.ctcf_thresh, 
+#                                                         scores_thresh = options.scores_thresh, 
+#                                                         scores_pixelwise_thresh = options.scores_pixelwise_thresh,
+#                                                         )
     
     
   #################################################################  
@@ -315,7 +339,7 @@ def main():
         for k in shuffle_set:
             
             ax = fig.add_subplot(spec[sample_set.index(ind),shuffle_set.index(k)])
-            # temp_scores_before = []
+            temp_scores_before = []
             temp_scores_shuffle_after = []
             # for i in scores_before[ind,k]:
             #     temp_scores_before =+ i
@@ -326,7 +350,7 @@ def main():
             # kde_df_before = pd.DataFrame(temp_scores_before, columns=["score"])
             sns.kdeplot(data=kde_df_after, x="score", bw_adjust=.3, label='after', fill=True)
             # sns.kdeplot(data=kde_df_before, x="score", bw_adjust=.3, label='before', fill=True)
-            ax.legend()
+            # ax.legend()
             plt.title(f'GC_{gc} k_{k}')
     plt.savefig(f'{plot_dir}/shuffle_parameter_results.pdf',dpi=300)
     plt.close()
@@ -339,7 +363,7 @@ def main():
         for score in scores_thresh_set:
             
             ax = fig.add_subplot(spec[sample_set.index(ind),scores_thresh_set.index(score)])
-            # temp_scores_before = []
+            temp_scores_before = []
             temp_scores_thresh_after = []
 
             # for i in scores_before[ind,8]:
@@ -351,8 +375,8 @@ def main():
             # kde_df_before = pd.DataFrame(temp_scores_before, columns=["score"])
             sns.kdeplot(data=kde_df_after, x="score", bw_adjust=.3, fill=True)
             # sns.kdeplot(data=kde_df_before, x="score", bw_adjust=.3, label='permutation', fill=True)
-            ax.legend()
-            plt.title(f'GC_{gc} scores_thresh_{score}')       
+            # ax.legend()
+            plt.title(f'GC_{gc} scores_thresh_{score}_sample size_{len(sample_set)}')       
     plt.savefig(f'{plot_dir}/masking_threshold_parameter_results.pdf',dpi=300)
     plt.close()
 
