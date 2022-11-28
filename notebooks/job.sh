@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem-per-cpu=15G
 # SBATCH --mem=100GB
-#SBATCH --time=15:00:00
+#SBATCH --time=24:00:00
 
 # SBATCH --account=fudenber_735
 

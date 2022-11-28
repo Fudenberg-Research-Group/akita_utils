@@ -196,7 +196,7 @@ def main():
   # Generating a sample for down stream analysis
 
   super_set = []
-  error = 0.01
+  error = 0.001
 
   for gc in np.percentile(df['GC'].dropna().values, np.linspace(1,99,500)):
     for i in range(df.shape[0]):
@@ -207,50 +207,12 @@ def main():
   super_set = list(set(super_set)) 
   sample_set = super_set
   print('new')
-#   #################################################################
-#   # Making predictions for the sampled data
-    
-    
-    
-#   # initialize predictions stream
-
-#   def seq_gen(df=df, sample_set=sample_set, genome_open):
-#         for ind in set(sample_set):
-#             chrom, start, end, gc = df.iloc[ind][['chrom','start','end','GC']]
-#             # genome_open = pysam.Fastafile(options.genome_fasta)
-#             seq = genome_open.fetch(chrom, start, end).upper()
-#             seq_1hot = dna_io.dna_1hot(seq)
-#         yield seq_1hot
-        
-        
-#   preds_stream = stream.PredStreamGen(seqnn_model, seq_gen(df, sample_set, genome_open=pysam.Fastafile(options.genome_fasta)), batch_size)
-
-#   for ind in set(sample_set):
-#         # get predictions
-#         preds = preds_stream[ind]
-
-#     genome_open.close()
-#     scd_out.close()  
-
-    
-    
-# #   predictions=[]
-
-# #   for ind in set(sample_set):
-# #         chrom, start, end, gc = df.iloc[ind][['chrom','start','end','GC']]
-# #         genome_open = pysam.Fastafile(options.genome_fasta)
-# #         seq = genome_open.fetch(chrom, start, end).upper()
-# #         seq_1hot = dna_io.dna_1hot(seq)
-# #         predictions.append(seq_1hot)
-
-# #   predictions = np.array(predictions)
-# #   predictions = seqnn_model.predict(predictions, batch_size=6)#len(sample_set)
 
   #################################################################
   # For comparison further down
     
   shuffle_set = [4,8] # shuffling basepairs to sample for comparison
-  scores_thresh_set = [5500,7500]
+  scores_thresh_set = [5500,7500] # thresholds to sample for comparison
     
   #################################################################
   # calculating initial scores
