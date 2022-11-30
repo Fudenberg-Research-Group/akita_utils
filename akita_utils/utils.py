@@ -8,6 +8,7 @@ import glob
 from io import StringIO
 import h5py
 import random
+import basenji
 from basenji import dna_io
 from io import StringIO
 import pysam
