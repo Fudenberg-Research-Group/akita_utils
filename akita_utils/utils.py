@@ -51,7 +51,7 @@ def smooth(y, box_pts):
 #         set_diag(z, np.nan, i)
 #     return z + z.T
 
-=======
+# =======
 def ut_dense(preds_ut, diagonal_offset):
     """Construct symmetric dense prediction matrices from upper triangular vectors.
 
