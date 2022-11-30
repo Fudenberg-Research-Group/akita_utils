@@ -23,19 +23,20 @@ install:          ## Install the project in dev mode.
 	@if [ "$(USING_POETRY)" ]; then poetry install && exit; fi
 	@echo "Don't forget to run 'make virtualenv' if you got errors."
 	$(ENV_PREFIX)pip install -r requirements.txt
+	$(ENV_PREFIX)pip install -r requirements-test.txt
 	$(ENV_PREFIX)pip install -e . --no-deps
 
 .PHONY: fmt
 fmt:              ## Format code using black & isort.
 	$(ENV_PREFIX)isort akita_utils/
-	$(ENV_PREFIX)black -l 79 akita_utils/
-	$(ENV_PREFIX)black -l 79 tests/
+	$(ENV_PREFIX)black akita_utils/
+	$(ENV_PREFIX)black tests/
 
 .PHONY: lint
 lint:             ## Run pep8, black, mypy linters.
 	$(ENV_PREFIX)flake8 akita_utils/
-	$(ENV_PREFIX)black -l 79 --check akita_utils/
-	$(ENV_PREFIX)black -l 79 --check tests/
+	$(ENV_PREFIX)black --check akita_utils/
+	$(ENV_PREFIX)black --check tests/
 	$(ENV_PREFIX)mypy --ignore-missing-imports akita_utils/
 
 .PHONY: test
