@@ -42,7 +42,7 @@ def create_flat_seqs(
             
         genome_open = pysam.Fastafile(genome_fasta)
         seq = genome_open.fetch(chrom, start, end).upper()
-        seq_1hot = dna_io.dna_1hot(seq)
+        seq_1hot = dna_1hot(seq)
 
         t0 = time.time()
         num_iters = 0
@@ -154,7 +154,7 @@ def custom_calculate_scores(    seqnn_model,
         chrom, start, end, gc = dataframe.iloc[ind][["chrom", "start", "end", "GC"]]
         genome_open = pysam.Fastafile(genome_fasta)
         seq = genome_open.fetch(chrom, start, end).upper()
-        seq_1hot = dna_io.dna_1hot(seq)
+        seq_1hot = dna_1hot(seq)
 
         num_iters = 0
         while num_iters < max_iters:
