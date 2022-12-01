@@ -1,13 +1,6 @@
 ### akita utilities
 
-import bioframe
-import pandas as pd
 import numpy as np
-import tensorflow as tf
-import glob
-from io import StringIO
-import h5py
-import random
 
 ### numeric utilites
 def absmaxND(a, axis=None):
