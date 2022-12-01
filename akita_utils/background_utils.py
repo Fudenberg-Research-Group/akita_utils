@@ -1,3 +1,12 @@
+import pandas as pd
+import numpy as np
+from io import StringIO
+# from basenji import dna_io
+# from io import StringIO
+import pysam
+import time
+from .utils import *
+
 def create_flat_seqs(
     seqnn_model,
     genome_fasta,
@@ -9,7 +18,7 @@ def create_flat_seqs(
     ctcf_thresh=8,
     scores_thresh=5500,
     scores_pixelwise_thresh=0.04,
-    masking = False
+    masking=False
 ):
     """
     This function creates flat sequences
@@ -24,7 +33,6 @@ def create_flat_seqs(
     motif_window = int(np.ceil(len(motif) / 2))
     mot_shuf = np.array([12, 0, 1, 11, 10, 3, 2, 8, 9, 4, 5, 7, 6])
 
-    
     for ind in range(num_seqs):
         try:
             chrom, start, end, gc = dataframe.iloc[ind][["chrom", "start", "end", "GC"]]
@@ -34,7 +42,7 @@ def create_flat_seqs(
             
         genome_open = pysam.Fastafile(genome_fasta)
         seq = genome_open.fetch(chrom, start, end).upper()
-        seq_1hot = dna_io.dna_1hot(seq)
+        seq_1hot = dna_1hot(seq)
 
         t0 = time.time()
         num_iters = 0
@@ -45,7 +53,7 @@ def create_flat_seqs(
             seq_1hot_batch = []
             for i in range(batch_size):
                 seq_1hot_mut = permute_seq_k(seq_1hot, k=shuffle_k)
-                if masking == True:
+                if masking is True:
                     s = scan_motif(seq_1hot_mut, motif)
                     for i in np.where(s > ctcf_thresh)[0]:
                         # seq_1hot_mut[i-motif_window:i+motif_window] = permute_seq_k(seq_1hot_mut[i-motif_window:i+motif_window], k=2)
@@ -85,13 +93,6 @@ def create_flat_seqs(
                 )
 
             else:
-                best_ind = np.argmin(scores_pixelwise)
-                best_seq = seq_1hot_batch[best_ind]
-                best_pred = pred[best_ind]
-                best_score, best_score_pixelwise = (
-                    scores[best_ind],
-                    scores_pixelwise[best_ind],
-                )
                 print(
                     "trying: best seq, thresh",
                     np.min(scores),
@@ -149,12 +150,11 @@ def custom_calculate_scores(    seqnn_model,
     motif_window = int(np.ceil(len(motif) / 2))
     mot_shuf = np.array([12, 0, 1, 11, 10, 3, 2, 8, 9, 4, 5, 7, 6, 13])
 
-    
     for ind in range(num_seqs):
         chrom, start, end, gc = dataframe.iloc[ind][["chrom", "start", "end", "GC"]]
         genome_open = pysam.Fastafile(genome_fasta)
         seq = genome_open.fetch(chrom, start, end).upper()
-        seq_1hot = dna_io.dna_1hot(seq)
+        seq_1hot = dna_1hot(seq)
 
         num_iters = 0
         while num_iters < max_iters:
@@ -184,15 +184,6 @@ def custom_calculate_scores(    seqnn_model,
                     (np.min(scores) < scores_thresh)
                     , (np.min(scores_pixelwise) < scores_pixelwise_thresh)]
                     ):
-                    scores_set += [scores]
-                    best_ind = np.argmin(scores_pixelwise)
-                    best_seq = seq_1hot_batch[best_ind]
-                    best_pred = pred[best_ind]
-                    best_score, best_score_pixelwise = (
-                        scores[best_ind],
-                        scores_pixelwise[best_ind],
-                    )
-
                     print(
                         "*** success: best seq, thresh",
                         np.min(scores),
