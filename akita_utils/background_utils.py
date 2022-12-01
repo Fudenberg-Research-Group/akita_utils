@@ -1,3 +1,18 @@
+import bioframe
+import pandas as pd
+import numpy as np
+import tensorflow as tf
+import glob
+from io import StringIO
+import h5py
+import random
+from basenji import dna_io
+from io import StringIO
+import pysam
+import time 
+from scipy.stats import spearmanr, pearsonr
+import scipy.signal
+
 def create_flat_seqs(
     seqnn_model,
     genome_fasta,
