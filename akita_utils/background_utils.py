@@ -1,17 +1,11 @@
-import bioframe
 import pandas as pd
 import numpy as np
-import tensorflow as tf
-import glob
 from io import StringIO
-import h5py
-import random
 from basenji import dna_io
 from io import StringIO
 import pysam
-import time 
-from scipy.stats import spearmanr, pearsonr
-import scipy.signal
+import time
+from .utils import *
 
 def create_flat_seqs(
     seqnn_model,
@@ -100,13 +94,6 @@ def create_flat_seqs(
                 )
 
             else:
-                best_ind = np.argmin(scores_pixelwise)
-                best_seq = seq_1hot_batch[best_ind]
-                best_pred = pred[best_ind]
-                best_score, best_score_pixelwise = (
-                    scores[best_ind],
-                    scores_pixelwise[best_ind],
-                )
                 print(
                     "trying: best seq, thresh",
                     np.min(scores),
