@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from io import StringIO
-from basenji import dna_io
+# from basenji import dna_io
 # from io import StringIO
 import pysam
 import time
