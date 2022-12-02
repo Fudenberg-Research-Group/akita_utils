@@ -1,11 +1,9 @@
 import pandas as pd
 import numpy as np
-from io import StringIO
-# from basenji import dna_io
-# from io import StringIO
 import pysam
 import time
-from .utils import *
+from .io import read_jaspar_to_numpy
+from .dna_utils import dna_1hot, permute_seq_k, scan_motif
 
 def create_flat_seqs(
     seqnn_model,
@@ -20,24 +18,43 @@ def create_flat_seqs(
     scores_pixelwise_thresh=0.04,
     masking=False
 ):
-    """
-    This function creates flat sequences
+    """This function creates flat sequences by permutating experimental sequences
+
+    Args:
+        seqnn_model : model used to make predictions
+        genome_fasta : _description_
+        seq_length (int): length of the sequence
+        dataframe : dataframe of experimental sequences
+        max_iters (int, optional): maximum iterations in making permutations. Defaults to 1.
+        batch_size (int, optional): batch size used in model predictions. Defaults to 6.
+        shuffle_k (int, optional): basepairs to shuffle while permutating. Defaults to 8.
+        ctcf_thresh (int, optional): minimum number of ctcf motiifs allowed in a flat sequence. Defaults to 8.
+        scores_thresh (int, optional): score used to determine how much structure exists in the output. Defaults to 5500.
+        scores_pixelwise_thresh (float, optional): pixelwise score to determine structure in output. Defaults to 0.04.
+        masking (bool, optional): Option to determine whether to mask or not before permutation. Defaults to False.
+
+    Returns:
+        flat_seqs : list of flat sequences
     """
     flat_seqs = []
     num_seqs = dataframe.shape[0]
 
-    mot = ">CCAsyAGrkGGCr\n0.0000\t1.0000\t0.0000\t0.0000\n0.0000\t1.0000\t0.0000\t0.0000\n1.0000\t0.0000\t0.0000\t0.0000\n0.0000\t0.5000\t0.5000\t0.0000\n0.0000\t0.5000\t0.0000\t0.5000\n1.0000\t0.0000\t0.0000\t0.0000\n0.0000\t0.0000\t1.0000\t0.0000\n0.5000\t0.0000\t0.5000\t0.0000\n0.0000\t0.0000\t0.5000\t0.5000\n0.0000\t0.0000\t1.0000\t0.0000\n0.0000\t0.0000\t1.0000\t0.0000\n0.0000\t1.0000\t0.0000\t0.0000\n0.5000\t0.0000\t0.5000\t0.0000"
-    motif = pd.read_csv(
-        StringIO(mot), sep="\t", header=0, names=["A", "C", "G", "T"]
-    ).values
+    # mot = ">CCAsyAGrkGGCr\n0.0000\t1.0000\t0.0000\t0.0000\n0.0000\t1.0000\t0.0000\t0.0000\n1.0000\t0.0000\t0.0000\t0.0000\n0.0000\t0.5000\t0.5000\t0.0000\n0.0000\t0.5000\t0.0000\t0.5000\n1.0000\t0.0000\t0.0000\t0.0000\n0.0000\t0.0000\t1.0000\t0.0000\n0.5000\t0.0000\t0.5000\t0.0000\n0.0000\t0.0000\t0.5000\t0.5000\n0.0000\t0.0000\t1.0000\t0.0000\n0.0000\t0.0000\t1.0000\t0.0000\n0.0000\t1.0000\t0.0000\t0.0000\n0.5000\t0.0000\t0.5000\t0.0000"
+    # motif = pd.read_csv(
+    #     StringIO(mot), sep="\t", header=0, names=["A", "C", "G", "T"]
+    # ).values
+    # motif_window = int(np.ceil(len(motif) / 2))
+
+    motif = read_jaspar_to_numpy()
     motif_window = int(np.ceil(len(motif) / 2))
-    mot_shuf = np.array([12, 0, 1, 11, 10, 3, 2, 8, 9, 4, 5, 7, 6])
+
+    CTCF_MOTIF_SHUF = np.array([12, 0, 1, 11, 10, 3, 2, 8, 9, 4, 5, 7, 6]) # manual shuffle procedure 
 
     for ind in range(num_seqs):
         try:
             chrom, start, end, gc = dataframe.iloc[ind][["chrom", "start", "end", "GC"]]
         except:
-            chrom, start, end, strand = site_df.iloc[ind][["chrom", "start", "end", "strand"]]
+            chrom, start, end, strand = dataframe.iloc[ind][["chrom", "start", "end", "strand"]]
             print('The dataframe used doesnot have GC content')
             
         genome_open = pysam.Fastafile(genome_fasta)
@@ -59,7 +76,7 @@ def create_flat_seqs(
                         # seq_1hot_mut[i-motif_window:i+motif_window] = permute_seq_k(seq_1hot_mut[i-motif_window:i+motif_window], k=2)
                         seq_1hot_mut[
                             i - motif_window + 1 : i + motif_window
-                        ] = seq_1hot_mut[i - motif_window + 1 : i + motif_window][mot_shuf]
+                        ] = seq_1hot_mut[i - motif_window + 1 : i + motif_window][CTCF_MOTIF_SHUF]
                     seq_1hot_batch.append(seq_1hot_mut)
                 else:
                     seq_1hot_batch.append(seq_1hot_mut)
@@ -90,14 +107,6 @@ def create_flat_seqs(
                     np.min(scores_pixelwise),
                     "time",
                     t1 - t0
-                )
-
-            else:
-                print(
-                    "trying: best seq, thresh",
-                    np.min(scores),
-                    " pixelwise",
-                    np.min(scores_pixelwise),
                 )
 
             num_iters += 1
@@ -139,16 +148,34 @@ def custom_calculate_scores(    seqnn_model,
                                 success_scores = 0,
                                 masking=False,
                             ):
-    """
-    This function creates flat sequences
+    """_summary_
+
+    Args:
+        seqnn_model : model used to make predictions
+        genome_fasta : _description_
+        seq_length (int): length of the sequence
+        dataframe : dataframe of experimental sequences
+        max_iters (int, optional): maximum iterations in making permutations. Defaults to 1.
+        batch_size (int, optional): batch size used in model predictions. Defaults to 6.
+        shuffle_k (int, optional): basepairs to shuffle while permutating. Defaults to 8.
+        ctcf_thresh (int, optional): minimum number of ctcf motiifs allowed in a flat sequence. Defaults to 8.
+        scores_thresh (int, optional): score used to determine how much structure exists in the output. Defaults to 5500.
+        scores_pixelwise_thresh (float, optional): pixelwise score to determine structure in output. Defaults to 0.04.
+        success_scores (int, optional): _description_. Defaults to 0.
+        masking (bool, optional): Option to determine whether to mask or not before permutation. Defaults to False.
+
+    Returns:
+        scores_set : list containing scores
     """
     scores_set = []
     num_seqs = dataframe.shape[0]
 
-    mot = ">CCAsyAGrkGGCr\n0.0000\t1.0000\t0.0000\t0.0000\n0.0000\t1.0000\t0.0000\t0.0000\n1.0000\t0.0000\t0.0000\t0.0000\n0.0000\t0.5000\t0.5000\t0.0000\n0.0000\t0.5000\t0.0000\t0.5000\n1.0000\t0.0000\t0.0000\t0.0000\n0.0000\t0.0000\t1.0000\t0.0000\n0.5000\t0.0000\t0.5000\t0.0000\n0.0000\t0.0000\t0.5000\t0.5000\n0.0000\t0.0000\t1.0000\t0.0000\n0.0000\t0.0000\t1.0000\t0.0000\n0.0000\t1.0000\t0.0000\t0.0000\n0.5000\t0.0000\t0.5000\t0.0000"
-    motif = pd.read_csv(StringIO(mot), sep="\t", header=0, names=["A", "C", "G", "T"]).values
+    # mot = ">CCAsyAGrkGGCr\n0.0000\t1.0000\t0.0000\t0.0000\n0.0000\t1.0000\t0.0000\t0.0000\n1.0000\t0.0000\t0.0000\t0.0000\n0.0000\t0.5000\t0.5000\t0.0000\n0.0000\t0.5000\t0.0000\t0.5000\n1.0000\t0.0000\t0.0000\t0.0000\n0.0000\t0.0000\t1.0000\t0.0000\n0.5000\t0.0000\t0.5000\t0.0000\n0.0000\t0.0000\t0.5000\t0.5000\n0.0000\t0.0000\t1.0000\t0.0000\n0.0000\t0.0000\t1.0000\t0.0000\n0.0000\t1.0000\t0.0000\t0.0000\n0.5000\t0.0000\t0.5000\t0.0000"
+    # motif = pd.read_csv(StringIO(mot), sep="\t", header=0, names=["A", "C", "G", "T"]).values
+    
+    motif = read_jaspar_to_numpy()
     motif_window = int(np.ceil(len(motif) / 2))
-    mot_shuf = np.array([12, 0, 1, 11, 10, 3, 2, 8, 9, 4, 5, 7, 6, 13])
+    CTCF_MOTIF_SHUF = np.array([12, 0, 1, 11, 10, 3, 2, 8, 9, 4, 5, 7, 6, 13])
 
     for ind in range(num_seqs):
         chrom, start, end, gc = dataframe.iloc[ind][["chrom", "start", "end", "GC"]]
@@ -165,10 +192,10 @@ def custom_calculate_scores(    seqnn_model,
                 if masking == True:
                     s = scan_motif(seq_1hot_mut, motif)
                     for i in np.where(s > ctcf_thresh)[0]:
-                        if len(seq_1hot_mut[i-motif_window:i+motif_window]) == len(mot_shuf):
+                        if len(seq_1hot_mut[i-motif_window:i+motif_window]) == len(CTCF_MOTIF_SHUF):
                             seq_1hot_mut[i-motif_window:i+motif_window] = permute_seq_k(seq_1hot_mut[i-motif_window:i+motif_window], k=2)
                         
-                        # seq_1hot_mut[i-motif_window:i+motif_window] = seq_1hot_mut[i-motif_window:i+motif_window][mot_shuf]
+                        # seq_1hot_mut[i-motif_window:i+motif_window] = seq_1hot_mut[i-motif_window:i+motif_window][CTCF_MOTIF_SHUF]
                     seq_1hot_batch.append(seq_1hot_mut)
                 else:    
                     seq_1hot_batch.append(seq_1hot_mut)
@@ -178,7 +205,6 @@ def custom_calculate_scores(    seqnn_model,
             scores = np.sum(pred**2, axis=-1).sum(axis=-1)
             scores_pixelwise = np.max(pred**2, axis=-1).max(axis=-1)
             
-
             if success_scores == 1:
                 if np.any([
                     (np.min(scores) < scores_thresh)
@@ -190,13 +216,6 @@ def custom_calculate_scores(    seqnn_model,
                         " pixelwise",
                         np.min(scores_pixelwise),
                         "***",
-                    )
-                else:
-                    print(
-                    "trying: best seq, thresh",
-                    np.min(scores),
-                    " pixelwise",
-                    np.min(scores_pixelwise),
                     )
             else:
                     scores_set += [scores]
