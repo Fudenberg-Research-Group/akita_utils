@@ -1,6 +1,11 @@
 ### akita utilities
 
 import numpy as np
+import tensorflow as tf
+import glob
+from io import StringIO
+import h5py
+import random
 
 ### numeric utilites
 def absmaxND(a, axis=None):
@@ -20,6 +25,7 @@ def smooth(y, box_pts):
 
 def ut_dense(preds_ut, diagonal_offset):
     """Construct symmetric dense prediction matrices from upper triangular vectors.
+
     Parameters
     -----------
     preds_ut : ( M x O) numpy array
@@ -28,11 +34,13 @@ def ut_dense(preds_ut, diagonal_offset):
     diagonal_offset : int
         Number of diagonals that are added as zeros in the conversion.
         Typically 2 diagonals are ignored in Hi-C data processing.
+
     Returns
     --------
     preds_dense : (D x D x O) numpy array
         Each output upper-triangular vector is converted to a symmetric D x D matrix.
         Output matrices have zeros at the diagonal for `diagonal_offset` number of diagonals.
+
     """
     ut_len, num_targets = preds_ut.shape
 
@@ -62,4 +70,5 @@ def split_df_equally(df, num_chunks, chunk_idx):
     df_chunk = df.loc[
         chunks_bounds[chunk_idx] : (chunks_bounds[chunk_idx + 1]-1), :
     ]
+    
     return df_chunk
