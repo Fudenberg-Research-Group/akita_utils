@@ -1,7 +1,9 @@
 import pandas as pd
 import numpy as np
+import akita_utils
 import glob
-
+from io import StringIO
+import bioframe
 
 def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
     """Helper function to split a span 'start-end' into two integer series, and either
@@ -35,7 +37,7 @@ def filter_boundary_ctcfs_from_h5(
     ## load scores from boundary mutagenesis, average chosen score across models
     dfs = []
     for h5_file in glob.glob(h5_dirs):
-        dfs.append(h5_to_df(h5_file))
+        dfs.append(akita_utils.io.h5_to_df(h5_file))
     df = dfs[0].copy()
     df[score_key] = np.mean([df[score_key] for df in dfs], axis=0)
 
@@ -103,6 +105,23 @@ def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
     return df_filtered
 
 
+
+
+#     strong_sites, weak_sites = akita_utils.tsv_gen_utils.filter_sites_by_score(
+#         sites,
+#         score_key=score_key,
+#         weak_thresh_pct=weak_thresh_pct,
+#         weak_num=options.num_strong_motifs,
+#         strong_thresh_pct=strong_thresh_pct,
+#         strong_num=options.num_strong_motifs,
+
+
+#     score_key = "SCD"
+#     weak_thresh_pct = 1
+#     strong_thresh_pct = 99
+#     pad_flank = 0
+
+
 def filter_sites_by_score(
     sites,
     score_key="SCD",
@@ -123,14 +142,14 @@ def filter_sites_by_score(
     if num_sites != None:
         assert num_sites <= len(filtered_sites), "length of dataframe is smaller than requested number of sites, change contraints"
         
-        if mode == "head":
-            filtered_sites = filtered_sites[:num_sites]
-        elif mode == "tail":
-            filtered_sites = filtered_sites[-num_sites:]
-        else:
-            filtered_sites = filtered_sites.sample(n=num_sites)
+        # if mode == "head":
+        #     filtered_sites = filtered_sites[:num_sites]
+        # elif mode == "tail":
+        #     filtered_sites = filtered_sites[-num_sites:]
+        # else:
+        #     filtered_sites = filtered_sites.sample(n=num_sites)
     
-    return filtered_sites
+    return filtered_sites[:num_sites], filtered_sites[-num_sites:] #filtered_sites (FAHAD CHANGED HERE)
 
 
 def unpack_flank_range(flank_range):

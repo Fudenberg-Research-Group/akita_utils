@@ -1,6 +1,6 @@
 
 import numpy as np
-
+import tensorflow as tf
 
 def dna_rc(seq):
     return seq.translate(str.maketrans("ATCGatcg", "TAGCtagc"))[::-1]

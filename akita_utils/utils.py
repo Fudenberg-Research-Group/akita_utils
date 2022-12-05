@@ -1,7 +1,6 @@
 ### akita utilities
 
 import numpy as np
-import tensorflow as tf
 import glob
 from io import StringIO
 import h5py
