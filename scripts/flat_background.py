@@ -263,7 +263,7 @@ def main():
   # save flat sequences in fasta format if requested
     
   if options.save_seqs is not None:  
-      with open(f'{options.out_dir}/backround_seqs.fa','w') as f:
+      with open(f'{options.out_dir}/background_seqs.fa','w') as f:
         for i in range(len(flat_seqs)):
             f.write('>shuffled_chr'+str(i)+'_score'+str(int(flat_seqs[i][2]))+'_pixelwise'+str(int(flat_seqs[i][3]*1000))+'\n')
             f.write(dna_io.hot1_dna(flat_seqs[i][0])+'\n')  
