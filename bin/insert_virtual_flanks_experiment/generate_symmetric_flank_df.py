@@ -53,17 +53,24 @@ If the orientation_string is a comma-separated list of multiple string, e.g. ori
 
 from __future__ import print_function
 import os
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
+
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 import random
 from optparse import OptionParser
 import pandas as pd
-import itertools
 
-import bioframe
-import akita_utils
-
-from io import StringIO
+from tsv_gen_utils import (
+    unpack_range,
+    filter_boundary_ctcfs_from_h5,
+    filter_by_rmsk,
+    filter_by_ctcf,
+    add_orientation,
+    add_background,
+    add_flanks_and_spacers,
+    validate_df_lenght,
+    filter_sites_by_score,
+)
 
 ################################################################################
 # main
@@ -164,32 +171,32 @@ def main():
     )
 
     (options, args) = parser.parse_args()
-        
+
     orient_list = options.orientation_string.split(",")
     num_orients = len(orient_list)
     N = len(orient_list[0])
     all_permutations = options.all_permutations
-    
-    flank_start, flank_end = unpack_flank_range(options.flank_range)
-    
+
+    flank_start, flank_end = unpack_range(options.flank_range)
+
     rmsk_exclude_window = flank_end
     ctcf_exclude_window = 2 * flank_end
-    
+
     background_indices_list = options.backgrounds_indices.split(",")
-    
+
     if options.all_permutations == True:
         assert len(orient_list) == 1
         num_orients = 2**N
 
     random.seed(44)
-    
+
     # loading motifs
     score_key = "SCD"
     weak_thresh_pct = 1
     strong_thresh_pct = 99
     pad_flank = 0
 
-    sites = akita_utils.filter_boundary_ctcfs_from_h5(
+    sites = filter_boundary_ctcfs_from_h5(
         h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
         score_key=score_key,
         threshold_all_ctcf=5,
@@ -197,23 +204,34 @@ def main():
 
     sites = filter_by_rmsk(
         sites,
-        rmsk_file = options.rmsk_file, 
-        exclude_window = rmsk_exclude_window,
-        verbose=True
+        rmsk_file=options.rmsk_file,
+        exclude_window=rmsk_exclude_window,
+        verbose=True,
     )
-    
-    sites = filter_by_ctcf(sites,
-        ctcf_file = options.jaspar_file,
-        exclude_window = ctcf_exclude_window,
-        verbose=True)
-    
-    strong_sites, weak_sites = akita_utils.filter_sites_by_score(
+
+    sites = filter_by_ctcf(
         sites,
-        score_key=score_key,
-        weak_thresh_pct=weak_thresh_pct,
-        weak_num=options.num_strong_motifs,
-        strong_thresh_pct=strong_thresh_pct,
-        strong_num=options.num_strong_motifs,
+        ctcf_file=options.jaspar_file,
+        exclude_window=ctcf_exclude_window,
+        verbose=True,
+    )
+
+    strong_sites = filter_sites_by_score(
+        sites,
+        score_key="SCD",
+        upper_threshold=99,
+        lower_threshold=1,
+        mode="head",
+        num_sites=options.num_strong_motifs,
+    )
+
+    weak_sites = filter_sites_by_score(
+        sites,
+        score_key="SCD",
+        upper_threshold=99,
+        lower_threshold=1,
+        mode="tail",
+        num_sites=options.num_weak_motifs,
     )
 
     site_df = pd.concat([strong_sites.copy(), weak_sites.copy()])
@@ -231,8 +249,7 @@ def main():
     )
     seq_coords_df.reset_index(drop=True, inplace=True)
     seq_coords_df.reset_index(inplace=True)
-    
-    
+
     # adding orientation, background index, information about flanks and spacers
     df_with_orientation = add_orientation(
         seq_coords_df,
@@ -250,8 +267,15 @@ def main():
 
     df_with_flanks_spacers = df_with_flanks_spacers.drop(columns="index")
     df_with_flanks_spacers.index.name = "experiment_id"
-    
-    (expected_df_len, observed_df_len) = validate_df_lenght(options.num_strong_motifs, options.num_weak_motifs, num_orients, len(background_indices_list), options.flank_range, df_with_flanks_spacers)
+
+    (expected_df_len, observed_df_len) = validate_df_lenght(
+        options.num_strong_motifs,
+        options.num_weak_motifs,
+        num_orients,
+        len(background_indices_list),
+        options.flank_range,
+        df_with_flanks_spacers,
+    )
 
     if options.verbose:
         print("\nSummary")
@@ -263,9 +287,7 @@ def main():
         print("Number of background sequences: ", len(background_indices_list))
         print(
             "Number of flanks: ",
-            flank_end
-            - flank_start
-            +1,
+            flank_end - flank_start + 1,
         )
         print("===============")
 
@@ -277,7 +299,8 @@ def main():
 
     if options.tsv:
         df_with_flanks_spacers.to_csv(
-            f"./{options.filename}.tsv", sep="\t", index=False)
+            f"./{options.filename}.tsv", sep="\t", index=False
+        )
 
 
 ################################################################################

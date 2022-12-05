@@ -1,6 +1,10 @@
 import pandas as pd
 import numpy as np
 import glob
+import bioframe
+import itertools
+from io import StringIO
+from format_io import h5_to_df
 
 
 def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
@@ -98,7 +102,9 @@ def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
     chromend_zones["start"] = chromend_zones["end"] - buffer_bp
     chromstart_zones = view_df.copy()
     chromstart_zones["end"] = chromstart_zones["start"] + buffer_bp
-    filter_zones = pd.concat([chromend_zones, chromstart_zones]).reset_index(drop=True)
+    filter_zones = pd.concat([chromend_zones, chromstart_zones]).reset_index(
+        drop=True
+    )
     df_filtered = bioframe.setdiff(df, filter_zones)
     return df_filtered
 
@@ -109,43 +115,93 @@ def filter_sites_by_score(
     upper_threshold=100,
     lower_threshold=0,
     mode="head",
-    num_sites=None,    # if num_sites == None -> return all filtered sites
-    ):
-    
+    num_sites=None,
+):
+
+    """
+    Given a dataframe of CTCF-binding sites returns a subset of them.
+
+    Parameters
+    -----------
+    sites : dataframe
+        Dataframe of a given CTCF-binding sites.
+    score_key : str
+        Column that filtering and sorting is done by.
+    upper_threshold : float
+        Float in a range (0,100); all the sites above this percentile will be removed from further analysis.
+    lower_threshold : float
+        Float in a range (0,100); all the sites bellow this percentile will be removed from further analysis.
+    mode : str
+        Specification which part of a filtered dataframe is of a user's interest: if "head" - first rows are returned, if "tail" - last rows are returned, if "random" - a set of random rows is returned.
+    num_sites : int
+        A requested number of sites. If type of num_sites is None, the function returns all filtered sites.
+
+    Returns
+    --------
+    filtered_sites : dataframe
+        An output dataframe with filtered CTCF-binding sites.
+
+    """
+
     if mode not in ("head", "tail", "random"):
         raise ValueError("a mode has to be one from: head, tail, random")
-    
+
     upper_thresh = np.percentile(sites[score_key].values, upper_threshold)
     lower_thresh = np.percentile(sites[score_key].values, lower_threshold)
-        
-    filtered_sites = (sites[(sites[score_key] >= lower_thresh) & (sites[score_key] <= upper_thresh)].copy().sort_values(score_key, ascending=False))
-    
+
+    filtered_sites = (
+        sites[
+            (sites[score_key] >= lower_thresh)
+            & (sites[score_key] <= upper_thresh)
+        ]
+        .copy()
+        .sort_values(score_key, ascending=False)
+    )
+
     if num_sites != None:
-        assert num_sites <= len(filtered_sites), "length of dataframe is smaller than requested number of sites, change contraints"
-        
+        assert num_sites <= len(
+            filtered_sites
+        ), "length of dataframe is smaller than requested number of sites, change contraints"
+
         if mode == "head":
             filtered_sites = filtered_sites[:num_sites]
         elif mode == "tail":
             filtered_sites = filtered_sites[-num_sites:]
         else:
             filtered_sites = filtered_sites.sample(n=num_sites)
-    
+
     return filtered_sites
 
 
-def unpack_flank_range(flank_range):
-    
-    flank_start, flank_end = [int(num) for num in flank_range.split(",")]
-    return (flank_start, flank_end)
+def unpack_range(int_range):
+
+    """
+    Given start and end of a range of integer numbers as a string converts it to a tuple of integers (int type).
+
+    Parameters
+    -----------
+    int_range : string
+        String in a form: "range_start,range_end"
+
+    Returns
+    --------
+    (range_start,range_end) : tuple
+        A tuple of integer-type numbers.
+
+    """
+
+    range_start, range_end = [int(num) for num in int_range.split(",")]
+    return (range_start, range_end)
 
 
 def filter_by_rmsk(
     sites,
     rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz",
-    exclude_window = 60,
-    site_cols = ["chrom", "start", "end"],
+    exclude_window=60,
+    site_cols=["chrom", "start", "end"],
     verbose=True,
 ):
+
     """
     Filter out sites that overlap any entry in rmsk.
     This is important for sineB2 in mice, and perhaps for other repetitive elements as well.
@@ -164,6 +220,7 @@ def filter_by_rmsk(
         Subset of sites that do not have overlaps with repeats in the rmsk_file.
 
     """
+
     if verbose:
         print("filtering sites by overlap with rmsk")
 
@@ -184,13 +241,13 @@ def filter_by_rmsk(
         columns={"genoName": "chrom", "genoStart": "start", "genoEnd": "end"},
         inplace=True,
     )
-    
+
     rmsk = bioframe.expand(rmsk, pad=exclude_window)
-    
+
     sites = bioframe.count_overlaps(
         sites, rmsk[site_cols], cols1=["chrom", "start_2", "end_2"]
     )
-    
+
     sites = sites.iloc[sites["count"].values == 0]
     sites.reset_index(inplace=True, drop=True)
 
@@ -199,32 +256,34 @@ def filter_by_rmsk(
 
 def filter_by_ctcf(
     sites,
-    ctcf_file = "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
-    exclude_window = 60,
-    site_cols = ["chrom", "start", "end"],
+    ctcf_file="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
+    exclude_window=60,
+    site_cols=["chrom", "start", "end"],
     verbose=True,
-    ):
+):
+
     """
     Filter out sites that overlap any entry in ctcf within a window of 60bp up- and downstream.
+
     Parameters
     -----------
     sites : dataFrame
         Set of genomic intervals, currently with columns "chrom","start_2","end_2"
     ctcf_file : str
         File in tsv format used for filtering ctcf binding sites.
+
     Returns
     --------
     sites : dataFrame
         Subset of sites that do not have overlaps with ctcf binding sites in the ctcf_file.
     """
+
     if verbose:
         print("filtering sites by overlap with ctcfs")
 
     ctcf_cols = list(
         pd.read_csv(
-            StringIO(
-                """chrom start end name score pval strand"""
-            ),
+            StringIO("""chrom start end name score pval strand"""),
             sep=" ",
         )
     )
@@ -233,9 +292,9 @@ def filter_by_ctcf(
         ctcf_file,
         names=ctcf_cols,
     )
-    
+
     ctct_motifs = bioframe.expand(ctcf_motifs, pad=exclude_window)
-    
+
     sites = bioframe.count_overlaps(
         sites, ctcf_motifs[site_cols], cols1=["chrom", "start_2", "end_2"]
     )
@@ -243,34 +302,68 @@ def filter_by_ctcf(
     sites.reset_index(inplace=True, drop=True)
 
     return sites
-    
 
-def validate_df_lenght(num_strong, num_weak, num_orientations, num_backgrounds, flank_range, df):
-    
-    flank_start, flank_end = unpack_flank_range(flank_range)
-    
+
+def validate_df_lenght(
+    num_strong, num_weak, num_orientations, num_backgrounds, flank_range, df
+):
+
+    """
+    validates if a created dataframe has an expected length (if number of experiments, so number of rows agrees)
+    sizes.
+
+    Parameters
+    ------------
+    num_strong : int
+        Number of strong CTCF-binding sites to be tested.
+    num_weak : int
+        Number of weak CTCF-binding sites to be tested.
+    num_backgrounds : int
+        Number of different backgrounds to be used.
+    flank_range : str
+        String in a form: "range_start, range_end".
+    df : dataFrame
+        Input dataframe
+
+    Returns
+    ---------
+    (expected_df_len, observed_df_len) : tuple
+        Tuple of two integers: expected and observed number of rows.
+        There is an assertation error if those values are not the same.
+    """
+
+    flank_start, flank_end = unpack_range(flank_range)
+
     expected_df_len = (
-            (num_strong + num_weak)
-            * num_orientations
-            * num_backgrounds
-            * (
-                flank_end
-                - flank_start
-                + 1
-            )
-        )
+        (num_strong + num_weak)
+        * num_orientations
+        * num_backgrounds
+        * (flank_end - flank_start + 1)
+    )
     observed_df_len = len(df)
 
     assert expected_df_len == observed_df_len
-    
+
     return (expected_df_len, observed_df_len)
 
-    
+
 def generate_all_orientation_strings(N):
+
     """
     Function generates all possible orientations of N-long string consisting of binary characters (> and <) only.
     Example: for N=2 the result is ['>>', '><', '<>', '<<'].
+
+    Parameters
+    -----------
+    N : int
+        A desired length of each orientation string.
+
+    Returns
+    --------
+    list
+        A list of all possible N-long orientation strings.
     """
+
     def _binary_to_orientation_string_map(binary_list):
 
         binary_to_orientation_dict = {0: ">", 1: "<"}
@@ -291,7 +384,21 @@ def generate_all_orientation_strings(N):
 def add_orientation(seq_coords_df, orientation_strings, all_permutations):
 
     """
-    Function adds an additional column named 'orientation', to the given dataframe where each row corresponds to one CTCF-binding site.
+    Function adds an additional column named 'orientation', to the given dataframe where each row corresponds to a set of CTCF-binding sites.
+
+    Parameters
+    -----------
+    seq_coords_df : dataFrame
+        Set of experiments where each row specifies a set of CTCF-binding sites.
+    orientation_strings : list
+        List of orientation strings encoding directionality of CTCF-binding sites.
+    all_permutations : boolean
+        True if all possible orientation strings of a given length should be generated.
+
+    Returns
+    --------
+    seq_coords_df : dataFrame
+        An input dataframe with the "orientation" column.
     """
 
     df_len = len(seq_coords_df)
@@ -341,9 +448,28 @@ def add_orientation(seq_coords_df, orientation_strings, all_permutations):
 
 
 def add_flanks_and_spacers(seq_coords_df, flank_range, flank_spacer_sum):
-    
-    flank_start, flank_end = unpack_flank_range(flank_range)
-    
+
+    """
+    Function adds an additional column named 'orientation', to the given dataframe where each row corresponds to a set of CTCF-binding sites.
+
+    Parameters
+    -----------
+    seq_coords_df : dataFrame
+        Set of experiments where each row specifies a set of CTCF-binding sites.
+    flank_range : string
+        String in a form "range_start,range_end" sepecifying start and end of the tested flanks range.
+    flank_spacer_sum : int
+        Sum of flank and spacer lengths.
+        In other words, one half of a tail-to-head distance between two CTCFs.
+
+    Returns
+    --------
+    seq_coords_df : dataFrame
+        An input dataframe with two columns added: "flank_bp" and "spacer_bp".
+    """
+
+    flank_start, flank_end = unpack_range(flank_range)
+
     rep_unit = seq_coords_df
     df_len = len(rep_unit)
 
@@ -367,6 +493,22 @@ def add_flanks_and_spacers(seq_coords_df, flank_range, flank_spacer_sum):
 
 
 def add_background(seq_coords_df, background_indices_list):
+
+    """
+    Function adds an additional column named 'orientation', to the given dataframe where each row corresponds to a set of CTCF-binding sites.
+
+    Parameters
+    -----------
+    seq_coords_df : dataFrame
+        Set of experiments where each row specifies a set of CTCF-binding sites.
+    background_indices_list: list
+        List of background ids encoded as integers.
+
+    Returns
+    --------
+    seq_coords_df : dataFrame
+        An input dataframe with the "background_index" column.
+    """
 
     rep_unit = seq_coords_df
     df_len = len(rep_unit)
