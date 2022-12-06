@@ -305,7 +305,12 @@ def filter_by_ctcf(
 
 
 def validate_df_lenght(
-    num_strong, num_weak, num_orientations, num_backgrounds, number_of_flanks_or_spacers, df
+    num_strong,
+    num_weak,
+    num_orientations,
+    num_backgrounds,
+    number_of_flanks_or_spacers,
+    df,
 ):
 
     """
@@ -331,14 +336,14 @@ def validate_df_lenght(
         Tuple of two integers: expected and observed number of rows.
         There is an assertation error if those values are not the same.
     """
-    
+
     expected_df_len = (
         (num_strong + num_weak)
         * num_orientations
         * num_backgrounds
         * number_of_flanks_or_spacers
     )
-        
+
     observed_df_len = len(df)
 
     assert expected_df_len == observed_df_len
@@ -446,10 +451,12 @@ def add_orientation(seq_coords_df, orientation_strings, all_permutations):
     return seq_coords_df
 
 
-def add_diff_flanks_and_const_spacer(seq_coords_df, flank_range, flank_spacer_sum):
+def add_diff_flanks_and_const_spacer(
+    seq_coords_df, flank_range, flank_spacer_sum
+):
 
     """
-    Function adds two additional columns named "flank_bp" and "spacer_bp" to the given dataframe where each row corresponds to a set of CTCF-binding sites. Here, spacing stays constant while flank changes. 
+    Function adds two additional columns named "flank_bp" and "spacer_bp" to the given dataframe where each row corresponds to a set of CTCF-binding sites. Here, spacing stays constant while flank changes.
 
     Parameters
     -----------
@@ -494,7 +501,7 @@ def add_diff_flanks_and_const_spacer(seq_coords_df, flank_range, flank_spacer_su
 def add_const_flank_and_diff_spacer(seq_coords_df, flank, spacing_list):
 
     """
-    Function adds two additional columns named "flank_bp" and "spacer_bp" to the given dataframe where each row corresponds to a set of CTCF-binding sites. Here flank is constant, while spacing is changing. 
+    Function adds two additional columns named "flank_bp" and "spacer_bp" to the given dataframe where each row corresponds to a set of CTCF-binding sites. Here flank is constant, while spacing is changing.
 
     Parameters
     -----------
@@ -513,7 +520,7 @@ def add_const_flank_and_diff_spacer(seq_coords_df, flank, spacing_list):
 
     rep_unit = seq_coords_df
     df_len = len(rep_unit)
-    
+
     flank_ls = []
     spacer_ls = []
 
