@@ -66,11 +66,8 @@ import os
 # import os
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
-import pdb
 import pickle
 import random
-import sys
-import time
 
 import h5py
 import numpy as np
@@ -91,11 +88,11 @@ gpus = tf.config.experimental.list_physical_devices("GPU")
 #  tf.config.experimental.set_memory_growth(gpu, True)
 print(gpus)
 
-from basenji import seqnn
-from basenji import stream
-from basenji import dna_io
+from basenji import seqnn, stream, dna_io
 
-from akita_utils import ut_dense, split_df_equally, symmertic_insertion_seqs_gen
+from seq_gens import symmertic_insertion_seqs_gen
+from utils import ut_dense, split_df_equally
+from stats_utils import insul_diamonds_scores
 
 ################################################################################
 # main

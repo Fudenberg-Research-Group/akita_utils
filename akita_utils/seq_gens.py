@@ -1,5 +1,6 @@
 
 import pandas as pd
+from basenji import dna_io
 
 ########################################
 #           insertion utils            #
