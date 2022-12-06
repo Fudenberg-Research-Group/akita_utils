@@ -369,7 +369,6 @@ def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_l
     seq_coords_df_dtypes = seq_coords_df.dtypes
 
     for key in seq_coords_df:
-        print(key, seq_coords_df_dtypes[key])
         if seq_coords_df_dtypes[key] is np.dtype("O"):
             scd_out.create_dataset(key, data=seq_coords_df[key].values.astype("S"))
         else:
@@ -405,8 +404,6 @@ def write_snp(
     plot_freq=100,
 ):
     """Write SNP predictions to HDF."""
-    
-    print(si)
     
     # increase dtype
     ref_preds = ref_preds.astype("float32")

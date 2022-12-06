@@ -62,11 +62,8 @@ from __future__ import print_function
 from optparse import OptionParser
 import json
 import os
-import pdb
 import pickle
 import random
-import sys
-import time
 
 import h5py
 import numpy as np
@@ -94,7 +91,9 @@ from basenji import dna_io
 # import os
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
-from akita_utils import ut_dense, split_df_equally, symmertic_insertion_seqs_gen
+from seq_gens import symmertic_insertion_seqs_gen
+from utils import ut_dense, split_df_equally
+from stats_utils import insul_diamonds_scores
 
 ################################################################################
 # main
@@ -361,86 +360,6 @@ def main():
     genome_open.close()
     scd_out.close()
 
-    
-# def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
-#     """ sequence generator for making insertions from tsvs
-#         construct an iterator that yields a one-hot encoded sequence
-#         that can be used as input to akita via PredStreamGen
-#     """
-    
-#     # seq_length = 1310720
-    
-#     for s in seq_coords_df.itertuples():
-
-#         flank_bp = s.flank_bp
-#         spacer_bp = s.spacer_bp
-#         num_inserts = len(s.orientation)
-
-#         seq_1hot_insertion = dna_io.dna_1hot(
-#             genome_open.fetch(s.chrom, s.start - flank_bp, s.end + flank_bp).upper()
-#         )
-#         if s.strand == "-":
-#             seq_1hot_insertion = dna_io.hot1_rc(seq_1hot_insertion)
-#             # now, all motifs are standarized to this orientation ">"
-
-#         seq_1hot = background_seqs[s.background_index].copy()
-#         insert_bp = len(seq_1hot_insertion)
-#         insert_plus_spacer_bp = insert_bp + 2 * spacer_bp
-#         multi_insert_bp = num_inserts * insert_plus_spacer_bp
-#         insert_start_bp = seq_length // 2 - multi_insert_bp // 2
-
-#         for i in range(num_inserts):
-#             offset = insert_start_bp + i * insert_plus_spacer_bp + spacer_bp
-
-#             insertion_starting_positions.append(offset)
-
-#             for orientation_arrow in s.orientation[i]:
-#                 if orientation_arrow == ">":
-#                     seq_1hot[offset : offset + insert_bp] = seq_1hot_insertion
-#                 else:
-#                     seq_1hot[offset : offset + insert_bp] = dna_io.hot1_rc(seq_1hot_insertion)
-        
-#         yield seq_1hot
-
-        
-# def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
-#     """ sequence generator for making insertions from tsvs
-#         construct an iterator that yields a one-hot encoded sequence
-#         that can be used as input to akita via PredStreamGen
-#     """
-#     for s in seq_coords_df.itertuples():
-
-#         flank_bp = s.flank_bp
-#         spacer_bp = s.spacer_bp
-#         num_inserts = len(s.orientation)
-
-#         seq_1hot_insertion = dna_io.dna_1hot(
-#             genome_open.fetch(s.chrom, s.start - flank_bp, s.end + flank_bp).upper()
-#         )
-#         if s.strand == "-":
-#             seq_1hot_insertion = dna_io.hot1_rc(seq_1hot_insertion)
-
-#         # so now, all motifs are standarized to this orientation ">"
-
-#         seq_1hot = background_seqs[s.background_index].copy()
-#         insert_bp = len(seq_1hot_insertion)
-#         insert_plus_spacer_bp = insert_bp + 2 * spacer_bp
-#         multi_insert_bp = num_inserts * insert_plus_spacer_bp
-#         insert_start_bp = seq_length // 2 - multi_insert_bp // 2
-
-#         for i in range(num_inserts):
-#             offset = insert_start_bp + i * insert_plus_spacer_bp + spacer_bp
-#             # if *s.orientation[i] == ">":
-#             #     seq_1hot[offset : offset + insert_bp] = seq_1hot_insertion
-#             # else:
-#             #     seq_1hot[offset : offset + insert_bp] = dna_io.hot1_rc(seq_1hot_insertion)
-
-#             for orientation_arrow in s.orientation[i]:
-#                 if orientation_arrow == ">":
-#                     seq_1hot[offset : offset + insert_bp] = seq_1hot_insertion
-#                 else:
-#                     seq_1hot[offset : offset + insert_bp] = dna_io.hot1_rc(seq_1hot_insertion)
-#         yield seq_1hot
         
 
 def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_labels, head_index, model_index):
@@ -495,7 +414,6 @@ def write_snp(
     if "SCD" in scd_stats:
         # sum of squared diffs
         sd2_preds = np.sqrt((ref_preds**2).sum(axis=0))
-        print(sd2_preds)
         for target_ind in range(ref_preds.shape[1]):
             scd_out[f"SCD_h{head_index}_m{model_index}_t{target_ind}"][si] = sd2_preds[target_ind].astype("float16")
 
@@ -537,27 +455,6 @@ def write_snp(
         plt.tight_layout()
         plt.savefig("%s/s%d.pdf" % (plot_dir, si))
         plt.close()
-
-
-def _insul_diamond_central(mat, window=10):
-    """calculate insulation in a diamond around the central pixel"""
-    N = mat.shape[0]
-    if window > N // 2:
-        raise ValueError("window cannot be larger than matrix")
-    mid = N // 2
-    lo = max(0, mid + 1 - window)
-    hi = min(mid + window, N)
-    score = np.nanmean(mat[lo : (mid + 1), mid:hi])
-    return score
-
-
-def insul_diamonds_scores(mats, window=10):
-    num_targets = mats.shape[-1]
-    scores = np.zeros((num_targets,))
-    for ti in range(num_targets):
-        scores[ti] = _insul_diamond_central(mats[:, :, ti], window=window)
-    return scores
-
 
 
 ################################################################################

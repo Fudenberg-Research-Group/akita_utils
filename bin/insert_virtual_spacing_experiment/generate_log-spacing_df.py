@@ -68,7 +68,7 @@ from tsv_gen_utils import (
     filter_by_ctcf,
     add_orientation,
     add_background,
-    add_flanks_and_spacers,
+    add_const_flank_and_diff_spacer,
     validate_df_lenght,
     filter_sites_by_score,
 )
@@ -122,7 +122,7 @@ def main():
         "--num_log-intervals",
         dest="log_space_range",
         default=200,
-        type=int,
+        type="int",
         help="Specify number of intervals to divide the space-range into",
     )
     parser.add_option(
@@ -287,8 +287,8 @@ def main():
         df_with_orientation, background_indices_list
     )
 
-    df_with_flanks_spacers = add_flanks_and_spacers(
-        df_with_background, options.flank, spacing_list
+    df_with_flanks_spacers = add_const_flank_and_diff_spacer(
+        df_with_background, flank, spacing_list
     )
 
     df_with_flanks_spacers = df_with_flanks_spacers.drop(columns="index")

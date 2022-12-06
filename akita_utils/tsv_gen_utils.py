@@ -305,7 +305,7 @@ def filter_by_ctcf(
 
 
 def validate_df_lenght(
-    num_strong, num_weak, num_orientations, num_backgrounds, flank_range, df
+    num_strong, num_weak, num_orientations, num_backgrounds, number_of_flanks_or_spacers, df
 ):
 
     """
@@ -331,15 +331,14 @@ def validate_df_lenght(
         Tuple of two integers: expected and observed number of rows.
         There is an assertation error if those values are not the same.
     """
-
-    flank_start, flank_end = unpack_range(flank_range)
-
+    
     expected_df_len = (
         (num_strong + num_weak)
         * num_orientations
         * num_backgrounds
-        * (flank_end - flank_start + 1)
+        * number_of_flanks_or_spacers
     )
+        
     observed_df_len = len(df)
 
     assert expected_df_len == observed_df_len
@@ -447,10 +446,10 @@ def add_orientation(seq_coords_df, orientation_strings, all_permutations):
     return seq_coords_df
 
 
-def add_flanks_and_spacers(seq_coords_df, flank_range, flank_spacer_sum):
+def add_diff_flanks_and_cont_spacer(seq_coords_df, flank_range, flank_spacer_sum):
 
     """
-    Function adds an additional column named 'orientation', to the given dataframe where each row corresponds to a set of CTCF-binding sites.
+    Function adds two additional columns named "flank_bp" and "spacer_bp" to the given dataframe where each row corresponds to a set of CTCF-binding sites. Here, spacing stays constant while flank changes. 
 
     Parameters
     -----------
@@ -482,6 +481,49 @@ def add_flanks_and_spacers(seq_coords_df, flank_range, flank_spacer_sum):
         spacer_ls = spacer_ls + [spacer] * df_len
 
         if len(seq_coords_df) != len(flank_ls):
+            seq_coords_df = pd.concat(
+                [seq_coords_df, rep_unit], ignore_index=True
+            )
+
+    seq_coords_df["flank_bp"] = flank_ls
+    seq_coords_df["spacer_bp"] = spacer_ls
+
+    return seq_coords_df
+
+
+def add_const_flank_and_diff_spacer(seq_coords_df, flank, spacing_list):
+
+    """
+    Function adds two additional columns named "flank_bp" and "spacer_bp" to the given dataframe where each row corresponds to a set of CTCF-binding sites. Here flank is constant, while spacing is changing. 
+
+    Parameters
+    -----------
+    seq_coords_df : dataFrame
+        Set of experiments where each row specifies a set of CTCF-binding sites.
+    flank : int
+        Flank length that will stay constant in all experiments.
+    flank_spacer_sum : list
+        List of sums of flank and spacer lengths.
+        In other words, flank_spacer_sum is a half of a tail-to-head distance between two CTCFs.
+
+    Returns
+    --------
+    seq_coords_df : dataFrame
+        An input dataframe with two columns added: "flank_bp" and "spacer_bp".
+    """
+
+    rep_unit = seq_coords_df
+    df_len = len(rep_unit)
+    
+    flank_ls = []
+    spacer_ls = []
+
+    for flank_spacer_sum in spacing_list:
+        spacer = flank_spacer_sum - flank
+        flank_ls = flank_ls + [flank] * df_len
+        spacer_ls = spacer_ls + [spacer] * df_len
+
+        if len(seq_coords_df) != len(spacer_ls):
             seq_coords_df = pd.concat(
                 [seq_coords_df, rep_unit], ignore_index=True
             )

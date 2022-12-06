@@ -67,7 +67,7 @@ from tsv_gen_utils import (
     filter_by_ctcf,
     add_orientation,
     add_background,
-    add_flanks_and_spacers,
+    add_diff_flanks_and_cont_spacer,
     validate_df_lenght,
     filter_sites_by_score,
 )
@@ -261,7 +261,7 @@ def main():
         df_with_orientation, background_indices_list
     )
 
-    df_with_flanks_spacers = add_flanks_and_spacers(
+    df_with_flanks_spacers = add_diff_flanks_and_cont_spacer(
         df_with_background, options.flank_range, options.flank_spacer_sum
     )
 
@@ -273,7 +273,7 @@ def main():
         options.num_weak_motifs,
         num_orients,
         len(background_indices_list),
-        options.flank_range,
+        (flank_end - flank_start + 1),
         df_with_flanks_spacers,
     )
 
