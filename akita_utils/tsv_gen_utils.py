@@ -446,7 +446,7 @@ def add_orientation(seq_coords_df, orientation_strings, all_permutations):
     return seq_coords_df
 
 
-def add_diff_flanks_and_cont_spacer(seq_coords_df, flank_range, flank_spacer_sum):
+def add_diff_flanks_and_const_spacer(seq_coords_df, flank_range, flank_spacer_sum):
 
     """
     Function adds two additional columns named "flank_bp" and "spacer_bp" to the given dataframe where each row corresponds to a set of CTCF-binding sites. Here, spacing stays constant while flank changes. 

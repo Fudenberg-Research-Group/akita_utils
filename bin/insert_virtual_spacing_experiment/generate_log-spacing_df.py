@@ -126,14 +126,6 @@ def main():
         help="Specify number of intervals to divide the space-range into",
     )
     parser.add_option(
-        "--flank-spacer-sum",
-        dest="flank_spacer_sum",
-        default=90,
-        type="int",
-        help="Specify sum of flank and spacer so that distances between CTCFs binding sites are kept constant. \
-        \n2xflank-spacer-sum=distance between two consecutive CTCFs.",
-    )
-    parser.add_option(
         "--backgrounds-indices",
         dest="backgrounds_indices",
         default="0,1,2,3,4,5,6,7,8,9",
