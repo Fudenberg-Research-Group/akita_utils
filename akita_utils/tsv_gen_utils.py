@@ -502,9 +502,8 @@ def add_const_flank_and_diff_spacer(seq_coords_df, flank, spacing_list):
         Set of experiments where each row specifies a set of CTCF-binding sites.
     flank : int
         Flank length that will stay constant in all experiments.
-    flank_spacer_sum : list
-        List of sums of flank and spacer lengths.
-        In other words, flank_spacer_sum is a half of a tail-to-head distance between two CTCFs.
+    spacing_list : list
+        List of sums of spacer lengths.
 
     Returns
     --------
@@ -518,8 +517,7 @@ def add_const_flank_and_diff_spacer(seq_coords_df, flank, spacing_list):
     flank_ls = []
     spacer_ls = []
 
-    for flank_spacer_sum in spacing_list:
-        spacer = flank_spacer_sum - flank
+    for spacer in spacing_list:
         flank_ls = flank_ls + [flank] * df_len
         spacer_ls = spacer_ls + [spacer] * df_len
 
