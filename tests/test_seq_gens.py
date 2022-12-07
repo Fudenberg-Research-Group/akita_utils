@@ -1,5 +1,5 @@
-from dna_utils import dna_1hot, reverse_dna_1hot
-from seq_gens import _insert_casette
+from akita_utils.dna_utils import dna_1hot, reverse_dna_1hot
+from akita_utils.seq_gens import _insert_casette
 
 
 def test_insert_casette():

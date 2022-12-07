@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from utils import ut_dense, split_df_equally
+from akita_utils.utils import ut_dense, split_df_equally
 
 
 def test_ut_dense():

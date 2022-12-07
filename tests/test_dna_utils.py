@@ -1,4 +1,4 @@
-from dna_utils import dna_1hot, reverse_dna_1hot
+from akita_utils.dna_utils import dna_1hot, reverse_dna_1hot
 
 
 def test_reverse_dna_1hot():

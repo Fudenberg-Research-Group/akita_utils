@@ -1,5 +1,5 @@
 import pandas as pd
-from tsv_gen_utils import (
+from akita_utils.tsv_gen_utils import (
     filter_by_chrmlen,
     filter_sites_by_score,
     generate_all_orientation_strings,

@@ -90,9 +90,9 @@ print(gpus)
 
 from basenji import seqnn, stream, dna_io
 
-from seq_gens import symmertic_insertion_seqs_gen
-from utils import ut_dense, split_df_equally
-from stats_utils import insul_diamonds_scores
+from akita_utils.seq_gens import symmertic_insertion_seqs_gen
+from akita_utils.utils import ut_dense, split_df_equally
+from akita_utils.stats_utils import insul_diamonds_scores
 
 ################################################################################
 # main
