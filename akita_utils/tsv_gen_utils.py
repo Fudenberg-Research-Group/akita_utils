@@ -4,7 +4,7 @@ import glob
 import bioframe
 import itertools
 from io import StringIO
-from format_io import h5_to_df
+from akita_utils.format_io import h5_to_df
 
 
 def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):

@@ -1,4 +1,5 @@
-from dna_utils import hot1_rc, dna_1hot
+
+from akita_utils.dna_utils import hot1_rc, dna_1hot
 
 ########################################
 #           insertion utils            #
