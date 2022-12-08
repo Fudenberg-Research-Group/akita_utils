@@ -1,4 +1,4 @@
-from akita_utils.dna_utils import dna_1hot, reverse_dna_1hot
+from akita_utils.dna_utils import dna_1hot, dna_1hot_to_seq
 from akita_utils.seq_gens import _insert_casette
 
 
@@ -15,7 +15,7 @@ def test_insert_casette():
     first_orientation_string = ">"
 
     assert (
-        reverse_dna_1hot(
+        dna_1hot_to_seq(
             _insert_casette(
                 seq_1hot,
                 first_seq_1hot_insertion,
@@ -34,7 +34,7 @@ def test_insert_casette():
     second_orientation_string = "<"
 
     assert (
-        reverse_dna_1hot(
+        dna_1hot_to_seq(
             _insert_casette(
                 seq_1hot,
                 second_seq_1hot_insertion,

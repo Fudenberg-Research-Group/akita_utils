@@ -206,7 +206,7 @@ def hot1_get(seqs_1hot, pos):
     return nt
 
 
-def reverse_dna_1hot(ohe_sequence):
+def dna_1hot_to_seq(ohe_sequence):
     ACTG_seq = str()
     for pos in range(len(ohe_sequence)):
         ACTG_seq = ACTG_seq + hot1_get(ohe_sequence, pos)
