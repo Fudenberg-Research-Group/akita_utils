@@ -37,7 +37,7 @@ def h5_to_df(
     hf = h5py.File(filename, "r")
     s = []
     for key in hf.keys():
-        if key.replace("ref_", "").replace("alt_", "").split("-")[0] in scd_stats:
+        if key.replace("ref_", "").replace("alt_", "").split("-")[0] in scd_stats: 
             if verbose:
                 print(key)
             s.append(pd.Series(hf[key][()].mean(axis=1), name=key))
