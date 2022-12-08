@@ -1,4 +1,6 @@
 import numpy as np
+import random
+import tensorflow as tf
 
 
 def dna_rc(seq):
@@ -211,3 +213,17 @@ def dna_1hot_to_seq(ohe_sequence):
     for pos in range(len(ohe_sequence)):
         ACTG_seq = ACTG_seq + hot1_get(ohe_sequence, pos)
     return ACTG_seq
+
+
+def dna_seq_rc(seq):
+    rc_seq = ""
+    for nt in seq:
+        if nt == "A":
+            rc_seq = rc_seq + "T"
+        elif nt == "C":
+            rc_seq = rc_seq + "G"
+        elif nt == "G":
+            rc_seq = rc_seq + "C"
+        elif nt == "T":
+            rc_seq = rc_seq + "A"
+    return rc_seq[::-1]
