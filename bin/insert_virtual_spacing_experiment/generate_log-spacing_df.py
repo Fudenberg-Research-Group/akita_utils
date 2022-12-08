@@ -62,7 +62,6 @@ import pandas as pd
 import numpy as np
 
 from akita_utils.tsv_gen_utils import (
-    unpack_range,
     filter_boundary_ctcfs_from_h5,
     filter_by_rmsk,
     filter_by_ctcf,
@@ -187,7 +186,10 @@ def main():
     all_permutations = options.all_permutations
 
     flank = options.flank
-    spacing_start, spacing_end = unpack_range(options.space_range)
+    spacing_start, spacing_end = [
+        int(num) for num in options.space_range.split(",")
+    ]
+
     spacing_list = list(
         np.unique(
             numutils.logbins(

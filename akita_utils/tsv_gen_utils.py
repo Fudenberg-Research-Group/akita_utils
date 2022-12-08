@@ -293,7 +293,7 @@ def filter_by_ctcf(
         names=ctcf_cols,
     )
 
-    ctct_motifs = bioframe.expand(ctcf_motifs, pad=exclude_window)
+    ctcf_motifs = bioframe.expand(ctcf_motifs, pad=exclude_window)
 
     sites = bioframe.count_overlaps(
         sites, ctcf_motifs[site_cols], cols1=["chrom", "start_2", "end_2"]
@@ -481,9 +481,12 @@ def add_diff_flanks_and_const_spacer(
 
     flank_ls = []
     spacer_ls = []
-    
-    seq_coords_df = pd.concat([rep_unit for i in range(flank_end - flank_start + 1)], ignore_index=True)
-    
+
+    seq_coords_df = pd.concat(
+        [rep_unit for i in range(flank_end - flank_start + 1)],
+        ignore_index=True,
+    )
+
     for flank in range(flank_start, flank_end + 1):
         spacer = flank_spacer_sum - flank
         flank_ls = flank_ls + [flank] * df_len
@@ -520,9 +523,11 @@ def add_const_flank_and_diff_spacer(seq_coords_df, flank, spacing_list):
 
     flank_ls = []
     spacer_ls = []
-    
-    seq_coords_df = pd.concat([rep_unit for i in range(len(spacing_list))], ignore_index=True)
-    
+
+    seq_coords_df = pd.concat(
+        [rep_unit for i in range(len(spacing_list))], ignore_index=True
+    )
+
     for spacer in spacing_list:
         flank_ls = flank_ls + [flank] * df_len
         spacer_ls = spacer_ls + [spacer] * df_len
