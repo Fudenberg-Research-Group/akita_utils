@@ -42,8 +42,6 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
     that can be used as input to akita via PredStreamGen
     """
 
-    list_seq_1hot = []
-
     for s in seq_coords_df.itertuples():
 
         flank_bp = s.flank_bp
