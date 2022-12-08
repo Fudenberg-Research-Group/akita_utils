@@ -1,46 +1,54 @@
-from akita_utils.dna_utils import dna_1hot, dna_1hot_to_seq
+from akita_utils.dna_utils import dna_1hot, dna_1hot_to_seq, dna_seq_rc
 from akita_utils.seq_gens import _insert_casette
 
 
 def test_insert_casette():
 
-    toy_genome_open = dna_1hot("TTGTACTTCGTCGTT")
-    seq_1hot = dna_1hot("AAAAAAAAAA")
+    motif1 = "GTAC"
+    motif2 = "CGTCG"
+    toy_genome_open = dna_1hot("TT" + motif1 + "TT" + motif2 + "TT")
+    background_1hot = dna_1hot("AAAAAAAAAA")
 
     # first test
-    first_spacer_bp = 1
+    first_flank_bp = 1
+    first_spacer_bp = 0
     first_seq_1hot_insertion = toy_genome_open[
-        (2 - first_spacer_bp) : (6 + first_spacer_bp)
+        (2 - first_flank_bp) : (6 + first_flank_bp)
     ]
+    # toy_genome_open[(2-flank_bp):(6+flank_bp) corresponds to "TGTACT" (motif1 + 1bp-flanks)
     first_orientation_string = ">"
 
     assert (
         dna_1hot_to_seq(
             _insert_casette(
-                seq_1hot,
+                background_1hot,
                 first_seq_1hot_insertion,
                 first_spacer_bp,
                 first_orientation_string,
             )
         )
-        == "AATGTACTAA"
+        == "AA" + "T" + motif1 + "T" + "AA"
     )
+    # Ts around the motif are the 1bp flanks
+    # spacer_bp is 0
 
     # second test
+    second_flank_bp = 0
     second_spacer_bp = 0
     second_seq_1hot_insertion = toy_genome_open[
-        (8 - second_spacer_bp) : (13 + second_spacer_bp)
+        (8 - second_flank_bp) : (13 + second_flank_bp)
     ]
     second_orientation_string = "<"
+    # dna_1hot_to_seq(toy_genome_open[(8 - second_spacer_bp) : (13 + second_spacer_bp)]) corresponds to "CGTCG" (motif2)
 
     assert (
         dna_1hot_to_seq(
             _insert_casette(
-                seq_1hot,
+                background_1hot,
                 second_seq_1hot_insertion,
                 second_spacer_bp,
                 second_orientation_string,
             )
         )
-        == "AAACGACGAA"
+        == "AAA" + dna_seq_rc(motif2) + "AA"
     )
