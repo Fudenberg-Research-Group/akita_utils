@@ -176,8 +176,10 @@ def main():
     N = len(orient_list[0])
     all_permutations = options.all_permutations
 
-    flank_start, flank_end = [int(num) for num in options.flank_range.split(",")]
-    
+    flank_start, flank_end = [
+        int(num) for num in options.flank_range.split(",")
+    ]
+
     rmsk_exclude_window = flank_end
     ctcf_exclude_window = 2 * flank_end
 
@@ -194,7 +196,8 @@ def main():
     weak_thresh_pct = 1
     strong_thresh_pct = 99
 
-    sites = filter_boundary_ctcfs_from_h5(h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
+    sites = filter_boundary_ctcfs_from_h5(
+        h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
         score_key=score_key,
         threshold_all_ctcf=5,
     )
