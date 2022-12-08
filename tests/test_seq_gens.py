@@ -30,7 +30,6 @@ def test_insert_casette():
         == "AA" + "T" + motif1 + "T" + "AA"
     )
     # Ts around the motif are the 1bp flanks
-    # spacer_bp is 0
 
     # second test
     second_flank_bp = 0
@@ -52,24 +51,23 @@ def test_insert_casette():
         )
         == "AAA" + dna_seq_rc(motif2) + "AA"
     )
-
+    
     # third test (two casettes)
     third_flank_bp = 0
     third_spacer_bp = 0
     third_orientation_string = "><"
-    third_seq_1hot_insertion = toy_genome_open[
-        (2 - third_flank_bp) : (6 + third_flank_bp)
-    ]
+    third_seq_1hot_insertion = toy_genome_open[(2 - third_flank_bp) : (6 + third_flank_bp)]
     # toy_genome_open[(2 - third_flank_bp) : (6 + third_flank_bp)] corresponds to motif1
-
+    
     assert (
-        dna_1hot_to_seq(
-            _insert_casette(
-                background_1hot,
-                third_seq_1hot_insertion,
-                third_spacer_bp,
-                third_orientation_string,
-            )
+    dna_1hot_to_seq(
+        _insert_casette(
+            background_1hot,
+            third_seq_1hot_insertion,
+            third_spacer_bp,
+            third_orientation_string,
         )
-        == "A" + motif1 + dna_seq_rc(motif1) + "A"
     )
+    == "A" + motif1 + dna_seq_rc(motif1) + "A"
+    )
+    
