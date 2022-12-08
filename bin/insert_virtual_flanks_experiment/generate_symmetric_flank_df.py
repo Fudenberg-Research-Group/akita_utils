@@ -61,7 +61,6 @@ from optparse import OptionParser
 import pandas as pd
 
 from akita_utils.tsv_gen_utils import (
-    unpack_range,
     filter_boundary_ctcfs_from_h5,
     filter_by_rmsk,
     filter_by_ctcf,
@@ -177,8 +176,8 @@ def main():
     N = len(orient_list[0])
     all_permutations = options.all_permutations
 
-    flank_start, flank_end = unpack_range(options.flank_range)
-
+    flank_start, flank_end = [int(num) for num in options.flank_range.split(",")]
+    
     rmsk_exclude_window = flank_end
     ctcf_exclude_window = 2 * flank_end
 
@@ -194,10 +193,8 @@ def main():
     score_key = "SCD"
     weak_thresh_pct = 1
     strong_thresh_pct = 99
-    pad_flank = 0
 
-    sites = filter_boundary_ctcfs_from_h5(
-        h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
+    sites = filter_boundary_ctcfs_from_h5(h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
         score_key=score_key,
         threshold_all_ctcf=5,
     )
@@ -218,18 +215,18 @@ def main():
 
     strong_sites = filter_sites_by_score(
         sites,
-        score_key="SCD",
-        upper_threshold=99,
-        lower_threshold=1,
+        score_key=score_key,
+        upper_threshold=strong_thresh_pct,
+        lower_threshold=weak_thresh_pct,
         mode="head",
         num_sites=options.num_strong_motifs,
     )
 
     weak_sites = filter_sites_by_score(
         sites,
-        score_key="SCD",
-        upper_threshold=99,
-        lower_threshold=1,
+        score_key=score_key,
+        upper_threshold=strong_thresh_pct,
+        lower_threshold=weak_thresh_pct,
         mode="tail",
         num_sites=options.num_weak_motifs,
     )
@@ -262,7 +259,7 @@ def main():
     )
 
     df_with_flanks_spacers = add_diff_flanks_and_const_spacer(
-        df_with_background, options.flank_range, options.flank_spacer_sum
+        df_with_background, flank_start, flank_end, options.flank_spacer_sum
     )
 
     df_with_flanks_spacers = df_with_flanks_spacers.drop(columns="index")

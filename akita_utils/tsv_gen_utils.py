@@ -452,7 +452,7 @@ def add_orientation(seq_coords_df, orientation_strings, all_permutations):
 
 
 def add_diff_flanks_and_const_spacer(
-    seq_coords_df, flank_range, flank_spacer_sum
+    seq_coords_df, flank_start, flank_end, flank_spacer_sum
 ):
 
     """
@@ -462,8 +462,10 @@ def add_diff_flanks_and_const_spacer(
     -----------
     seq_coords_df : dataFrame
         Set of experiments where each row specifies a set of CTCF-binding sites.
-    flank_range : string
-        String in a form "range_start,range_end" sepecifying start and end of the tested flanks range.
+    flank_start : int
+        Integer specifying start of the tested flanks range.
+    flank_end : int
+        Integer specifying end of the tested flanks range.
     flank_spacer_sum : int
         Sum of flank and spacer lengths.
         In other words, one half of a tail-to-head distance between two CTCFs.
@@ -474,23 +476,18 @@ def add_diff_flanks_and_const_spacer(
         An input dataframe with two columns added: "flank_bp" and "spacer_bp".
     """
 
-    flank_start, flank_end = unpack_range(flank_range)
-
     rep_unit = seq_coords_df
     df_len = len(rep_unit)
 
     flank_ls = []
     spacer_ls = []
-
+    
+    seq_coords_df = pd.concat([rep_unit for i in range(flank_end - flank_start + 1)], ignore_index=True)
+    
     for flank in range(flank_start, flank_end + 1):
         spacer = flank_spacer_sum - flank
         flank_ls = flank_ls + [flank] * df_len
         spacer_ls = spacer_ls + [spacer] * df_len
-
-        if len(seq_coords_df) != len(flank_ls):
-            seq_coords_df = pd.concat(
-                [seq_coords_df, rep_unit], ignore_index=True
-            )
 
     seq_coords_df["flank_bp"] = flank_ls
     seq_coords_df["spacer_bp"] = spacer_ls
@@ -523,15 +520,12 @@ def add_const_flank_and_diff_spacer(seq_coords_df, flank, spacing_list):
 
     flank_ls = []
     spacer_ls = []
-
+    
+    seq_coords_df = pd.concat([rep_unit for i in range(len(spacing_list))], ignore_index=True)
+    
     for spacer in spacing_list:
         flank_ls = flank_ls + [flank] * df_len
         spacer_ls = spacer_ls + [spacer] * df_len
-
-        if len(seq_coords_df) != len(spacer_ls):
-            seq_coords_df = pd.concat(
-                [seq_coords_df, rep_unit], ignore_index=True
-            )
 
     seq_coords_df["flank_bp"] = flank_ls
     seq_coords_df["spacer_bp"] = spacer_ls
