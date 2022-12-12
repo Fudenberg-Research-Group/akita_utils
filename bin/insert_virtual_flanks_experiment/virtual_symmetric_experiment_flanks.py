@@ -66,11 +66,8 @@ import os
 # import os
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
-import pdb
 import pickle
 import random
-import sys
-import time
 
 import h5py
 import numpy as np
@@ -91,11 +88,11 @@ gpus = tf.config.experimental.list_physical_devices("GPU")
 #  tf.config.experimental.set_memory_growth(gpu, True)
 print(gpus)
 
-from basenji import seqnn
-from basenji import stream
-from basenji import dna_io
+from basenji import seqnn, stream, dna_io
 
-from akita_utils import ut_dense, split_df_equally, symmertic_insertion_seqs_gen
+from akita_utils.seq_gens import symmertic_insertion_seqs_gen
+from akita_utils.utils import ut_dense, split_df_equally
+from akita_utils.stats_utils import insul_diamonds_scores
 
 ################################################################################
 # main
@@ -372,7 +369,6 @@ def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_l
     seq_coords_df_dtypes = seq_coords_df.dtypes
 
     for key in seq_coords_df:
-        print(key, seq_coords_df_dtypes[key])
         if seq_coords_df_dtypes[key] is np.dtype("O"):
             scd_out.create_dataset(key, data=seq_coords_df[key].values.astype("S"))
         else:
@@ -408,8 +404,6 @@ def write_snp(
     plot_freq=100,
 ):
     """Write SNP predictions to HDF."""
-    
-    print(si)
     
     # increase dtype
     ref_preds = ref_preds.astype("float32")

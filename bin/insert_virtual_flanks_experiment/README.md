@@ -2,7 +2,7 @@
 1. 2022-10-10_flank0-30_200motifs (all orientations)
     - generating tsv table
         ```
-        python generate_symmetric_flank_df.py --num-strong 100 --num-weak 100 --orientation-string ">>" --flank-range 0,30 --backgrounds-indices 0,1,2 --filename 2022-10-10_flank0-30_200motifs_convergent.tsv --verbose
+        python generate_symmetric_flank_df.py --num-strong 100 --num-weak 100 --orientation-string ">>" --flank-range 0,30 --backgrounds-indices 0,1,2 --filename 2022-10-10_flank0-30_200motifs_convergent --verbose
         ```
     - Akita predictions
 
