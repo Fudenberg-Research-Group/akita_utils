@@ -1,11 +1,12 @@
 import pandas as pd
 import numpy as np
+import akita_utils
 import glob
 import bioframe
 import itertools
 from io import StringIO
 from akita_utils.format_io import h5_to_df
-
+import akita_utils.format_io
 
 def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
     """Helper function to split a span 'start-end' into two integer series, and either
@@ -39,7 +40,7 @@ def filter_boundary_ctcfs_from_h5(
     ## load scores from boundary mutagenesis, average chosen score across models
     dfs = []
     for h5_file in glob.glob(h5_dirs):
-        dfs.append(h5_to_df(h5_file))
+        dfs.append(akita_utils.format_io.h5_to_df(h5_file))
     df = dfs[0].copy()
     df[score_key] = np.mean([df[score_key] for df in dfs], axis=0)
 
@@ -572,3 +573,17 @@ def add_background(seq_coords_df, background_indices_list):
     seq_coords_df["background_index"] = background_ls
 
     return seq_coords_df
+
+
+
+
+def calculate_GC(chrom_seq_bed_file,genome_fasta):
+    "takes a bed file and fasta, splits it in akita feedable windows, calculates GC content and adds a column GC"
+    chromsizes = bioframe.read_chromsizes(chrom_seq_bed_file,chrom_patterns=("^chr1$", "^chr2$", "^chr3$"))
+    raw_dataframe = pd.DataFrame(chromsizes)
+    raw_dataframe['end'] = raw_dataframe['length']+ 1310720 # akita's window size (open to another selection method)
+    raw_dataframe = raw_dataframe.reset_index()
+    raw_dataframe.rename(columns = {'index' : 'chrom', 'length':'start'}, inplace = True)
+    final_chrom_dataframe = bioframe.frac_gc(raw_dataframe, bioframe.load_fasta(genome_fasta), return_input=True)
+    return final_chrom_dataframe
+
