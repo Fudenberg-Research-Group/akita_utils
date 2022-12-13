@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
-from akita_utils import filter_by_chrmlen, ut_dense
-from io import StringIO
+from akita_utils.utils import ut_dense, split_df_equally
 
 
 def test_ut_dense():
@@ -26,26 +25,9 @@ def test_ut_dense():
 
 
 def test_split_df_equally():
-    
-    df = pd.DataFrame(np.linspace(0, 99, 100), columns=['col1'])
-    fifth_chunk = akita_utils.split_df_equally(df, 20, 5)
-    assert (fifth_chunk["col1"].to_numpy() == np.linspace(25, 29, 5)).all() == True
 
-    
-def test_filter_by_chrmlen():
-
-    df1 = pd.DataFrame(
-        [["chrX", 3, 8], ["chr1", 4, 5], ["chrX", 1, 5]],
-        columns=["chrom", "start", "end"],
-    )
-
-    # get the same result with chrmsizes provided as dict or via StringIO
-
-    # one interval is dropped for exceeding chrX len of 7
-    assert filter_by_chrmlen(df1, {"chr1": 10, "chrX": 7}, 0).shape == (2, 3)
-
-    # both chrX intervals are dropped if the buffer_bp are increased
-    assert filter_by_chrmlen(df1, {"chr1": 10, "chrX": 7}, 3).shape == (1, 3)
-
-    # no intervals remain if all of chr1 is excluded as well
-    assert filter_by_chrmlen(df1, {"chr1": 10, "chrX": 7}, 5).shape == (0, 3)
+    df = pd.DataFrame(np.linspace(0, 99, 100), columns=["col1"])
+    fifth_chunk = split_df_equally(df, 20, 5)
+    assert (
+        fifth_chunk["col1"].to_numpy() == np.linspace(25, 29, 5)
+    ).all() == True
