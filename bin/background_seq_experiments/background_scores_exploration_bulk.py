@@ -33,11 +33,6 @@ from basenji import seqnn
 from basenji import stream
 from basenji import dna_io
 
-#from basenji import vcf as bvcf
-from basenji import seqnn
-from basenji import stream
-from basenji import dna_io
-
 import akita_utils
 from akita_utils import ut_dense, split_df_equally 
 from akita_utils.seq_gens import background_exploration_seqs_gen

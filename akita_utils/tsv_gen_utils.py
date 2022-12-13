@@ -4,6 +4,7 @@ import akita_utils
 import glob
 from io import StringIO
 import bioframe
+import akita_utils.io
 
 def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
     """Helper function to split a span 'start-end' into two integer series, and either
@@ -105,23 +106,6 @@ def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
     return df_filtered
 
 
-
-
-#     strong_sites, weak_sites = akita_utils.tsv_gen_utils.filter_sites_by_score(
-#         sites,
-#         score_key=score_key,
-#         weak_thresh_pct=weak_thresh_pct,
-#         weak_num=options.num_strong_motifs,
-#         strong_thresh_pct=strong_thresh_pct,
-#         strong_num=options.num_strong_motifs,
-
-
-#     score_key = "SCD"
-#     weak_thresh_pct = 1
-#     strong_thresh_pct = 99
-#     pad_flank = 0
-
-
 def filter_sites_by_score(
     sites,
     score_key="SCD",
@@ -142,14 +126,14 @@ def filter_sites_by_score(
     if num_sites != None:
         assert num_sites <= len(filtered_sites), "length of dataframe is smaller than requested number of sites, change contraints"
         
-        # if mode == "head":
-        #     filtered_sites = filtered_sites[:num_sites]
-        # elif mode == "tail":
-        #     filtered_sites = filtered_sites[-num_sites:]
-        # else:
-        #     filtered_sites = filtered_sites.sample(n=num_sites)
+        if mode == "head":
+            filtered_sites = filtered_sites[:num_sites]
+        elif mode == "tail":
+            filtered_sites = filtered_sites[-num_sites:]
+        else:
+            filtered_sites = filtered_sites.sample(n=num_sites)
     
-    return filtered_sites[:num_sites], filtered_sites[-num_sites:] #filtered_sites (FAHAD CHANGED HERE)
+    return filtered_sites
 
 
 def unpack_flank_range(flank_range):
@@ -403,3 +387,17 @@ def add_background(seq_coords_df, background_indices_list):
     seq_coords_df["background_index"] = background_ls
 
     return seq_coords_df
+
+
+
+
+def calculate_GC(chrom_seq_bed_file,genome_fasta):
+    "takes a bed file and fasta, splits it in akita feedable windows, calculates GC content and adds a column GC"
+    chromsizes = bioframe.read_chromsizes(chrom_seq_bed_file,chrom_patterns=("^chr1$", "^chr2$", "^chr3$"))
+    raw_dataframe = pd.DataFrame(chromsizes)
+    raw_dataframe['end'] = raw_dataframe['length']+ 1310720 # akita's window size (open to another selection method)
+    raw_dataframe = raw_dataframe.reset_index()
+    raw_dataframe.rename(columns = {'index' : 'chrom', 'length':'start'}, inplace = True)
+    final_chrom_dataframe = bioframe.frac_gc(raw_dataframe, bioframe.load_fasta(genome_fasta), return_input=True)
+    return final_chrom_dataframe
+
