@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 # Copyright 2017 Calico LLC
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,27 +15,28 @@
 # limitations under the License.
 # =========================================================================
 
-from optparse import OptionParser
-import glob
-import os
-import pickle
-import shutil
-import subprocess
-import sys
-
-import h5py
-import numpy as np
-
-import slurm_gf as slurm
-
 """
-Derived from akita_scd_multi.py
+multiGPU-virtual_symmetric_experiment.py
+Derived from akita_motif_scd_multi.py (https://github.com/Fudenberg-Research-Group/akita_utils/blob/main/bin/disrupt_genomic_boundary_ctcfs/akita_motif_scd_multi.py)
 
 Compute scores for motifs in a TSV file, using multiple processes.
 
 Relies on slurm_gf.py to auto-generate slurm jobs.
 
 """
+
+from optparse import OptionParser
+import os
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+
+import pickle
+import subprocess
+import sys
+
+import h5py
+import numpy as np
+
+import akita_utils.slurm_gf as slurm
 
 ################################################################################
 # main
@@ -119,21 +121,18 @@ def main():
         help="Specify head index (0=human 1=mus) ",
     )
     parser.add_option(
-        "--mut-method",
-        dest="mutation_method",
-        default="mask",
-        type="str",
-        help="Specify mutation method, [Default: %default]",
+        "--model-index",
+        dest="model_index",
+        default=0,
+        type="int",
+        help="Specify model index (from 0 to 7)",
     )
+    ## insertion-specific options
     parser.add_option(
-        "--motif-width", dest="motif_width", default=18, type="int", help="motif width"
-    )
-    parser.add_option(
-        "--use-span",
-        dest="use_span",
-        default=False,
-        action="store_true",
-        help="specify if using spans",
+        "--background-file",
+        dest="background_file",
+        default="/project/fudenber_735/tensorflow_models/akita/v2/analysis/background_seqs.fa",
+        help="file with insertion seqs in fasta format",
     )
 
     # multi
@@ -187,7 +186,7 @@ def main():
     parser.add_option(
         "--time",
         dest="time",
-        default="1-0:0:0",
+        default="01:00:00",
         help="time to run job. [Default: %default]",
     )
     parser.add_option(
@@ -211,7 +210,7 @@ def main():
 
     #######################################################
     # prep work
-
+    
     # output directory
     if not options.restart:
         if os.path.isdir(options.out_dir):
@@ -224,7 +223,7 @@ def main():
     options_pkl = open(options_pkl_file, "wb")
     pickle.dump(options, options_pkl)
     options_pkl.close()
-
+    
     #######################################################
     # launch worker threads
     jobs = []
@@ -236,10 +235,11 @@ def main():
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
             else:
                 cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += "conda activate basenji;"
+                cmd += "conda activate basenji-numba2;"      #changed
+                # cmd += "conda activate basenji;"      #changed
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
 
-            cmd += " ${SLURM_SUBMIT_DIR}/akita_motif_scd.py %s %s %d" % (
+            cmd += " ${SLURM_SUBMIT_DIR}/virtual_symmetric_experiment.py %s %s %d" % (
                 options_pkl_file,
                 " ".join(args),
                 pi,
@@ -265,16 +265,16 @@ def main():
                 constraint=options.constraint,
             )
             jobs.append(j)
-
+    
     slurm.multi_run(
-        jobs, max_proc=options.max_proc, verbose=True, launch_sleep=10, update_sleep=60
+        jobs, max_proc=options.max_proc, verbose=False, launch_sleep=10, update_sleep=60
     )
 
     #######################################################
     # collect output
 
     collect_h5("scd.h5", options.out_dir, options.processes)
-
+    
     # for pi in range(options.processes):
     #     shutil.rmtree('%s/job%d' % (options.out_dir,pi))
 
@@ -296,7 +296,7 @@ def collect_h5(file_name, out_dir, num_procs):
         # open job
         job_h5_file = "%s/job%d/%s" % (out_dir, pi, file_name)
         job_h5_open = h5py.File(job_h5_file, "r")
-        num_variants += len(job_h5_open["chrom_core"])
+        num_variants += len(job_h5_open["chrom"])
         job_h5_open.close()
 
     # initialize final h5
@@ -309,10 +309,12 @@ def collect_h5(file_name, out_dir, num_procs):
     job0_h5_file = "%s/job0/%s" % (out_dir, file_name)
     job0_h5_open = h5py.File(job0_h5_file, "r")
     for key in job0_h5_open.keys():
-        if key in ["target_ids", "target_labels"]:
-            # copy
-            final_h5_open.create_dataset(key, data=job0_h5_open[key])
 
+        if key in ["experiment_id", "chrom", "start", "end", "strand", "genomic_SCD", "orientation", "background_index", "flank_bp", "spacer_bp"]:
+            final_h5_open.create_dataset(
+                key, shape=(num_variants,), dtype=job0_h5_open[key].dtype
+            )
+            
         elif job0_h5_open[key].dtype.char == "S":
             final_strings[key] = []
 
@@ -332,21 +334,23 @@ def collect_h5(file_name, out_dir, num_procs):
     # set values
     vi = 0
     for pi in range(num_procs):
+        print("collecting job", pi)
         # open job
         job_h5_file = "%s/job%d/%s" % (out_dir, pi, file_name)
         job_h5_open = h5py.File(job_h5_file, "r")
 
         # append to final
         for key in job_h5_open.keys():
-            if key in ["target_ids", "target_labels"]:
-                # once is enough
-                pass
+            
+            job_variants = job_h5_open[key].shape[0]
+            
+            if key in ["experiment_id", "chrom", "start", "end", "strand", "genomic_SCD", "orientation", "background_index", "flank_bp", "spacer_bp"]:
+                final_h5_open[key][vi : vi + job_variants] = job_h5_open[key]
 
             else:
                 if job_h5_open[key].dtype.char == "S":
-                    final_strings[key] += list(job_h5_open[key])
+                    final_strings[key] = list(job_h5_open[key])
                 else:
-                    job_variants = job_h5_open[key].shape[0]
                     final_h5_open[key][vi : vi + job_variants] = job_h5_open[key]
 
         vi += job_variants

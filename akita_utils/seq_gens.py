@@ -1,13 +1,16 @@
+
+from akita_utils.dna_utils import hot1_rc, dna_1hot
 import numpy as np
-import pandas as pd
-import akita_utils
-import akita_utils.io
+import akita_utils.format_io
 ########################################
 #           insertion utils            #
 ########################################
 
-def _insert_casette(seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string):
-        
+
+def _insert_casette(
+    seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string
+):
+
     seq_length = seq_1hot.shape[0]
     insert_bp = len(seq_1hot_insertion)
     num_inserts = len(orientation_string)
@@ -15,7 +18,7 @@ def _insert_casette(seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string)
     insert_plus_spacer_bp = insert_bp + 2 * spacer_bp
     multi_insert_bp = num_inserts * insert_plus_spacer_bp
     insert_start_bp = seq_length // 2 - multi_insert_bp // 2
-    
+
     output_seq = seq_1hot.copy()
     insertion_starting_positions = []
     for i in range(num_inserts):
@@ -27,8 +30,33 @@ def _insert_casette(seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string)
             if orientation_arrow == ">":
                 output_seq[offset : offset + insert_bp] = seq_1hot_insertion
             else:
-                output_seq[offset : offset + insert_bp] = dna_io.hot1_rc(seq_1hot_insertion)
+                output_seq[offset : offset + insert_bp] = hot1_rc(
+                    seq_1hot_insertion
+                )
 
+    return output_seq
+
+
+def _multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_string):
+        
+    assert len(seq_1hot_insertions)==len(orientation_string), "insertions dont match orientations, please check"
+    seq_length = seq_1hot.shape[0]
+    total_insert_bp = sum([len(insertion) for insertion in seq_1hot_insertions])
+    num_inserts = len(seq_1hot_insertions)
+    inserts_plus_spacer_bp = total_insert_bp + (2 * spacer_bp)*num_inserts
+    insert_start_bp = seq_length // 2 - inserts_plus_spacer_bp // 2
+    output_seq = seq_1hot.copy()
+    
+    length_of_previous_insert = 0
+    for i in range(num_inserts):
+        insert_bp = len(seq_1hot_insertions[i])
+        orientation_arrow = orientation_string[i]
+        offset = insert_start_bp + length_of_previous_insert + spacer_bp # i * inserts_plus_spacer_bp + spacer_bp
+        length_of_previous_insert += len(seq_1hot_insertions[i]) + 2*spacer_bp
+        if orientation_arrow == ">":
+            output_seq[offset : offset + insert_bp] = seq_1hot_insertions[i]
+        else:
+            output_seq[offset : offset + insert_bp] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[i])
     return output_seq
 
 
@@ -56,28 +84,29 @@ def _multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_
 
         
 def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
-    """ sequence generator for making insertions from tsvs
-        construct an iterator that yields a one-hot encoded sequence
-        that can be used as input to akita via PredStreamGen
+    """sequence generator for making insertions from tsvs
+    construct an iterator that yields a one-hot encoded sequence
+    that can be used as input to akita via PredStreamGen
     """
-        
-    list_seq_1hot = []
-    
+
     for s in seq_coords_df.itertuples():
-        
+
         flank_bp = s.flank_bp
         spacer_bp = s.spacer_bp
         orientation_string = s.orientation
-                
-        seq_1hot_insertion = dna_io.dna_1hot(
-            genome_open.fetch(s.chrom, s.start - flank_bp, s.end + flank_bp).upper()
+
+        seq_1hot_insertion = dna_1hot(
+            genome_open.fetch(
+                s.chrom, s.start - flank_bp, s.end + flank_bp
+            ).upper()
         )
-        
+
         if s.strand == "-":
-            seq_1hot_insertion = dna_io.hot1_rc(seq_1hot_insertion)
+            seq_1hot_insertion = hot1_rc(seq_1hot_insertion)
             # now, all motifs are standarized to this orientation ">"
 
         seq_1hot = background_seqs[s.background_index].copy()
+        
         seq_1hot = _insert_casette(seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string)
         
         yield seq_1hot
@@ -105,7 +134,6 @@ def modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
             seq_1hot_insertions.append(seq_1hot_insertion)
 
         seq_1hot = _multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_string)
-
         yield seq_1hot
         
         
@@ -153,7 +181,8 @@ def random_seq_permutation(seq_1hot):
     return seq_1hot_perm
 
 def background_exploration_seqs_gen(seq_coords_df, genome_open, use_span=True):
-    motif = akita_utils.io.read_jaspar_to_numpy()
+
+    motif = akita_utils.format_io.read_jaspar_to_numpy()
     motif_window = len(motif)-3 #for compartibility ie (19-3=16 which is a multiple of 2,4,8 the shuffle parameters)
     for s in seq_coords_df.itertuples():
         chrom,start,end = s.locus_specification.split(",")
@@ -171,3 +200,7 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open, use_span=True):
             yield akita_utils.dna_utils.permute_seq_k(wt_1hot, k=s.shuffle_parameter)
         elif mutation_method == "randomise_whole_seq":
             yield random_seq_permutation(wt_1hot)
+
+########################################
+#           deletion utils             #
+########################################

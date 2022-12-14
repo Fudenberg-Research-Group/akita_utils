@@ -6,12 +6,9 @@ from __future__ import print_function
 from optparse import OptionParser
 import json
 import os
-import pdb
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import pickle
 import random
-import sys
-import time
-import bioframe 
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
@@ -29,19 +26,14 @@ gpus = tf.config.experimental.list_physical_devices('GPU')
 #  tf.config.experimental.set_memory_growth(gpu, True)
 print(gpus)
 
-from basenji import seqnn
-from basenji import stream
-from basenji import dna_io
-
+from basenji import seqnn, stream, dna_io
 import akita_utils
-from akita_utils import ut_dense, split_df_equally 
+from akita_utils.utils import ut_dense, split_df_equally 
 from akita_utils.seq_gens import background_exploration_seqs_gen
-from io import StringIO
 '''
 creating flat maps/seqs
 
 '''
-
 ################################################################################
 # main
 ################################################################################
@@ -301,7 +293,6 @@ def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_l
     seq_coords_df_dtypes = seq_coords_df.dtypes
 
     for key in seq_coords_df:
-        print(key, seq_coords_df_dtypes[key])
         if seq_coords_df_dtypes[key] is np.dtype("O"):
             scd_out.create_dataset(key, data=seq_coords_df[key].values.astype("S"))
         else:
@@ -337,8 +328,6 @@ def write_snp(
     plot_freq=100,
 ):
     """Write SNP predictions to HDF."""
-    
-    print(si)
     
     # increase dtype
     ref_preds = ref_preds.astype("float32")
