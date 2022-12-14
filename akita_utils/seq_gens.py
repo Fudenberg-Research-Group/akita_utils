@@ -59,29 +59,6 @@ def _multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_
             output_seq[offset : offset + insert_bp] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[i])
     return output_seq
 
-
-def _multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_string):
-        
-    assert len(seq_1hot_insertions)==len(orientation_string), "insertions dont match orientations, please check"
-    seq_length = seq_1hot.shape[0]
-    total_insert_bp = sum([len(insertion) for insertion in seq_1hot_insertions])
-    num_inserts = len(seq_1hot_insertions)
-    inserts_plus_spacer_bp = total_insert_bp + (2 * spacer_bp)*num_inserts
-    insert_start_bp = seq_length // 2 - inserts_plus_spacer_bp // 2
-    output_seq = seq_1hot.copy()
-    
-    length_of_previous_insert = 0
-    for i in range(num_inserts):
-        insert_bp = len(seq_1hot_insertions[i])
-        orientation_arrow = orientation_string[i]
-        offset = insert_start_bp + length_of_previous_insert + spacer_bp # i * inserts_plus_spacer_bp + spacer_bp
-        length_of_previous_insert += len(seq_1hot_insertions[i]) + 2*spacer_bp
-        if orientation_arrow == ">":
-            output_seq[offset : offset + insert_bp] = seq_1hot_insertions[i]
-        else:
-            output_seq[offset : offset + insert_bp] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[i])
-    return output_seq
-
         
 def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
     """sequence generator for making insertions from tsvs
