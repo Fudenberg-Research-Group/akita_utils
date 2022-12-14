@@ -36,14 +36,7 @@ def h5_to_df(
     hf = h5py.File(filename, "r")
     s = []
     for key in hf.keys():
-<<<<<<< HEAD:akita_utils/io.py
         if key.replace("ref_", "").replace("alt_", "").split("-")[0] in scd_stats: 
-=======
-        if (
-            key.replace("ref_", "").replace("alt_", "").split("-")[0]
-            in scd_stats
-        ):
->>>>>>> main:akita_utils/format_io.py
             if verbose:
                 print(key)
             s.append(pd.Series(hf[key][()].mean(axis=1), name=key))
