@@ -67,7 +67,7 @@ from akita_utils.tsv_gen_utils import (
     add_orientation,
     add_background,
     add_diff_flanks_and_const_spacer,
-    validate_df_lenght,
+    validate_df_lenght_additive,
     filter_sites_by_score,
 )
 
@@ -268,7 +268,7 @@ def main():
     df_with_flanks_spacers = df_with_flanks_spacers.drop(columns="index")
     df_with_flanks_spacers.index.name = "experiment_id"
 
-    (expected_df_len, observed_df_len) = validate_df_lenght(
+    (expected_df_len, observed_df_len) = validate_df_lenght_additive(
         options.num_strong_motifs,
         options.num_weak_motifs,
         num_orients,
