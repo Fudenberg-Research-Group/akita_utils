@@ -53,19 +53,26 @@ If the orientation_string is a comma-separated list of multiple string, e.g. ori
 
 from __future__ import print_function
 import os
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
+
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 import random
 from optparse import OptionParser
 import pandas as pd
-import itertools
 import numpy as np
 
-import bioframe
-import akita_utils
-from cooltools.lib import numutils
+from akita_utils.tsv_gen_utils import (
+    filter_boundary_ctcfs_from_h5,
+    filter_by_rmsk,
+    filter_by_ctcf,
+    add_orientation,
+    add_background,
+    add_const_flank_and_diff_spacer,
+    validate_df_lenght,
+    filter_sites_by_score,
+)
 
-from io import StringIO
+from cooltools.lib import numutils
 
 ################################################################################
 # main
@@ -114,16 +121,8 @@ def main():
         "--num_log-intervals",
         dest="log_space_range",
         default=200,
-        type=int,
-        help="Specify number of intervals to divide the space-range into",
-    )
-    parser.add_option(
-        "--flank-spacer-sum",
-        dest="flank_spacer_sum",
-        default=90,
         type="int",
-        help="Specify sum of flank and spacer so that distances between CTCFs binding sites are kept constant. \
-        \n2xflank-spacer-sum=distance between two consecutive CTCFs.",
+        help="Specify number of intervals to divide the space-range into",
     )
     parser.add_option(
         "--backgrounds-indices",
@@ -180,34 +179,44 @@ def main():
     )
 
     (options, args) = parser.parse_args()
-        
+
     orient_list = options.orientation_string.split(",")
     num_orients = len(orient_list)
     N = len(orient_list[0])
     all_permutations = options.all_permutations
-    
+
     flank = options.flank
-    spacing_start, spacing_end = unpack_range(options.space_range)
-    spacing_list = list(np.unique(numutils.logbins(lo=spacing_start, hi=spacing_end, N=options.log_space_range, version=2)-1))
-    
+    spacing_start, spacing_end = [
+        int(num) for num in options.space_range.split(",")
+    ]
+
+    spacing_list = list(
+        np.unique(
+            numutils.logbins(
+                lo=spacing_start,
+                hi=spacing_end,
+                N=options.log_space_range,
+                version=2,
+            )
+            - 1
+        )
+    )
+
     rmsk_exclude_window = flank
     ctcf_exclude_window = 2 * flank
-    
+
     background_indices_list = options.backgrounds_indices.split(",")
-    
+
     if options.all_permutations == True:
         assert len(orient_list) == 1
         num_orients = 2**N
 
     random.seed(44)
-    
+
     # loading motifs
     score_key = "SCD"
-    weak_thresh_pct = 1
-    strong_thresh_pct = 99
-    pad_flank = 0
 
-    sites = akita_utils.filter_boundary_ctcfs_from_h5(
+    sites = filter_boundary_ctcfs_from_h5(
         h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
         score_key=score_key,
         threshold_all_ctcf=5,
@@ -215,32 +224,37 @@ def main():
 
     sites = filter_by_rmsk(
         sites,
-        rmsk_file = options.rmsk_file, 
-        exclude_window = rmsk_exclude_window,
-        verbose=True
+        rmsk_file=options.rmsk_file,
+        exclude_window=rmsk_exclude_window,
+        verbose=True,
     )
-    
-    sites = filter_by_ctcf(sites,
-        ctcf_file = options.jaspar_file,
-        exclude_window = ctcf_exclude_window,
-        verbose=True)
-    
-    strong_sites, weak_sites = filter_sites_by_score(
+
+    sites = filter_by_ctcf(
         sites,
-        score_key=score_key,
-        weak_thresh_pct=weak_thresh_pct,
-        weak_num=options.num_weak_motifs,
-        strong_thresh_pct=strong_thresh_pct,
-        strong_num=options.num_strong_motifs,
+        ctcf_file=options.jaspar_file,
+        exclude_window=ctcf_exclude_window,
+        verbose=True,
     )
-    
-    if options.num_weak_motifs == 0:
-        site_df = strong_sites.copy()
-    elif options.num_strong_motifs == 0:
-        site_df = weak_sites.copy()
-    else:
-        site_df = pd.concat([strong_sites.copy(), weak_sites.copy()])
-    
+
+    strong_sites = filter_sites_by_score(
+        sites,
+        score_key="SCD",
+        upper_threshold=99,
+        lower_threshold=1,
+        mode="head",
+        num_sites=options.num_strong_motifs,
+    )
+
+    weak_sites = filter_sites_by_score(
+        sites,
+        score_key="SCD",
+        upper_threshold=99,
+        lower_threshold=1,
+        mode="tail",
+        num_sites=options.num_weak_motifs,
+    )
+
+    site_df = pd.concat([strong_sites.copy(), weak_sites.copy()])
     seq_coords_df = (
         site_df[["chrom", "start_2", "end_2", "strand_2", score_key]]
         .copy()
@@ -253,12 +267,9 @@ def main():
             }
         )
     )
-    
     seq_coords_df.reset_index(drop=True, inplace=True)
     seq_coords_df.reset_index(inplace=True)
-    
-    print(len(seq_coords_df))
-    
+
     # adding orientation, background index, information about flanks and spacers
     df_with_orientation = add_orientation(
         seq_coords_df,
@@ -270,14 +281,21 @@ def main():
         df_with_orientation, background_indices_list
     )
 
-    df_with_flanks_spacers = add_flanks_and_spacers(
-        df_with_background, options.flank, spacing_list
+    df_with_flanks_spacers = add_const_flank_and_diff_spacer(
+        df_with_background, flank, spacing_list
     )
 
     df_with_flanks_spacers = df_with_flanks_spacers.drop(columns="index")
     df_with_flanks_spacers.index.name = "experiment_id"
-    
-    (expected_df_len, observed_df_len) = validate_df_lenght(options.num_strong_motifs, options.num_weak_motifs, num_orients, len(background_indices_list), len(spacing_list), df_with_flanks_spacers)
+
+    (expected_df_len, observed_df_len) = validate_df_lenght(
+        options.num_strong_motifs,
+        options.num_weak_motifs,
+        num_orients,
+        len(background_indices_list),
+        len(spacing_list),
+        df_with_flanks_spacers,
+    )
 
     if options.verbose:
         print("\nSummary")
@@ -288,7 +306,8 @@ def main():
         print("Number of orientations: ", num_orients)
         print("Number of background sequences: ", len(background_indices_list))
         print(
-            "Number of different spacings: ", len(spacing_list),
+            "Number of different spacings: ",
+            len(spacing_list),
         )
         print("===============")
 
@@ -302,296 +321,6 @@ def main():
         df_with_flanks_spacers.to_csv(
             f"./{options.filename}.tsv", sep="\t", index=True
         )
-
-
-#################################################################
-
-def unpack_range(given_range):
-    
-    start, end = [int(num) for num in given_range.split(",")]
-    return (start, end)
-
-
-def filter_by_rmsk(
-    sites,
-    rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz",
-    exclude_window = 60,
-    site_cols = ["chrom", "start", "end"],
-    verbose=True,
-):
-    """
-    Filter out sites that overlap any entry in rmsk.
-    This is important for sineB2 in mice, and perhaps for other repetitive elements as well.
-
-    Parameters
-    -----------
-    sites : dataFrame
-        Set of genomic intervals, currently with columns "chrom","start_2","end_2"
-        TODO: update this and allow columns to be passed
-    rmsk_file : str
-        File in repeatmasker format used for filtering sites.
-
-    Returns
-    --------
-    sites : dataFrame
-        Subset of sites that do not have overlaps with repeats in the rmsk_file.
-
-    """
-    if verbose:
-        print("filtering sites by overlap with rmsk")
-
-    rmsk_cols = list(
-        pd.read_csv(
-            StringIO(
-                """bin swScore milliDiv milliDel milliIns genoName genoStart genoEnd genoLeft strand repName repClass repFamily repStart repEnd repLeft id"""
-            ),
-            sep=" ",
-        )
-    )
-
-    rmsk = pd.read_table(
-        rmsk_file,
-        names=rmsk_cols,
-    )
-    rmsk.rename(
-        columns={"genoName": "chrom", "genoStart": "start", "genoEnd": "end"},
-        inplace=True,
-    )
-    
-    rmsk = bioframe.expand(rmsk, pad=exclude_window)
-    
-    sites = bioframe.count_overlaps(
-        sites, rmsk[site_cols], cols1=["chrom", "start_2", "end_2"]
-    )
-    
-    sites = sites.iloc[sites["count"].values == 0]
-    sites.reset_index(inplace=True, drop=True)
-
-    return sites
-
-
-def filter_by_ctcf(
-    sites,
-    ctcf_file = "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
-    exclude_window = 60,
-    site_cols = ["chrom", "start", "end"],
-    verbose=True,
-    ):
-    """
-    Filter out sites that overlap any entry in ctcf within a window of 60bp up- and downstream.
-    Parameters
-    -----------
-    sites : dataFrame
-        Set of genomic intervals, currently with columns "chrom","start_2","end_2"
-    ctcf_file : str
-        File in tsv format used for filtering ctcf binding sites.
-    Returns
-    --------
-    sites : dataFrame
-        Subset of sites that do not have overlaps with ctcf binding sites in the ctcf_file.
-    """
-    if verbose:
-        print("filtering sites by overlap with ctcfs")
-
-    ctcf_cols = list(
-        pd.read_csv(
-            StringIO(
-                """chrom start end name score pval strand"""
-            ),
-            sep=" ",
-        )
-    )
-
-    ctcf_motifs = pd.read_table(
-        ctcf_file,
-        names=ctcf_cols,
-    )
-    
-    ctct_motifs = bioframe.expand(ctcf_motifs, pad=exclude_window)
-    
-    sites = bioframe.count_overlaps(
-        sites, ctcf_motifs[site_cols], cols1=["chrom", "start_2", "end_2"]
-    )
-    sites = sites.iloc[sites["count"].values == 0]
-    sites.reset_index(inplace=True, drop=True)
-
-    return sites
-    
-
-def validate_df_lenght(num_strong, num_weak, num_orientations, num_backgrounds, num_spacings, df):
-    
-    print("num_strong: ", num_strong)
-    print("num_weak: ", num_weak)
-    print("num_orientations: ", num_orientations)
-    print("num_backgrounds: ", num_backgrounds)
-    print("num_spacings: ", num_spacings)
-    
-    expected_df_len = (
-            (num_strong + num_weak)
-            * num_orientations
-            * num_backgrounds
-            * num_spacings
-        )
-    observed_df_len = len(df)
-    
-    print("expected_df_len: ", expected_df_len)
-    print("observed_df_len: ", observed_df_len)
-    
-    assert expected_df_len == observed_df_len
-    
-    return (expected_df_len, observed_df_len)
-
-    
-def generate_all_orientation_strings(N):
-    """
-    Function generates all possible orientations of N-long string consisting of binary characters (> and <) only.
-    Example: for N=2 the result is ['>>', '><', '<>', '<<'].
-    """
-    def _binary_to_orientation_string_map(binary_list):
-
-        binary_to_orientation_dict = {0: ">", 1: "<"}
-        orientation_list = [
-            binary_to_orientation_dict[number] for number in binary_list
-        ]
-
-        return "".join(orientation_list)
-
-    binary_list = [list(i) for i in itertools.product([0, 1], repeat=N)]
-
-    return [
-        _binary_to_orientation_string_map(binary_element)
-        for binary_element in binary_list
-    ]
-
-
-def add_orientation(seq_coords_df, orientation_strings, all_permutations):
-
-    """
-    Function adds an additional column named 'orientation', to the given dataframe where each row corresponds to one CTCF-binding site.
-    """
-
-    df_len = len(seq_coords_df)
-
-    if len(orientation_strings) > 1:
-
-        orientation_ls = []
-        rep_unit = seq_coords_df
-
-        for ind in range(len(orientation_strings)):
-            orientation = orientation_strings[ind]
-            orientation_ls = orientation_ls + [orientation] * df_len
-            if len(seq_coords_df) != len(orientation_ls):
-                seq_coords_df = pd.concat(
-                    [seq_coords_df, rep_unit], ignore_index=True
-                )
-
-        seq_coords_df["orientation"] = orientation_ls
-
-    else:
-        if all_permutations:
-
-            N = len(orientation_strings[0])
-
-            orientation_strings = generate_all_orientation_strings(N)
-
-            orientation_ls = []
-            rep_unit = seq_coords_df
-
-            for ind in range(len(orientation_strings)):
-                orientation = orientation_strings[ind]
-                orientation_ls = orientation_ls + [orientation] * df_len
-                if len(seq_coords_df) != len(orientation_ls):
-                    seq_coords_df = pd.concat(
-                        [seq_coords_df, rep_unit], ignore_index=True
-                    )
-
-            seq_coords_df["orientation"] = orientation_ls
-
-        else:
-            orientation_ls = []
-            orientation_ls = orientation_strings * df_len
-
-            seq_coords_df["orientation"] = orientation_ls
-
-    return seq_coords_df
-
-
-def add_flanks_and_spacers(seq_coords_df, flank, spacing_list):
-        
-    rep_unit = seq_coords_df
-    df_len = len(rep_unit)
-
-    flank_ls = []
-    spacer_ls = []
-
-    for spacer in spacing_list:
-        flank_ls = flank_ls + [flank] * df_len
-        spacer_ls = spacer_ls + [spacer] * df_len
-
-        if len(seq_coords_df) != len(flank_ls):
-            seq_coords_df = pd.concat(
-                [seq_coords_df, rep_unit], ignore_index=True
-            )
-
-    seq_coords_df["flank_bp"] = flank_ls
-    seq_coords_df["spacer_bp"] = spacer_ls
-
-    return seq_coords_df
-
-
-def add_background(seq_coords_df, background_indices_list):
-
-    rep_unit = seq_coords_df
-    df_len = len(rep_unit)
-
-    background_ls = []
-
-    for background_ind in background_indices_list:
-        background_ls = background_ls + [background_ind] * df_len
-
-        if len(seq_coords_df) != len(background_ls):
-            seq_coords_df = pd.concat(
-                [seq_coords_df, rep_unit], ignore_index=True
-            )
-
-    seq_coords_df["background_index"] = background_ls
-
-    return seq_coords_df
-
-
-def filter_sites_by_score(
-    sites,
-    score_key="SCD",
-    weak_thresh_pct=1,  # don't use sites weaker than this, might be artifacts
-    weak_num=500,
-    strong_thresh_pct=99,  # don't use sites stronger than this, might be artifacts
-    strong_num=500,
-):
-    """Chooses a specified number of strong and weak sites exluding low and/or high outliers which may contain more artifacts."""
-    # if weak_num < 1) or (strong_num < 1):
-    #     raise ValueError("must select a postive number of sites")
-    strong_thresh = np.percentile(sites[score_key].values, strong_thresh_pct)
-    weak_thresh = np.percentile(sites[score_key].values, weak_thresh_pct)
-    weak_sites = (
-        sites.loc[sites[score_key] > weak_thresh]
-        .copy()
-        .sort_values(score_key)[:weak_num]
-    )
-    strong_sites = (
-        sites.loc[sites[score_key] < strong_thresh]
-        .copy()
-        .sort_values(score_key)[-strong_num:][::-1]
-    )
-    if weak_num == 0:
-        strong_sites.reset_index(inplace=True, drop=True)
-        return strong_sites, None
-    elif strong_num == 0:
-        weak_sites.reset_index(inplace=True, drop=True)
-        return None, weak_sites
-    else:
-        strong_sites.reset_index(inplace=True, drop=True)
-        weak_sites.reset_index(inplace=True, drop=True)
-        return strong_sites, weak_sites
 
 
 ################################################################################

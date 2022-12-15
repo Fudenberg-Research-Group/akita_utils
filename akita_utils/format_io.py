@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy as np
+import h5py
 
 
 def h5_to_df(
@@ -36,7 +36,10 @@ def h5_to_df(
     hf = h5py.File(filename, "r")
     s = []
     for key in hf.keys():
-        if key.replace("ref_", "").replace("alt_", "").split("-")[0] in scd_stats:
+        if (
+            key.replace("ref_", "").replace("alt_", "").split("-")[0]
+            in scd_stats
+        ):
             if verbose:
                 print(key)
             s.append(pd.Series(hf[key][()].mean(axis=1), name=key))
@@ -47,7 +50,9 @@ def h5_to_df(
     insulation_stats = ["INS-16", "INS-32", "INS-64", "INS-128", "INS-256"]
     for key in insulation_stats:
         if "ref_" + key in hf.keys():
-            diff = hf["ref_" + key][()].mean(axis=1) - hf["alt_" + key][()].mean(axis=1)
+            diff = hf["ref_" + key][()].mean(axis=1) - hf["alt_" + key][
+                ()
+            ].mean(axis=1)
             s.append(pd.Series(diff, name=key))
     hf.close()
 
@@ -60,7 +65,9 @@ def h5_to_df(
     if drop_duplicates_key is not None:
         len_orig = len(df_out)
         if drop_duplicates_key not in df_out.keys():
-            raise ValueError("duplicate removal key must be present in dataFrame")
+            raise ValueError(
+                "duplicate removal key must be present in dataFrame"
+            )
         df_out.drop_duplicates(drop_duplicates_key, inplace=True)
         if verbose:
             print(len_orig - len(df_out), "duplicates removed for ", filename)
@@ -96,7 +103,9 @@ def read_jaspar_to_numpy(
             if ">" in line:
                 continue
             else:
-                motif.append(line.strip().replace("[", "").replace("]", "").split())
+                motif.append(
+                    line.strip().replace("[", "").replace("]", "").split()
+                )
     motif = pd.DataFrame(motif).set_index(0).astype(float).values.T
     if normalize is True:
         motif /= motif.sum(axis=1)[:, None]
