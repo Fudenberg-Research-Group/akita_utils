@@ -1,12 +1,10 @@
 import pandas as pd
 import numpy as np
-import akita_utils
 import glob
 import bioframe
 import itertools
 from io import StringIO
 from akita_utils.format_io import h5_to_df
-import akita_utils.format_io
 
 def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
     """Helper function to split a span 'start-end' into two integer series, and either
@@ -40,7 +38,7 @@ def filter_boundary_ctcfs_from_h5(
     ## load scores from boundary mutagenesis, average chosen score across models
     dfs = []
     for h5_file in glob.glob(h5_dirs):
-        dfs.append(akita_utils.format_io.h5_to_df(h5_file))
+        dfs.append(h5_to_df(h5_file))
     df = dfs[0].copy()
     df[score_key] = np.mean([df[score_key] for df in dfs], axis=0)
 
@@ -716,4 +714,6 @@ def add_fixed_core_coordinates(flanks_sites_df, core_sites_df):
     comma_separated_df = comma_separated_df.drop(columns=["flank_chrom", "flank_start", "flank_end", "flank_strand", "flank_genomic_SCD"])
     
     return comma_separated_df
+    
+
     
