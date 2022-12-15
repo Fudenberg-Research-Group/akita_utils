@@ -305,7 +305,7 @@ def filter_by_ctcf(
     return sites
 
 
-def validate_df_lenght(
+def validate_df_lenght_additive(
     num_strong,
     num_weak,
     num_orientations,
@@ -317,6 +317,7 @@ def validate_df_lenght(
     """
     validates if a created dataframe has an expected length (if number of experiments, so number of rows agrees)
     sizes.
+    In the "additive" version of this function, two first values are added (not multiplicated). 
 
     Parameters
     ------------
@@ -340,6 +341,55 @@ def validate_df_lenght(
 
     expected_df_len = (
         (num_strong + num_weak)
+        * num_orientations
+        * num_backgrounds
+        * number_of_flanks_or_spacers
+    )
+
+    observed_df_len = len(df)
+
+    assert expected_df_len == observed_df_len
+
+    return (expected_df_len, observed_df_len)
+
+
+def validate_df_lenght_multiplicative(
+    num_cores,
+    num_flanks,
+    num_orientations,
+    num_backgrounds,
+    number_of_flanks_or_spacers,
+    df,
+):
+
+    """
+    Validates if a created dataframe has an expected length (if number of experiments, so number of rows agrees)
+    sizes.
+    In the multiplicative version, first two values are multiplied to get the expected length of df. 
+
+    Parameters
+    ------------
+    num_cores : int
+        Number of CTCF-binding sites cores to be tested.
+    num_flanks : int
+        Number of CTCF-binding sites flank sets to be tested.
+    num_backgrounds : int
+        Number of different backgrounds to be used.
+    flank_range : str
+        String in a form: "range_start, range_end".
+    df : dataFrame
+        Input dataframe
+
+    Returns
+    ---------
+    (expected_df_len, observed_df_len) : tuple
+        Tuple of two integers: expected and observed number of rows.
+        There is an assertation error if those values are not the same.
+    """
+
+    expected_df_len = (
+        num_cores
+        * num_flanks
         * num_orientations
         * num_backgrounds
         * number_of_flanks_or_spacers
@@ -587,3 +637,83 @@ def calculate_GC(chrom_seq_bed_file,genome_fasta):
     final_chrom_dataframe = bioframe.frac_gc(raw_dataframe, bioframe.load_fasta(genome_fasta), return_input=True)
     return final_chrom_dataframe
 
+
+def concatenate_strings(list_of_values):
+    
+    """
+    Function concatenates togeter strings or numberical values and separate them with a comma. 
+    
+    Parameters
+    -----------
+    list_of_values : list
+        List of values or strings to be concatenated and comma-separated.
+
+    Returns
+    --------
+    output_string : string
+        A string of concatenated and comma-separated values.
+    """
+    
+    output_string = ""
+    for input_string in list_of_values:
+        output_string = output_string + "," + str(input_string)
+    return output_string[1:]
+
+
+def add_fixed_core_coordinates(flanks_sites_df, core_sites_df):
+    
+    """
+    Function adds information about core CTCF sites to the dataframe with flank sites coordinates.
+    
+    Parameters
+    -----------
+    flanks_sites_df : dataFrame
+        Set of experiments where each row specifies a set of flank CTCF-binding sites.
+    core_sites_df : dataFrame
+        Set of experiments where each row specifies a set of core CTCF-binding sites.
+
+    Returns
+    --------
+    comma_separated_df : dataFrame
+        A dataframe with comma-separated coordinates columns (chrom, start, end, strand) and genomic_SCD
+        such that first values correspond to core CTCF and second values - to flank CTCF.
+    """
+    
+    fixed_core_num_motifs = len(core_sites_df)
+    flank_sets_num_motifs = len(flanks_sites_df)
+    
+    rep_unit = flanks_sites_df.copy()
+    comma_separated_df = pd.concat([rep_unit for i in range(fixed_core_num_motifs)], ignore_index=True)
+
+    core_chrom, core_start, core_end, core_strand, core_genomic_SCD = [], [], [], [], []
+    for s in core_sites_df.itertuples():
+        for i in range(flank_sets_num_motifs):
+            core_chrom.append(s.chrom)
+            core_start.append(s.start)
+            core_end.append(s.end)
+            core_strand.append(s.strand)
+            core_genomic_SCD.append(s.genomic_SCD)
+    
+    comma_separated_df = comma_separated_df.rename(columns={"chrom": "flank_chrom", 
+                                             "start": "flank_start",
+                                             "end": "flank_end",
+                                             "strand": "flank_strand",
+                                            "genomic_SCD": "flank_genomic_SCD"})
+    
+    comma_separated_df["core_chrom"] = core_chrom
+    comma_separated_df["core_start"] = core_start
+    comma_separated_df["core_end"] = core_end
+    comma_separated_df["core_strand"] = core_strand
+    comma_separated_df["core_genomic_SCD"] = core_genomic_SCD
+    
+    comma_separated_df["chrom"] = comma_separated_df.apply(lambda x: concatenate_strings([x.core_chrom, x.flank_chrom]), axis=1)
+    comma_separated_df["start"] = comma_separated_df.apply(lambda x: concatenate_strings([x.core_start, x.flank_start]), axis=1)
+    comma_separated_df["end"] = comma_separated_df.apply(lambda x: concatenate_strings([x.core_end, x.flank_end]), axis=1)
+    comma_separated_df["strand"] = comma_separated_df.apply(lambda x: concatenate_strings([x.core_strand, x.flank_strand]), axis=1)
+    comma_separated_df["genomic_SCD"] = comma_separated_df.apply(lambda x: concatenate_strings([x.core_genomic_SCD, x.flank_genomic_SCD]), axis=1)
+    
+    comma_separated_df = comma_separated_df.drop(columns=["core_chrom", "core_start", "core_end", "core_strand", "core_genomic_SCD"])
+    comma_separated_df = comma_separated_df.drop(columns=["flank_chrom", "flank_start", "flank_end", "flank_strand", "flank_genomic_SCD"])
+    
+    return comma_separated_df
+    
