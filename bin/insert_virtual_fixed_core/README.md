@@ -1,4 +1,14 @@
 ### Commands
+
+python generate_symmetric_flank_df.py --fixed-core-num 2 --flank-sets-num 10 --orientation-string ">>" --flank-range 0,30 --backgrounds-indices 1,2 --filename test --verbose
+
+
+
+
+
+
+
+
 1. 2022-10-10_flank0-30_200motifs (all orientations)
     - generating tsv table
         ```

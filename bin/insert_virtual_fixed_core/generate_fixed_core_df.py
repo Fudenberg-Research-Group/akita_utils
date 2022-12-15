@@ -17,35 +17,35 @@
 
 ###################################################
 
-# """
-# generate_symmetric_flank_df.py
+"""
+generate_fixed_core_df.py
 
-# This script creates a tsv (default) or csv file that can be used as an input to the padding experiment script - virtual_symmetric_flank_experiment.py.
+This script creates a tsv (default) or csv file that can be used as an input to the fixed-core-experiment script - virtual_fixed_core_experiment_flanks.py.
 
-# tsv / csv table columns:
-# chrom | start | end | strand | genomic_SCD | orientation | background_index | flank_bp | spacer_bp
+tsv / csv table columns:
+chrom | start | end | strand | genomic_SCD | orientation | background_index | flank_bp | spacer_bp
 
-# This way one row represents a single experiment.
+This way one row represents a single experiment.
 
-# At the next step - while running virtual_symmetric_flank_experiment.py, calculated statistics metrics e.g. SCD, INS-16, will be added as next columns. 
+At the next step - while running virtual_fixed_core_experiment_flanks.py, calculated statistics metrics e.g. SCD, INS-16, will be added as next columns. 
 
-# The script requires the following input:
-# - number of strong CTCF binding sites
-# - number of weak CTCF binding sites
-# - orientation string
-# - flank range
-# - desired sum of the length of (flank + spacer)
-# - (optional) an argument "all_permutations" storing True/False
-# - (optional) number of background sequences
+The script requires the following input:
+- number of fixed-core motifs
+- number of flank motifs
+- orientation string
+- flank range
+- desired sum of the length of (flank + spacer)
+- (optional) an argument "all_permutations" storing True/False
+- (optional) number of background sequences
 
-# If the provided orientation_string is a single string of length N, for example orientation_string=">>>", N=3.
-#     a) if all_permutations == True
-#     - all possible orientation string permutations of length N are created and tested for each strong and weak CTCF binding site.
-#     b) otherwise, only the single orientation_string is tested with each possible strong and weak CTCF binding site.
-# If the orientation_string is a comma-separated list of multiple string, e.g. orientation_string=">>>,>>,<>"
-#     - then each strong and weak motif will be tested with each orientation on the provided list.
+If the provided orientation_string is a single string of length N, for example orientation_string=">>>", N=3.
+    a) if all_permutations == True
+    - all possible orientation string permutations of length N are created and tested for each strong and weak CTCF binding site.
+    b) otherwise, only the single orientation_string is tested with each possible strong and weak CTCF binding site.
+If the orientation_string is a comma-separated list of multiple string, e.g. orientation_string=">>>,>>,<>"
+    - then each strong and weak motif will be tested with each orientation on the provided list.
 
-# """
+"""
 
 ################################################################################
 # imports
@@ -58,7 +58,6 @@ os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 import random
 from optparse import OptionParser
-import pandas as pd
 
 from akita_utils.tsv_gen_utils import (
     filter_boundary_ctcfs_from_h5,
@@ -67,7 +66,6 @@ from akita_utils.tsv_gen_utils import (
     add_orientation,
     add_background,
     add_diff_flanks_and_const_spacer,
-    validate_df_lenght,
     filter_sites_by_score,
     add_fixed_core_coordinates,
     validate_df_lenght_multiplicative,
@@ -177,7 +175,7 @@ def main():
     num_orients = len(orient_list)
     N = len(orient_list[0])
     all_permutations = options.all_permutations
-
+    
     flank_start, flank_end = [
         int(num) for num in options.flank_range.split(",")
     ]
@@ -279,15 +277,15 @@ def main():
     )
     
     df_with_flanks_spacers = add_diff_flanks_and_const_spacer(
-        df_with_background, flank_start, flank_end, flank_spacer_sum
+        df_with_background, flank_start, flank_end, options.flank_spacer_sum
     )
     
     df_with_flanks_spacers = df_with_flanks_spacers.drop(columns="index")
     df_with_flanks_spacers.index.name = "experiment_id"
     
     (expected_df_len, observed_df_len) = validate_df_lenght_multiplicative(
-        fixed_core_num_motifs,
-        flank_sets_num_motifs,
+        options.fixed_core_num_motifs,
+        options.flank_sets_num_motifs,
         num_orients,
         len(background_indices_list),
         (flank_end - flank_start + 1),
