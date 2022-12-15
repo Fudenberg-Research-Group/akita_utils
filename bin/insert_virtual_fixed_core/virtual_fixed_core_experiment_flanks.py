@@ -17,41 +17,41 @@
 
 ###################################################
 
-"""
-virtual_symmetric_experiment.py
-derived from akita_insert.py (https://github.com/Fudenberg-Research-Group/akita_utils/blob/flank_experiment/bin/akita_insert.py)
+# """
+# virtual_symmetric_experiment.py
+# derived from akita_insert.py (https://github.com/Fudenberg-Research-Group/akita_utils/blob/flank_experiment/bin/akita_insert.py)
 
 
-This scripts computes insertion scores for motif insertions from a tsv file with:
-chrom | start | end | strand | genomic_SCD | orientation | background_index | flank_bp | spacer_bp
-where one row represents a single experiment.
-The insertion scores are added as next keys in the h5 format file.
+# This scripts computes insertion scores for motif insertions from a tsv file with:
+# chrom | start | end | strand | genomic_SCD | orientation | background_index | flank_bp | spacer_bp
+# where one row represents a single experiment.
+# The insertion scores are added as next keys in the h5 format file.
 
-The script requires the following input:
+# The script requires the following input:
 
-Parameters:
------------
-<params_file> - parameters for the akita model
-<model_file> - model in the h5 format
-<motifs_file> - tsv/csv table specifying designed experiemensts
+# Parameters:
+# -----------
+# <params_file> - parameters for the akita model
+# <model_file> - model in the h5 format
+# <motifs_file> - tsv/csv table specifying designed experiemensts
 
-Options:
------------
-- path to the mouse or human genome in the fasta format
-- comma-separated list of statistic scores (stats, e.g. --stats SCD,INS-16)
-- head index (depending if predictions are to be made in the mouse (--head_index 0) or human genome-context (--head_index 1))
-- model index (same as specified one by the model_file)
-- batch size 
-- path to the background file (in the fasta format)
-- output directory for tables and plots
-- flag -m to plot contact map for some of the performed experiments
-- (optional, specific for plotting) heatmap plot limit
-- (optional, specific for plotting) heatmap plot frequency
-- (optional) add option --rc to average forward and reverse complement predictions
-- (optional) adding --shifts k ensembles prediction shifts by k
+# Options:
+# -----------
+# - path to the mouse or human genome in the fasta format
+# - comma-separated list of statistic scores (stats, e.g. --stats SCD,INS-16)
+# - head index (depending if predictions are to be made in the mouse (--head_index 0) or human genome-context (--head_index 1))
+# - model index (same as specified one by the model_file)
+# - batch size 
+# - path to the background file (in the fasta format)
+# - output directory for tables and plots
+# - flag -m to plot contact map for some of the performed experiments
+# - (optional, specific for plotting) heatmap plot limit
+# - (optional, specific for plotting) heatmap plot frequency
+# - (optional) add option --rc to average forward and reverse complement predictions
+# - (optional) adding --shifts k ensembles prediction shifts by k
 
 
-"""
+# """
 
 ################################################################################
 # imports
@@ -90,7 +90,7 @@ print(gpus)
 
 from basenji import seqnn, stream, dna_io
 
-from akita_utils.seq_gens import symmertic_insertion_seqs_gen
+from akita_utils.seq_gens import fixed_core_insertion_seqs_gen
 from akita_utils.utils import ut_dense, split_df_equally
 from akita_utils.stats_utils import insul_diamonds_scores
 
@@ -336,7 +336,7 @@ def main():
 
     # initialize predictions stream
     preds_stream = stream.PredStreamGen(
-        seqnn_model, symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open), batch_size
+        seqnn_model, fixed_core_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open), batch_size
     )
     
     for exp in range(num_experiments):
