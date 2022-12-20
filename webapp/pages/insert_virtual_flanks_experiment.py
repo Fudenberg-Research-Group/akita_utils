@@ -70,7 +70,6 @@ fig_spacer.update_layout(
 st.plotly_chart(fig_spacer)
 
 
-
 fig = px.scatter_3d(    res,
     x="spacer_bp",
     y="flank_bp",
