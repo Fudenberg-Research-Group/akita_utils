@@ -10,6 +10,17 @@ import akita_utils.format_io
 def _insert_casette(
     seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string
 ):
+    """insert an insert (or multiple instances of same insert) into a seq
+
+    Args:
+        seq_1hot : seq to be mofied
+        seq_1hot_insertion : seq to be inserted
+        spacer_bp (int): seperation basepairs
+        orientation_string (str): string with orientation of insert(s)
+
+    Returns:
+        seq modified with the inserts
+    """
 
     seq_length = seq_1hot.shape[0]
     insert_bp = len(seq_1hot_insertion)
@@ -38,12 +49,23 @@ def _insert_casette(
 
 
 def _multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_string):
-        
+    """insert multiple inserts in the seq at once
+
+    Args:
+        seq_1hot : seq to be modified
+        seq_1hot_insertions (list): inserts to be inserted in the string
+        spacer_bp (int): seperating basepairs between the inserts
+        orientation_string (string): string with orientations of the inserts
+
+    Returns:
+        modified seq with all the insertions
+    """
+      
     assert len(seq_1hot_insertions)==len(orientation_string), "insertions dont match orientations, please check"
     seq_length = seq_1hot.shape[0]
     total_insert_bp = sum([len(insertion) for insertion in seq_1hot_insertions])
     num_inserts = len(seq_1hot_insertions)
-    inserts_plus_spacer_bp = total_insert_bp + (2 * spacer_bp)*num_inserts
+    inserts_plus_spacer_bp = total_insert_bp + (spacer_bp)*num_inserts + spacer_bp
     insert_start_bp = seq_length // 2 - inserts_plus_spacer_bp // 2
     output_seq = seq_1hot.copy()
     
@@ -51,8 +73,8 @@ def _multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_
     for i in range(num_inserts):
         insert_bp = len(seq_1hot_insertions[i])
         orientation_arrow = orientation_string[i]
-        offset = insert_start_bp + length_of_previous_insert + spacer_bp # i * inserts_plus_spacer_bp + spacer_bp
-        length_of_previous_insert += len(seq_1hot_insertions[i]) + 2*spacer_bp
+        offset = insert_start_bp + length_of_previous_insert + spacer_bp 
+        length_of_previous_insert += len(seq_1hot_insertions[i]) + spacer_bp
         if orientation_arrow == ">":
             output_seq[offset : offset + insert_bp] = seq_1hot_insertions[i]
         else:
@@ -64,6 +86,14 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
     """sequence generator for making insertions from tsvs
     construct an iterator that yields a one-hot encoded sequence
     that can be used as input to akita via PredStreamGen
+
+    Args:
+        seq_coords_df (dataframe): important colums spacer_bp,locus_orientation,background_seqs,insert_strand,insert_flank_bp,insert_loci 
+        background_seqs (fasta): file containing background sequences
+        genome_open (opened_fasta): fasta with chrom data
+
+    Yields:
+        one-hot encoded sequence: sequence containing specified insertion
     """
 
     for s in seq_coords_df.itertuples():
@@ -91,8 +121,16 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
 
 def modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
     """ sequence generator for making modular insertions from tsvs
-        construct an iterator that yields a one-hot encoded sequence
+        yields a one-hot encoded sequence
         that can be used as input to akita via PredStreamGen
+
+    Args:
+        seq_coords_df (dataframe): important colums spacer_bp,locus_orientation,background_seqs,insert_strand,insert_flank_bp,insert_loci 
+        background_seqs (fasta): file containing background sequences
+        genome_open (opened_fasta): fasta with chrom data
+
+    Yields:
+        one-hot encoded sequence: sequence containing specified insertions
     """
     
     for s in seq_coords_df.itertuples():
@@ -114,10 +152,16 @@ def modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
         yield seq_1hot
         
         
-
-
-# define sequence generator
 def generate_spans_start_positions(seq_1hot, motif, threshold):
+    """get span positions after search for a specified motif and its threshold
+    Args:
+        seq_1hot (one-hot encoded sequence): one-hot encoded sequence to be scanned
+        motif (ndarry): motif to scan for
+        threshold (float): threshold to consider
+
+    Returns:
+        list: motif found positions
+    """
     index_scores_array = akita_utils.dna_utils.scan_motif(seq_1hot, motif)
     motif_window = len(motif)
     half_motif_window = int(np.ceil(motif_window/2))
@@ -128,6 +172,17 @@ def generate_spans_start_positions(seq_1hot, motif, threshold):
     return spans
 
 def permute_spans(seq_1hot, spans, motif_window, shuffle_parameter):
+    """permute spans of given seq
+
+    Args:
+        seq_1hot : one-hot encoded sequence to be scanned
+        spans (list): motif found positions
+        motif_window (int): length on motif window
+        shuffle_parameter (int): basepairs to shuffle by
+
+    Returns:
+        one-hot encoded sequence: one-hot encoded sequence with permutated spans
+    """
     seq_1hot_mut = seq_1hot.copy()
     half_motif_window = int(np.ceil(motif_window/2))
     for s in spans:
@@ -136,6 +191,16 @@ def permute_spans(seq_1hot, spans, motif_window, shuffle_parameter):
     return seq_1hot_mut
 
 def mask_spans(seq_1hot, spans, motif_window):
+    """mask spans of given seq
+
+    Args:
+        seq_1hot : one-hot encoded sequence to be scanned
+        spans (list): motif found positions
+        motif_window (int): length on motif window
+
+    Returns:
+       one-hot encoded sequence: one-hot encoded sequence with masked spans
+    """
     seq_1hot_perm = seq_1hot.copy()
     half_motif_window = int(np.ceil(motif_window/2))
     for s in spans:
@@ -144,6 +209,16 @@ def mask_spans(seq_1hot, spans, motif_window):
     return seq_1hot_perm
 
 def randomise_spans(seq_1hot, spans, motif_window):
+    """randomise spans of given seq
+
+    Args:
+        seq_1hot : one-hot encoded sequence to be scanned
+        spans (list): motif found positions
+        motif_window (int): length on motif window
+
+    Returns:
+       one-hot encoded sequence: one-hot encoded sequence with randomised spans
+    """
     seq_1hot_perm = seq_1hot.copy()
     half_motif_window = int(np.ceil(motif_window/2))
     for s in spans:
@@ -152,12 +227,29 @@ def randomise_spans(seq_1hot, spans, motif_window):
     return seq_1hot_perm
 
 def random_seq_permutation(seq_1hot):
+    """randomise a given seq
+
+    Args:
+        seq_1hot : one-hot encoded sequence to be randomised
+
+    Returns:
+        one-hot encoded sequence: randomised one-hot encoded sequence
+    """
     seq_1hot_perm = seq_1hot.copy()
     random_inds = np.random.permutation(range(len(seq_1hot)))
     seq_1hot_perm = seq_1hot[random_inds, :].copy()
     return seq_1hot_perm
 
-def background_exploration_seqs_gen(seq_coords_df, genome_open, use_span=True):
+def background_exploration_seqs_gen(seq_coords_df, genome_open):
+    """unpacks the given dataframe and creats an iterator for a sequence from each row generated by specified values in the columns
+
+    Args:
+        seq_coords_df (dataframe): important colums spacer_bp,locus_orientation,background_seqs,insert_strand,insert_flank_bp,insert_loci
+        genome_open (opened_fasta): fasta with chrom data
+
+    Yields:
+        seq_1hot generator : one-hot encoded sequences
+    """
 
     motif = akita_utils.format_io.read_jaspar_to_numpy()
     motif_window = len(motif)-3 #for compartibility ie (19-3=16 which is a multiple of 2,4,8 the shuffle parameters)
