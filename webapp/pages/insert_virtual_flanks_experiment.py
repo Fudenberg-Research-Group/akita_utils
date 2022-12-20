@@ -63,7 +63,7 @@ fig_spacer = px.box(
 )
 fig_spacer.update_layout(
     # xaxis=dict(tickmode="linear"),
-    plot_bgcolor="rgba(0,0,0,0)",
+    # plot_bgcolor="rgba(0,0,0,0)",
     # yaxis=(dict(showgrid=False)),
 )
 
@@ -74,7 +74,8 @@ st.plotly_chart(fig_spacer)
 fig = px.scatter_3d(    res,
     x="spacer_bp",
     y="flank_bp",
-    z="genomic_SCD")
+    z="genomic_SCD",
+    color = "genomic_SCD" )
 st.plotly_chart(fig)
 
 
@@ -82,8 +83,6 @@ st.plotly_chart(fig)
 hide_st_style = """
             <style>
             #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
             </style>
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
