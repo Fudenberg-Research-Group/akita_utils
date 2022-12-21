@@ -575,13 +575,33 @@ def add_background(seq_coords_df, background_indices_list):
     return seq_coords_df
 
 
+def calculate_GC(chrom_seq_bed_file,genome_fasta,window_size= 1310720 ):
+    """
+     Calculate GC content for each chromosome in a genome.
 
+    Args:
+        chrom_seq_bed_file (str): Path to BED file containing chromosome names and sizes.
+        genome_fasta (str): Path to FASTA file containing genome sequence.
+        window_size (int, optional): Size of the window to use for GC content calculation. Defaults to 1310720.
 
-def calculate_GC(chrom_seq_bed_file,genome_fasta):
-    "takes a bed file and fasta, splits it in akita feedable windows, calculates GC content and adds a column GC"
+    Raises:
+        TypeError: If `chrom_seq_bed_file` or `genome_fasta` is not a valid file path.
+        ValueError: If `window_size` is not a positive integer.
+
+    Returns:
+        pd.DataFrame: Dataframe containing GC content for each chromosome. Columns: "chrom", "start", "end", "GC"
+    """    
+    # Validate input arguments
+    if not isinstance(chrom_seq_bed_file, str):
+        raise TypeError("`chrom_seq_bed_file` must be a string.")
+    if not isinstance(genome_fasta, str):
+        raise TypeError("`genome_fasta` must be a string.")
+    if not isinstance(window_size, int) or window_size <= 0:
+        raise ValueError("`window_size` must be a positive integer.")
+
     chromsizes = bioframe.read_chromsizes(chrom_seq_bed_file,chrom_patterns=("^chr1$", "^chr2$", "^chr3$"))
     raw_dataframe = pd.DataFrame(chromsizes)
-    raw_dataframe['end'] = raw_dataframe['length']+ 1310720 # akita's window size (open to another selection method)
+    raw_dataframe['end'] = raw_dataframe['length']+ window_size # akita's window size (open to another selection method)
     raw_dataframe = raw_dataframe.reset_index()
     raw_dataframe.rename(columns = {'index' : 'chrom', 'length':'start'}, inplace = True)
     final_chrom_dataframe = bioframe.frac_gc(raw_dataframe, bioframe.load_fasta(genome_fasta), return_input=True)
