@@ -150,7 +150,57 @@ def modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
 
         seq_1hot = _multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_string)
         yield seq_1hot
-        
+
+
+def flexible_flank_modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
+    """ sequence generator for making modular insertions from tsvs with more twist to flanks generation
+        yields a one-hot encoded sequence
+        that can be used as input to akita via PredStreamGen
+
+    Args:
+        seq_coords_df (dataframe): important colums spacer_bp,locus_orientation,background_seqs,insert_strand,insert_flank_bp,insert_loci 
+        background_seqs (fasta): file containing background sequences
+        genome_open (opened_fasta): fasta with chrom data
+
+    Yields:
+        one-hot encoded sequence: sequence containing specified insertions
+    """
+    
+    for s in seq_coords_df.itertuples():
+        spacer_bp = s.spacer_bp
+        orientation_string = s.locus_orientation
+        seq_1hot = background_seqs[s.background_seqs].copy()        
+
+        from akita_utils.program_setup import Locus, Gene, CTCF, create_insertions_sequences
+
+        custom_locus = Locus()
+        swapping_flanks = None # whether we are swapping flanks
+
+        for module_number in range(len(s.insert_strand.split("$"))):
+            # figuring out a way to tell if ctcf or gene, will roll it out soon
+            if module_number == 0:
+                locus = s.insert_loci.split("$")[module_number]
+                flank_bp = int(s.insert_flank_bp.split("$")[module_number])
+                chrom,start,end = locus.split(",")
+                strand = s.insert_strand.split("$")[module_number]
+                gene = Gene("unkwown", chrom,int(start),int(end),strand)
+                custom_locus.insert(gene)
+            elif module_number == 1:
+                locus = s.insert_loci.split("$")[module_number]
+                flank_bp = int(s.insert_flank_bp.split("$")[module_number])
+                chrom,start,end = locus.split(",")
+                strand = s.insert_strand.split("$")[module_number]
+                ctcf = CTCF("unknown", chrom,int(start),int(end),[flank_bp,flank_bp],strand)
+                known_strong_ctcf = CTCF("strong","chr5",43398346,43398365,[flank_bp,flank_bp],"+") # default known strong ctcf to pick flanks from
+                if swapping_flanks:
+                    ctcf.replace_flanks(known_strong_ctcf)
+                custom_locus.insert(ctcf)
+
+        seq_1hot_insertions = create_insertions_sequences(locus, genome_open)
+
+        seq_1hot = _multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_string)
+        yield seq_1hot
+
         
 def generate_spans_start_positions(seq_1hot, motif, threshold):
     """get span positions after search for a specified motif and its threshold
@@ -254,7 +304,7 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open):
     motif = akita_utils.format_io.read_jaspar_to_numpy()
     motif_window = len(motif)-3 #for compartibility ie (19-3=16 which is a multiple of 2,4,8 the shuffle parameters)
     for s in seq_coords_df.itertuples():
-        chrom,start,end = s.locus_specification.split(",")
+        chrom,start,end = s.locus_specification.split(",") # Split the locus specification into chromosome, start, and end coordinates
         seq_dna = genome_open.fetch(chrom, int(start), int(end))
         wt_1hot = akita_utils.dna_utils.dna_1hot(seq_dna)
         mutation_method = s.mutation_method
@@ -269,6 +319,8 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open):
             yield akita_utils.dna_utils.permute_seq_k(wt_1hot, k=s.shuffle_parameter)
         elif mutation_method == "randomise_whole_seq":
             yield random_seq_permutation(wt_1hot)
+        else:
+            raise ValueError(f"Unrecognized parameters, check your dataframe")
 
 ########################################
 #           deletion utils             #
