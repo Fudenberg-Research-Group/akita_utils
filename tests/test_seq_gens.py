@@ -1,6 +1,5 @@
 from akita_utils.dna_utils import dna_1hot, dna_1hot_to_seq, dna_seq_rc
-from akita_utils.seq_gens import _insert_casette
-
+from akita_utils.seq_gens import _insert_casette, _multi_insert_casette 
 
 def test_insert_casette():
 
@@ -71,3 +70,42 @@ def test_insert_casette():
     == "A" + motif1 + dna_seq_rc(motif1) + "A"
     )
     
+
+
+def test_multi_insert_casette():
+    # Test insertion of a single sequence
+    seq_1hot = dna_1hot("ACGT")
+    seq_1hot_insertions =[dna_1hot("GT")]
+    spacer_bp = 1
+    orientation_string = ">"
+    expected_output = "AGTT" 
+    assert dna_1hot_to_seq(_multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_string)) == expected_output
+    
+    # Test insertion of multiple sequences with reverse-complemented sequences
+    seq_1hot = dna_1hot("ACATAGT")
+    seq_1hot_insertions = [dna_1hot("GT"),dna_1hot("A")] 
+    spacer_bp = 1
+    orientation_string = "<>"
+    expected_output = "AACTAGT" 
+    assert dna_1hot_to_seq(_multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_string)) == expected_output
+    
+    # Test insertion with longer spacers with reverse-complemented sequences
+    seq_1hot = dna_1hot("ACGTACGTACGTTACGT")
+    seq_1hot_insertions = [dna_1hot("GT"),dna_1hot("A"),dna_1hot("GT")] 
+    spacer_bp = 3
+    orientation_string = "<<>"
+    expected_output = "ACGACCGTTCGTGTCGT" 
+    assert dna_1hot_to_seq(_multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_string)) == expected_output
+        
+    # Test insertion with mismatched number of insertions and orientations
+    seq_1hot = dna_1hot("ACGTACGTACGT") 
+    seq_1hot_insertions = [dna_1hot("CTG"), dna_1hot,("ATG")] 
+    spacer_bp = 1
+    orientation_string = "<"
+    try:
+        _multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_string)
+    except AssertionError:
+        pass
+    else:
+        assert False, "Expected AssertionError for mismatched number of insertions and orientations"
+
