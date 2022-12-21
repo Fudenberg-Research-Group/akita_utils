@@ -10,13 +10,11 @@ import gtfparse
 
 # loading motifs
 score_key = "SCD"
-weak_thresh_pct = 10
-strong_thresh_pct = 90
-pad_flank = 0
+weak_thresh_pct = 50
+strong_thresh_pct = 80
 rmsk_file = "/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz"
-# rmsk_exclude_window = 
 jaspar_file = "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz"
-# ctcf_exclude_window = 
+
 
 sites = akita_utils.tsv_gen_utils.filter_boundary_ctcfs_from_h5(    h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
     score_key=score_key,
@@ -25,14 +23,11 @@ sites = akita_utils.tsv_gen_utils.filter_boundary_ctcfs_from_h5(    h5_dirs="/pr
 sites = akita_utils.tsv_gen_utils.filter_by_rmsk(
     sites,
     rmsk_file = rmsk_file, 
-    # exclude_window = rmsk_exclude_window,
     verbose=True)
 
 sites = akita_utils.tsv_gen_utils.filter_by_ctcf(sites,
     ctcf_file = jaspar_file,
-    # exclude_window = ctcf_exclude_window,
     verbose=True)
-
 
 strong_sites = akita_utils.tsv_gen_utils.filter_sites_by_score(
     sites,
@@ -53,6 +48,7 @@ weak_sites = akita_utils.tsv_gen_utils.filter_sites_by_score(
 )
 
 site_df = pd.concat([strong_sites.copy(), weak_sites.copy()])
+
 seq_coords_df = (site_df[["chrom", "start_2", "end_2", "strand_2", score_key]].copy().rename(
         columns={
             "start_2": "start",
@@ -113,7 +109,7 @@ tss_intervals_1 = tss_intervals
 tss_intervals_1["locus_specification"] = tss_intervals["chrom"].map(str) +","+ tss_intervals["start"].map(str) + "," + tss_intervals["end"].map(str)+"#"+tss_intervals["strand"].map(str)+"#"+tss_intervals["gene_id"].map(str)
 tss_intervals_1 = tss_intervals.loc[True == tss_intervals_1["locus_specification"].str.contains("chr2,")] # Picking genes to put in the simulation dataframe, will become an option
 
-gene_locus_specification_list = tss_intervals_1["locus_specification"].values.tolist()[3:8]
+gene_locus_specification_list = tss_intervals_1["locus_specification"].values.tolist()[13:18]
 
 #-------------------------------------------------------------------------------------------------
 
@@ -130,9 +126,9 @@ cli_params = {
     'ctcf_locus_specification': ctcf_locus_specification_list,
     'gene_locus_specification': gene_locus_specification_list,
     'ctcf_flank_bp': [i for i in range(0,61,5)],
-    'gene_flank_bp': [i for i in range(0,501,100)],
+    'gene_flank_bp': [i for i in range(0,201,100)],
     'background_seqs': [2], 
-    'spacer_bp': [i for i in range(0,21,10)],
+    'spacer_bp': [i for i in range(0,31,10)],
     'locus_orientation':[">>","<<","<>","><"] #
 }
             

@@ -144,7 +144,7 @@ def filter_sites_by_score(
 
     """
 
-    if mode not in ("head", "tail", "random"):
+    if mode not in ("head", "tail", "random","flat"):
         raise ValueError("a mode has to be one from: head, tail, random")
 
     upper_thresh = np.percentile(sites[score_key].values, upper_threshold)
@@ -168,6 +168,8 @@ def filter_sites_by_score(
             filtered_sites = filtered_sites[:num_sites]
         elif mode == "tail":
             filtered_sites = filtered_sites[-num_sites:]
+        elif mode == "flat":
+            filtered_sites = filtered_sites.sample(n=num_sites, stratify=filtered_sites[score_key], random_state=42)        
         else:
             filtered_sites = filtered_sites.sample(n=num_sites)
 
