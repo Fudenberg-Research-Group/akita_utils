@@ -269,7 +269,7 @@ def main():
         jobs, max_proc=options.max_proc, verbose=False, launch_sleep=10, update_sleep=60
     )
 
-    
+
 def job_completed(options, pi):
     """Check whether a specific job has generated its
     output file."""
