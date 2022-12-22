@@ -2,6 +2,7 @@
 from akita_utils.dna_utils import hot1_rc, dna_1hot
 import numpy as np
 import akita_utils.format_io
+from akita_utils.program_setup import Locus, Gene, CTCF, create_insertions_sequences
 ########################################
 #           insertion utils            #
 ########################################
@@ -170,37 +171,43 @@ def flexible_flank_modular_insertion_seqs_gen(seq_coords_df, background_seqs, ge
         spacer_bp = s.spacer_bp
         orientation_string = s.locus_orientation
         seq_1hot = background_seqs[s.background_seqs].copy()        
-
-        from akita_utils.program_setup import Locus, Gene, CTCF, create_insertions_sequences
-
-        custom_locus = Locus()
-        swapping_flanks = None # whether we are swapping flanks
+        custom_locus = Locus([CTCF,Gene])
+        swapping_flanks = s.swap_flanks  # whether/how we are swapping flanks
 
         for module_number in range(len(s.insert_strand.split("$"))):
-            # figuring out a way to tell if ctcf or gene, will roll it out soon
-            if module_number == 0:
-                locus = s.insert_loci.split("$")[module_number]
-                flank_bp = int(s.insert_flank_bp.split("$")[module_number])
-                chrom,start,end = locus.split(",")
-                strand = s.insert_strand.split("$")[module_number]
-                gene = Gene("unkwown", chrom,int(start),int(end),strand)
-                custom_locus.insert(gene)
-            elif module_number == 1:
-                locus = s.insert_loci.split("$")[module_number]
-                flank_bp = int(s.insert_flank_bp.split("$")[module_number])
-                chrom,start,end = locus.split(",")
-                strand = s.insert_strand.split("$")[module_number]
-                ctcf = CTCF("unknown", chrom,int(start),int(end),[flank_bp,flank_bp],strand)
-                known_strong_ctcf = CTCF("strong","chr5",43398346,43398365,[flank_bp,flank_bp],"+") # default known strong ctcf to pick flanks from
-                if swapping_flanks:
-                    ctcf.replace_flanks(known_strong_ctcf)
-                custom_locus.insert(ctcf)
+            # figuring out a way to tell if module is a ctcf or gene, currently it is easy to tell from tsv
+            locus = s.insert_loci.split("$")[module_number]
+            flank_bp = int(s.insert_flank_bp.split("$")[module_number])
+            chrom,start,end = locus.split(",")
+            strand = s.insert_strand.split("$")[module_number]
+            ctcf_score = s.ctcf_genomic_score
+            insert = create_insertion(module_number, locus, strand, flank_bp, ctcf_score, swapping_flanks)
+            custom_locus.insert(insert)
 
-        seq_1hot_insertions = create_insertions_sequences(locus, genome_open)
-
+        seq_1hot_insertions = create_insertions_sequences(custom_locus, genome_open)
         seq_1hot = _multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_string)
         yield seq_1hot
-
+        
+def create_insertion(module_number, locus, strand, flank_bp, ctcf_score, swapping_flanks=None):
+    """
+    Creates an Insertion object (either a Gene or a CTCF) based on the given module number,
+    locus, strand, and flank_bp values.
+    """
+    threshold_for_strong_ctcf = 15
+    known_strong_ctcf = CTCF("strong","chr11",22206811,22206830,[flank_bp,flank_bp],"+") # default known strong ctcf to pick flanks
+    known_weak_ctcf = CTCF("weak","chr4",88777220,88777239,[flank_bp,flank_bp],"+") # default known weak ctcf to pick flanks 
+    chrom, start, end = locus.split(",")
+    
+    if module_number == 0: # gene
+        return Gene("unkwown", chrom, int(start), int(end), strand)
+    elif module_number == 1: # ctcf
+        ctcf = CTCF("unknown", chrom, int(start), int(end), [flank_bp, flank_bp], strand)
+        if swapping_flanks=="weak_for_strong" and ctcf_score <= threshold_for_strong_ctcf:
+            ctcf.replace_flanks(known_strong_ctcf)
+        if swapping_flanks=="strong_for_weak" and ctcf_score > threshold_for_strong_ctcf:
+            ctcf.replace_flanks(known_weak_ctcf)
+        return ctcf        
+        
         
 def generate_spans_start_positions(seq_1hot, motif, threshold):
     """get span positions after search for a specified motif and its threshold
