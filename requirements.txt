@@ -4,3 +4,4 @@ scipy
 tensorflow
 h5py
 bioframe
+pysam

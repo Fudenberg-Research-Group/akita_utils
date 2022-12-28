@@ -1,5 +1,6 @@
 from akita_utils.dna_utils import hot1_rc, dna_1hot
 import numpy as np
+
 import akita_utils.format_io
 from akita_utils.program_setup import LOCUS, INSERT, create_insertions_sequences
 ########################################
@@ -116,8 +117,8 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
         
         seq_1hot = _insert_casette(seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string)
         
-        yield seq_1hot
-        
+        yield seq_1hot 
+
 
 def modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
     """ sequence generator for making modular insertions from tsvs
@@ -132,7 +133,7 @@ def modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
     Yields:
         one-hot encoded sequence: sequence containing specified insertions
     """
-    
+
     for s in seq_coords_df.itertuples():
         seq_1hot_insertions = []
         spacer_bp = s.spacer_bp

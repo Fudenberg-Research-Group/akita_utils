@@ -1,9 +1,12 @@
 # import general libraries
-import os
 import itertools
-import pandas as pd
-import numpy as np
+import os
+
 import bioframe
+import gtfparse
+import numpy as np
+import pandas as pd
+
 import akita_utils.tsv_gen_utils
 import gtfparse
 from pathlib import Path
@@ -16,9 +19,11 @@ rmsk_file = "/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz"
 jaspar_file = "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz"
 
 
-sites = akita_utils.tsv_gen_utils.filter_boundary_ctcfs_from_h5(    h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
+sites = akita_utils.tsv_gen_utils.filter_boundary_ctcfs_from_h5(
+    h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
     score_key=score_key,
-    threshold_all_ctcf=5)
+    threshold_all_ctcf=5,
+)
 
 sites = akita_utils.tsv_gen_utils.filter_by_rmsk(
     sites,
@@ -56,14 +61,26 @@ seq_coords_df = (site_df[["chrom", "start_2", "end_2", "strand_2", score_key]].c
             "end_2": "end",
             "strand_2": "strand",
             score_key: "genomic_" + score_key,
-        }))
+        }
+    )
+)
 
 seq_coords_df.reset_index(drop=True, inplace=True)
 seq_coords_df.reset_index(inplace=True)
 
-seq_coords_df = seq_coords_df["chrom"].map(str) +","+ seq_coords_df["start"].map(str) + "," + seq_coords_df["end"].map(str)+"#"+seq_coords_df["strand"].map(str)+"#"+seq_coords_df["genomic_" + score_key].map(str)
+seq_coords_df = (
+    seq_coords_df["chrom"].map(str)
+    + ","
+    + seq_coords_df["start"].map(str)
+    + ","
+    + seq_coords_df["end"].map(str)
+    + "#"
+    + seq_coords_df["strand"].map(str)
+    + "#"
+    + seq_coords_df["genomic_" + score_key].map(str)
+)
 
-ctcf_locus_specification_list = seq_coords_df.values.tolist() # to be modified to have modules attached
+ctcf_locus_specification_list = seq_coords_df.values.tolist()  # to be modified to have modules attached
 
 
 #---------------importing genes + cropping upstream bps workflow-------------------------------
@@ -97,16 +114,17 @@ cli_params = {
     'locus_orientation':[">>","<<","<>","><"],
     'swap_flanks': ["all_for_strong","all_for_weak","no"] # threshold(15) is hard coded in akita_utils.seq_gens.create_insertion (should i open to user?) 
 }
-            
+
 cli_param_set = list(itertools.product(*[v for v in cli_params.values()]))
 
-#-------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 # filling missing table values (if a key was deleted in dictionary above or commented)
 
 parameters_combo_dataframe = pd.DataFrame(cli_param_set, columns=cli_params.keys())
 
+
 def fill_in_default_values(dataframe):
-    " filling default values in ungiven or commented parameters"
+    "filling default values in ungiven or commented parameters"
 
     parameter_space = [('out_folder', 'data'),
                        ('ctcf_locus_specification', 'chr12,113_500_000,118_500_000#-#4'),
@@ -121,20 +139,28 @@ def fill_in_default_values(dataframe):
     
     for (parameter, default_value) in parameter_space:
         if parameter not in dataframe.columns:
-            dataframe.insert(1, parameter, default_value,
-                             allow_duplicates=False)
+            dataframe.insert(1, parameter, default_value, allow_duplicates=False)
+
 
 fill_in_default_values(parameters_combo_dataframe)
 
-#-------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 
 # adapting dataframe to desired look
 parameters_combo_dataframe[["ctcf_locus_specification",'ctcf_strand','ctcf_genomic_score']] = parameters_combo_dataframe["ctcf_locus_specification"].str.split('#',expand=True)
 parameters_combo_dataframe[["gene_locus_specification",'gene_strand','gene_symbol']] = parameters_combo_dataframe["gene_locus_specification"].str.split('#',expand=True)
 
-parameters_combo_dataframe["insert_strand"] = parameters_combo_dataframe["ctcf_strand"]+'$'+parameters_combo_dataframe["gene_strand"]
-parameters_combo_dataframe["insert_loci"] = parameters_combo_dataframe["ctcf_locus_specification"]+'$'+parameters_combo_dataframe["gene_locus_specification"]
-parameters_combo_dataframe["insert_flank_bp"] = parameters_combo_dataframe["ctcf_flank_bp"].map(str)+'$'+parameters_combo_dataframe["gene_flank_bp"].map(str)
+parameters_combo_dataframe["insert_strand"] = (
+    parameters_combo_dataframe["ctcf_strand"] + "$" + parameters_combo_dataframe["gene_strand"]
+)
+parameters_combo_dataframe["insert_loci"] = (
+    parameters_combo_dataframe["ctcf_locus_specification"]
+    + "$"
+    + parameters_combo_dataframe["gene_locus_specification"]
+)
+parameters_combo_dataframe["insert_flank_bp"] = (
+    parameters_combo_dataframe["ctcf_flank_bp"].map(str) + "$" + parameters_combo_dataframe["gene_flank_bp"].map(str)
+)
 
 os.makedirs(parameters_combo_dataframe.out_folder[0], exist_ok=True)
 storage_folder = parameters_combo_dataframe.out_folder[0]
