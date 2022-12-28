@@ -16,6 +16,12 @@
 # =========================================================================
 from __future__ import print_function
 
+
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+log = logging.getLogger(__name__)
+
+
 from optparse import OptionParser
 import json
 import os
@@ -40,7 +46,7 @@ if tf.__version__[0] == '1':
 gpus = tf.config.experimental.list_physical_devices('GPU')
 #for gpu in gpus:
 #  tf.config.experimental.set_memory_growth(gpu, True)
-print(gpus)
+log.info(gpus)
 
 from basenji import seqnn
 from basenji import stream
@@ -133,9 +139,9 @@ def main():
       default=10,              
       help='maximum iterations')
 
-    parser.add_option('--backgounds_file', dest='backgroung_chromosome_tsv_file',
-      default='/home1/kamulege/akita_utils/bin/background_seq_experiments/data/background_seqs.tsv',           
-      help='backgounds tsv file')
+    parser.add_option('--flat_seq_tsv_file', dest='flat_seq_tsv_file',
+      default='/home1/kamulege/akita_utils/bin/background_seq_experiments/data/flat_seqs.tsv',           
+      help='flat_se tsv file')
 
     (options, args) = parser.parse_args()
 
@@ -166,7 +172,6 @@ def main():
         os.mkdir(options.out_dir)
 
     options.shifts = [int(shift) for shift in options.shifts.split(',')]
-    options.scd_stats = options.scd_stats.split(',')
 
     random.seed(44)
 
@@ -183,7 +188,7 @@ def main():
         batch_size = params_train['batch_size']
     else: 
         batch_size = options.batch_size
-    print(f"Batch size {batch_size}")
+    log.info(f"Batch size {batch_size}")
 
     if options.targets_file is not None:
         targets_df = pd.read_csv(options.targets_file, sep='\t', index_col=0)
@@ -210,15 +215,15 @@ def main():
     
     # filter for worker motifs
     if options.processes is not None:                    # multi-GPU option
-        seq_coords_full = pd.read_csv(options.backgroung_chromosome_tsv_file, sep="\t")
+        seq_coords_full = pd.read_csv(options.flat_seq_tsv_file, sep="\t")
         seq_coords_df = split_df_equally(seq_coords_full, options.processes, worker_index)
     else:
         seq_coords_df = pd.read_csv(options.backgroung_chromosome_tsv_file, sep="\t")
     
     num_experiments = len(seq_coords_df)
-    print("===================================")
-    print("Number of experiements = ", num_experiments)  # Warning! It's not number of predictions. Num of predictions is this number x batch size
-    
+    log.info("===================================")
+    log.info(f"Number of experiements = {num_experiments} \n It's not number of predictions. Num of predictions is upper bounded by {options.max_iters} x {batch_size} for each experiment")
+    log.info("===================================")    
     #################################################################
     # create flat sequences
     
@@ -235,7 +240,8 @@ def main():
         with open(f'{options.out_dir}/background_seqs.fa','w') as f:
             for i in range(len(flat_seqs)):
                 f.write('>shuffled_chr'+str(i)+'_score'+str(int(flat_seqs[i][2]))+'_pixelwise'+str(int(flat_seqs[i][3]*1000))+'\n')
-                f.write(dna_io.hot1_dna(flat_seqs[i][0])+'\n')  
+                f.write(dna_io.hot1_dna(flat_seqs[i][0])+'\n')
+        log.info(f"finished saving in! \n plotting next if requested")
 
     #################################################################
     # plot flat sequences
@@ -270,6 +276,7 @@ def main():
             plt.tight_layout()
             plt.savefig("%s/seq_%d.pdf" % (options.out_dir, no))
             plt.close()
+        log.info(f"finished plotting! \ncheck {options.out_dir} for plots")
     
 ################################################################################
 # __main__

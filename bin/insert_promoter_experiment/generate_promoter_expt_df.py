@@ -35,7 +35,7 @@ strong_sites = akita_utils.tsv_gen_utils.filter_sites_by_score(
     lower_threshold=weak_thresh_pct,
     upper_threshold=strong_thresh_pct,
     mode="head",
-    num_sites=5
+    num_sites=2
 )
 
 weak_sites = akita_utils.tsv_gen_utils.filter_sites_by_score(
@@ -44,8 +44,9 @@ weak_sites = akita_utils.tsv_gen_utils.filter_sites_by_score(
     lower_threshold=weak_thresh_pct,
     upper_threshold=strong_thresh_pct,
     mode="tail",
-    num_sites=5
+    num_sites=2
 )
+
 
 site_df = pd.concat([strong_sites.copy(), weak_sites.copy()])
 
@@ -73,9 +74,9 @@ up_stream_bps = 10000 # Number of basepairs upstream, will become an option
 feature_dataframe = pd.read_csv(feature_data_tsv, sep="\t")
 feature_dataframe["start"] = feature_dataframe["start"]-[up_stream_bps]
 feature_dataframe.reset_index(drop=True, inplace=True)
-feature_dataframe["locus_specification"] = feature_dataframe["chrom"].map(str) +","+ feature_dataframe["start"].map(str) + "," + feature_dataframe["end"].map(str)+"#"+feature_dataframe["strand"].map(str)+"#"+feature_dataframe["gene_id"].map(str)
+feature_dataframe["locus_specification"] = feature_dataframe["chrom"].map(str) +","+ feature_dataframe["start"].map(str) + "," + feature_dataframe["end"].map(str)+"#"+feature_dataframe["strand"].map(str)+"#"+feature_dataframe["SYMBOL"].map(str)
 
-gene_locus_specification_list = feature_dataframe["locus_specification"].values.tolist()[5:15]
+gene_locus_specification_list = feature_dataframe["locus_specification"].values.tolist()[7:12]
 
 #-------------------------------------------------------------------------------------------------
 
@@ -129,7 +130,7 @@ fill_in_default_values(parameters_combo_dataframe)
 
 # adapting dataframe to desired look
 parameters_combo_dataframe[["ctcf_locus_specification",'ctcf_strand','ctcf_genomic_score']] = parameters_combo_dataframe["ctcf_locus_specification"].str.split('#',expand=True)
-parameters_combo_dataframe[["gene_locus_specification",'gene_strand','gene_id']] = parameters_combo_dataframe["gene_locus_specification"].str.split('#',expand=True)
+parameters_combo_dataframe[["gene_locus_specification",'gene_strand','gene_symbol']] = parameters_combo_dataframe["gene_locus_specification"].str.split('#',expand=True)
 
 parameters_combo_dataframe["insert_strand"] = parameters_combo_dataframe["ctcf_strand"]+'$'+parameters_combo_dataframe["gene_strand"]
 parameters_combo_dataframe["insert_loci"] = parameters_combo_dataframe["ctcf_locus_specification"]+'$'+parameters_combo_dataframe["gene_locus_specification"]

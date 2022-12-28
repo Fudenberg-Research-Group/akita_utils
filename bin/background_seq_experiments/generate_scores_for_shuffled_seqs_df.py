@@ -4,7 +4,7 @@ import itertools
 import pandas as pd
 import numpy as np
 import bioframe
-from akita_utils.tsv_gen_utils import calculate_GC, filter_sites_by_score  # reminder. this function renamed to a more general name (filter dataframe by key)
+from akita_utils.tsv_gen_utils import calculate_GC, filter_sites_by_score  # reminder. this function needs to be renamed to a more general name (filter dataframe by key)
 
 #--------------------------------------on boarding------------------------------------------------
 chrom_seq_bed_file = '/project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed'
@@ -32,10 +32,9 @@ cli_params = {
     # should have appropriate permissions in case folder is absent (otherwise provide already existing folder), automaticaly will create ./data if commented
     'out_folder': ["data"],
     'locus_specification': locus_specification_list, 
-    'shuffle_parameter': [8],
-    'mutation_method': ['permute_whole_seq'], # ,'randomise_whole_seq','mask_motif','permute_motif','randomise_motif' 
-    'ctcf_selection_threshold': [8],
-    'map_score_threshold': [5000],
+    'shuffle_parameter': [2,4,8],
+    'ctcf_selection_threshold': [4,8,12],
+    'mutation_method': ['permute_whole_seq','randomise_whole_seq','mask_motif','permute_motif','randomise_motif'], #  
 }
 
 def fill_in_default_values(dataframe):
@@ -43,9 +42,8 @@ def fill_in_default_values(dataframe):
     parameter_space = [('out_folder', 'data'),
                        ('locus_specification', 'chr12,113_500_000,118_500_000-0.35'),
                        ('shuffle_parameter', 2),
-                       ('mutation_method', 'randomise_whole_seq'),
                        ('ctcf_selection_threshold', 8),
-                       ('map_score_threshold', 5500),                       
+                       ('mutation_method', 'randomise_whole_seq'),
                        ]
     
     for (parameter, default_value) in parameter_space:
@@ -61,4 +59,4 @@ parameters_combo_dataframe[["locus_specification",'GC_content']] = parameters_co
 os.makedirs(parameters_combo_dataframe.out_folder[0], exist_ok=True)
 storage_folder = parameters_combo_dataframe.out_folder[0]
 
-parameters_combo_dataframe.to_csv(f'{storage_folder}/background_seq.tsv', sep='\t', index=False)
+parameters_combo_dataframe.to_csv(f'{storage_folder}/shuffled_seqs.tsv', sep='\t', index=False)

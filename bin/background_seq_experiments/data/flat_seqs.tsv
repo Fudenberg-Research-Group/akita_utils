@@ -1,0 +1,11 @@
+out_folder	mutation_method	locus_specification	shuffle_parameter	ctcf_selection_threshold	map_score_threshold	scores_pixelwise_thresh	GC_content
+data	randomise_whole_seq	chr3,42616832,43927552	8	8	6500	0.5	0.36728439331054685
+data	randomise_whole_seq	chr2,81074176,82384896	8	8	6500	0.5	0.3672210693359375
+data	randomise_whole_seq	chr3,44582912,45893632	8	8	6500	0.5	0.3671844482421875
+data	randomise_whole_seq	chr2,96673792,97984512	8	8	6500	0.5	0.367138671875
+data	randomise_whole_seq	chr3,110370816,111681536	8	8	6500	0.5	0.36711654663085935
+data	randomise_whole_seq	chr1,140787712,142098432	8	8	6500	0.5	0.36702880859375
+data	randomise_whole_seq	chr1,47992832,49303552	8	8	6500	0.5	0.3670257568359375
+data	randomise_whole_seq	chr2,98639872,99950592	8	8	6500	0.5	0.36684188842773435
+data	randomise_whole_seq	chr3,113860608,115171328	8	8	6500	0.5	0.36683197021484376
+data	randomise_whole_seq	chr2,81729536,83040256	8	8	6500	0.5	0.3668060302734375

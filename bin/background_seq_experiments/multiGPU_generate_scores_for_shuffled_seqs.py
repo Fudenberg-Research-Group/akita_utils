@@ -152,7 +152,7 @@ def main():
     parser.add_option(
         "--name",
         dest="name",
-        default="scd",
+        default="shuf_bulk",
         help="SLURM name prefix [Default: %default]",
     )
     parser.add_option(
@@ -238,7 +238,7 @@ def main():
                 # cmd += "conda activate basenji;"      #changed
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
 
-            cmd += " ${SLURM_SUBMIT_DIR}/background_scores_exploration_bulk.py %s %s %d" % (
+            cmd += " ${SLURM_SUBMIT_DIR}/generate_scores_for_shuffled_seqs.py %s %s %d" % (
                 options_pkl_file,
                 " ".join(args),
                 pi,

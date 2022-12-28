@@ -3,6 +3,11 @@
 # =========================================================================
 from __future__ import print_function
 
+
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+log = logging.getLogger(__name__)
+
 from optparse import OptionParser
 import json
 import os
@@ -24,7 +29,7 @@ if tf.__version__[0] == '1':
 gpus = tf.config.experimental.list_physical_devices('GPU')
 #for gpu in gpus:
 #  tf.config.experimental.set_memory_growth(gpu, True)
-print(gpus)
+log.info(gpus)
 
 from basenji import seqnn, stream, dna_io
 import akita_utils
@@ -97,7 +102,7 @@ def main():
     parser.add_option(
         "--stats",
         dest="scd_stats",
-        default="SCD",
+        default="SCD,MSS,MPS,CS",
         help="Comma-separated list of stats to save. [Default: %default]",
     )
     parser.add_option(
@@ -138,15 +143,13 @@ def main():
 
     (options, args) = parser.parse_args()
     
-    print("\n++++++++++++++++++\n")
-    print("INPUT")
-    print("\n++++++++++++++++++\n")
-    print("options")
-    print(options)
-    print("\n++++++++++++++++++\n")
-    print("args", args)
-    print(args)
-    print("\n++++++++++++++++++\n")
+    log.info("\n++++++++++++++++++\n")
+    log.info("INPUT")
+    log.info("\n++++++++++++++++++\n")
+    log.info(f"options \n {options}")
+    log.info("\n++++++++++++++++++\n")
+    log.info(f"args \n {args}")
+    log.info("\n++++++++++++++++++\n")
     
     if len(args) == 3:
         # single worker
@@ -234,8 +237,9 @@ def main():
         
     num_experiments = len(seq_coords_df)
     
-    print("===================================")
-    print("Number of experiements = ", num_experiments)         # Warning! It's not number of predictions. Num of predictions is this number x5 or x6
+    log.info("===================================")
+    log.info(f"Number of experiements = {num_experiments} \n It's not number of predictions. Num of predictions is this {num_experiments} x {batch_size}")
+    log.info("===================================") 
     
     # open genome FASTA
     genome_open = pysam.Fastafile(options.genome_fasta)          # needs to be closed at some point
@@ -253,7 +257,7 @@ def main():
         model_index
     )
 
-    print("initialized")
+    log.info("initialized")
 
     #################################################################
     # predict SNP scores, write output
@@ -300,6 +304,7 @@ def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_l
 
     # initialize scd stats
     for scd_stat in scd_stats:
+        log.info(f"initialised stats {scd_stat}")
         
         if scd_stat in seq_coords_df.keys():
             raise KeyError("check input tsv for clashing score name")
@@ -329,8 +334,31 @@ def write_snp(
 ):
     """Write SNP predictions to HDF."""
     
+    log.info(f"writting SNP predictions for experiment {si}")
+    
     # increase dtype
     ref_preds = ref_preds.astype("float32")
+    
+    
+    if "MSS" in scd_stats:
+        # current standard map selection scores
+        Map_sum_square_scores = np.sum(ref_preds**2, axis=-1).sum(axis=-1)
+        for target_ind in range(ref_preds.shape[1]):
+            scd_out[f"MSS_h{head_index}_m{model_index}_t{target_ind}"][si] = Map_sum_square_scores.astype("float16")
+            
+    if "MPS" in scd_stats:
+        # current standard map selection scores
+        Max_scores_pixelwise = np.max(np.abs(ref_preds), axis=0)
+        for target_ind in range(ref_preds.shape[1]):
+            scd_out[f"MPS_h{head_index}_m{model_index}_t{target_ind}"][si] = Max_scores_pixelwise[target_ind].astype("float16")
+            
+    if "CS" in scd_stats: 
+        # customised scores for exploration
+        std = np.std(ref_preds, axis=0)
+        mean = np.mean(ref_preds, axis=0)
+        Custom_score = 3/mean + 2/std 
+        for target_ind in range(ref_preds.shape[1]):
+            scd_out[f"CS_h{head_index}_m{model_index}_t{target_ind}"][si] = Custom_score[target_ind].astype("float16")
         
     # compare reference to alternative via mean subtraction
     if "SCD" in scd_stats:
@@ -349,7 +377,7 @@ def write_snp(
                     scd_out[f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][si] = akita_utils.stats_utils.insul_diamonds_scores(ref_map, window=insul_window)[target_ind].astype("float16")
 
     if (plot_dir is not None) and (np.mod(si, plot_freq) == 0):
-        print("plotting ", si)
+        log.info(f"plotting {si}")
         # convert back to dense
         ref_map = ut_dense(ref_preds, diagonal_offset)
         _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4))

@@ -155,10 +155,8 @@ def filter_sites_by_score(
             (sites[score_key] >= lower_thresh)
             & (sites[score_key] <= upper_thresh)
         ]
-        .copy()
-        .sort_values(score_key, ascending=False)
-    )
-
+        .copy().drop_duplicates(subset=[score_key]).sort_values(score_key, ascending=False))
+    
     if num_sites != None:
         assert num_sites <= len(
             filtered_sites
@@ -170,7 +168,7 @@ def filter_sites_by_score(
             filtered_sites = filtered_sites[-num_sites:]
         else:
             filtered_sites = filtered_sites.sample(n=num_sites)
-
+            
     return filtered_sites
 
 

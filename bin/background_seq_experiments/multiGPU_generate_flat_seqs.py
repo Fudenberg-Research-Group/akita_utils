@@ -44,7 +44,6 @@ def main():
     usage = "usage: %prog [options] <params_file> <model_file> <tsv_file>"
     parser = OptionParser(usage)
 
-    # scd
     parser.add_option(
         "-f",
         dest="genome_fasta",
@@ -93,12 +92,6 @@ def main():
         help="Ensemble prediction shifts [Default: %default]",
     )
     parser.add_option(
-        "--stats",
-        dest="scd_stats",
-        default="SCD,SSD",
-        help="Comma-separated list of stats to save. [Default: %default]",
-    )
-    parser.add_option(
         "-t",
         dest="targets_file",
         default=None,
@@ -126,17 +119,17 @@ def main():
         type="int",
         help="Specify model index (from 0 to 7)",
     )
-    ## insertion-specific options
-    parser.add_option('--backgounds_file', dest='backgroung_chromosome_tsv_file',
-      default='/home1/kamulege/akita_utils/bin/background_seq_experiments/data/background_seq.tsv',           
-      help='backgounds tsv file')
+    parser.add_option('--flat_seq_tsv_file', dest='flat_seq_tsv_file',
+      default='/home1/kamulege/akita_utils/bin/background_seq_experiments/data/flat_seqs.tsv',           
+      help='flat_se tsv file')
     
     parser.add_option('-s', dest='save_seqs',
       default=None,
       help='Save the final seqs in fasta format')  
     
     parser.add_option('--max_iters', dest='max_iters',
-      default=10,              
+      default=10,
+      type="int",
       help='maximum iterations')
     
     # multi
@@ -157,7 +150,7 @@ def main():
     parser.add_option(
         "--name",
         dest="name",
-        default="scd",
+        default="flat_gen",
         help="SLURM name prefix [Default: %default]",
     )
     parser.add_option(
@@ -243,7 +236,7 @@ def main():
                 # cmd += "conda activate basenji;"      #changed
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
 
-            cmd += " ${SLURM_SUBMIT_DIR}/generate_flat_background.py %s %s %d" % (
+            cmd += " ${SLURM_SUBMIT_DIR}/generate_flat_seqs.py %s %s %d" % (
                 options_pkl_file,
                 " ".join(args),
                 pi,

@@ -5,23 +5,26 @@ from .dna_utils import dna_1hot, permute_seq_k
 from .stats_utils import insul_diamonds_scores
 
 
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+log = logging.getLogger(__name__)
+
+
 def create_flat_seqs_gen(
     seqnn_model,
     genome_fasta,
     dataframe,
     max_iters=10,
-    batch_size=6,
-    scores_pixelwise_thresh=0.04,
+    batch_size=6
 ):
     """This function creates flat sequences by permutating experimental sequences
 
     Args:
         seqnn_model : model used to make predictions
-        genome_fasta : _description_
-        dataframe : dataframe of experimental sequences
+        genome_fasta(str) : path to fasta file
+        dataframe : dataframe of experimental sequences' parameters
         max_iters (int, optional): maximum iterations in making permutations. Defaults to 1.
         batch_size (int, optional): batch size used in model predictions. Defaults to 6.
-        scores_pixelwise_thresh (float, optional): pixelwise score to determine structure in output. Defaults to 0.04.
 
     Returns:
         flat_seqs : list of flat sequences
@@ -30,27 +33,28 @@ def create_flat_seqs_gen(
     num_seqs = dataframe.shape[0]
     genome_open = pysam.Fastafile(genome_fasta) 
     for ind in range(num_seqs):
-        locus_specification, shuffle_k, ctcf_thresh, scores_thresh = dataframe.iloc[ind][["locus_specification","shuffle_parameter","ctcf_selection_threshold","map_score_threshold"]]
+        locus_specification, shuffle_k, ctcf_thresh, scores_thresh,scores_pixelwise_thresh = dataframe.iloc[ind][["locus_specification","shuffle_parameter","ctcf_selection_threshold","map_score_threshold",'scores_pixelwise_thresh']]
         chrom, start, end = locus_specification.split(",")
         seq = genome_open.fetch(chrom, int(start), int(end)).upper()
         seq_1hot = dna_1hot(seq)
         num_iters = 0
         while num_iters < max_iters:
             seq_1hot_batch = _seq_batch_generator_flat_maps(seq_1hot, shuffle_k, batch_size)
-            pred = seqnn_model.predict(seq_1hot_batch, batch_size=batch_size)
-            scores = np.sum(pred**2, axis=-1).sum(axis=-1) #insul_diamonds_scores(pred)
-            scores_pixelwise = np.max(pred**2, axis=-1).max(axis=-1)
-            
-            if np.all([(np.min(scores) < scores_thresh), (np.min(scores_pixelwise) < scores_pixelwise_thresh)]):
+            predictions = seqnn_model.predict(seq_1hot_batch, batch_size=batch_size)
+            scores, scores_pixelwise, custom_scores = _calculate_scores_from_predictions(predictions)
+
+            if np.all([(np.max(scores) < scores_thresh), (np.max(scores_pixelwise) < scores_pixelwise_thresh),(np.min(custom_scores)>40)]):
                 num_iters = max_iters
                 best_ind = np.argmin(scores_pixelwise)
                 best_seq = seq_1hot_batch[best_ind]
-                best_pred = pred[best_ind]
+                best_pred = predictions[best_ind]
                 best_score, best_score_pixelwise = (scores[best_ind],scores_pixelwise[best_ind])
-                print("success: best seq, thresh",np.min(scores),
-                    " pixelwise",np.min(scores_pixelwise))
+                log.info(f"success: best seq, thresh {np.min(scores)}, pixelwise {np.min(scores_pixelwise)}")
                 flat_seqs.append([best_seq,best_pred,best_score,best_score_pixelwise])
             num_iters += 1
+            
+            if num_iters == max_iters:
+                log.info(scores, scores_pixelwise, custom_scores)
             
     return flat_seqs
 
@@ -60,3 +64,17 @@ def _seq_batch_generator_flat_maps(seq_1hot, shuffle_k, batch_size):
     for i in range(batch_size):
             seq_1hot_batch.append(permute_seq_k(seq_1hot, k=shuffle_k))
     return np.array(seq_1hot_batch)
+
+def _calculate_scores_from_predictions(predictions):
+    scores = []
+    scores_pixelwise =[]
+    custom_score =[]
+    for seq_num in range(predictions.shape[0]):    
+        ref_preds=predictions[seq_num,:,:]
+        scores_pixelwise += [np.max(np.abs(ref_preds), axis=-1)]
+        scores += [np.sum(ref_preds**2, axis=-1)]
+        std = np.std(ref_preds, axis=0)
+        mean = np.mean(ref_preds, axis=0)
+        custom_score +=  [3/mean + 2/std]
+        
+    return np.sum(scores,axis=1), np.max(scores_pixelwise, axis=1), np.min(custom_score,axis=1)
