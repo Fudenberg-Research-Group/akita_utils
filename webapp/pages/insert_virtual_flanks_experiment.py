@@ -5,9 +5,11 @@ import numpy as np
 import streamlit as st
 import streamlit_pandas as sp
 import plotly.express as px 
+from pathlib import Path
 
+current_file_path = Path(__file__)
 
-h5_file = "/Users/phad/akita_utils/bin/insert_virtual_flanks_experiment/data/2022-09-30_flank0-30_10motifs_left.h5" 
+h5_file = current_file_path.parents[2] / "bin/insert_virtual_flanks_experiment/data/2022-09-30_flank0-30_10motifs_left.h5" 
 
 @st.cache(allow_output_mutation=True)
 def get_data(): 

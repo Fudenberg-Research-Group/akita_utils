@@ -1,24 +1,15 @@
 from pathlib import Path
+
 import streamlit as st
 
 # ---- MAINPAGE ----
 st.title(":bar_chart: Akita_utils")
 st.markdown("#visualizing various experiments#")
 
-def read_markdown_file(markdown_file):
-    """_summary_
+current_file_path = Path(__file__)
+intro_markdown = current_file_path.parents[1] / "README.md"
 
-    Args:
-        markdown_file (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    return Path(markdown_file).read_text()
-
-intro_markdown = read_markdown_file("/Users/phad/akita_utils/README.md")
-st.markdown(intro_markdown, unsafe_allow_html=True)
-
+st.markdown(intro_markdown.read_text(), unsafe_allow_html=True)
 
 # ---- HIDE STREAMLIT STYLE ----
 hide_st_style = """
