@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 class LOCUS:
     def __init__(self, allowed_classes):
-        self.contents = [] # consider switching to a set for faster run time in bigger simulations
+        self.contents = []
         self.allowed_classes = allowed_classes
 
     def insert(self, object):

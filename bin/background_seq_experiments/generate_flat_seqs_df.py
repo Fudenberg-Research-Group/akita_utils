@@ -34,8 +34,8 @@ cli_params = {
     'locus_specification': locus_specification_list, 
     'shuffle_parameter': [8],
     'ctcf_selection_threshold': [8],
-    'map_score_threshold': [6500],
-    'scores_pixelwise_thresh':[0.5],
+    'map_score_threshold': [8000],
+    'scores_pixelwise_thresh':[0.18],
 }
 
 def fill_in_default_values(dataframe):
@@ -45,7 +45,7 @@ def fill_in_default_values(dataframe):
                        ('shuffle_parameter', 2),
                        ('mutation_method', 'randomise_whole_seq'),
                        ('ctcf_selection_threshold', 8),
-                       ('map_score_threshold', 5500),
+                       ('map_score_threshold', 6500),
                        ('scores_pixelwise_thresh', 0.3)]
     
     for (parameter, default_value) in parameter_space:

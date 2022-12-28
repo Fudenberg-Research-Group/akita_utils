@@ -43,18 +43,20 @@ def create_flat_seqs_gen(
             predictions = seqnn_model.predict(seq_1hot_batch, batch_size=batch_size)
             scores, scores_pixelwise, custom_scores = _calculate_scores_from_predictions(predictions)
 
-            if np.all([(np.max(scores) < scores_thresh), (np.max(scores_pixelwise) < scores_pixelwise_thresh),(np.min(custom_scores)>40)]):
-                num_iters = max_iters
-                best_ind = np.argmin(scores_pixelwise)
-                best_seq = seq_1hot_batch[best_ind]
-                best_pred = predictions[best_ind]
-                best_score, best_score_pixelwise = (scores[best_ind],scores_pixelwise[best_ind])
-                log.info(f"success: best seq, thresh {np.min(scores)}, pixelwise {np.min(scores_pixelwise)}")
-                flat_seqs.append([best_seq,best_pred,best_score,best_score_pixelwise])
+            # log.info(f"\nscores {scores} - pixelwise {scores_pixelwise} - custom {custom_scores}\n")
+            for score_ind,score in enumerate(scores):
+                if np.all([(scores[score_ind]<scores_thresh),(scores_pixelwise[score_ind]< scores_pixelwise_thresh),(custom_scores[score_ind]>50)]):
+                    num_iters = max_iters
+                    best_ind = score_ind
+                    best_seq = seq_1hot_batch[best_ind]
+                    best_pred = predictions[best_ind]
+                    best_score, best_score_pixelwise, best_custom_score = (scores[best_ind],scores_pixelwise[best_ind],custom_scores[best_ind])
+                    log.info(f"success: best seq, map score {best_score}, pixelwise {best_score_pixelwise}, custom {best_custom_score}")
+                    flat_seqs.append([best_seq,best_pred,best_score,best_score_pixelwise])
+
             num_iters += 1
-            
             if num_iters == max_iters:
-                log.info(scores, scores_pixelwise, custom_scores)
+                log.info(f"******* last iteration *******\nscores: {scores} \nscores pixelwise: {scores_pixelwise} \ncustom scores: {custom_scores}")
             
     return flat_seqs
 
