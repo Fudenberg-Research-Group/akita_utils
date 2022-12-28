@@ -1,23 +1,29 @@
-import akita_utils.format_io
 import glob
+
 import bioframe
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pandas_profiling
+import plotly.express as px
 import streamlit as st
 import streamlit_pandas as sp
-import plotly.express as px 
-import pandas_profiling
 from streamlit_pandas_profiling import st_profile_report
 
-h5_dirs = "/Users/phad/akita_utils/bin/insert_promoter_experiment/data/promoter_scores_last_single_flank/*/*.h5" 
+import akita_utils.format_io
+
+h5_dirs_1 = "/Users/phad/akita_utils/bin/insert_promoter_experiment/data/promoter_scores_no_swap/*/*.h5"
+h5_dirs_2 = "/Users/phad/akita_utils/bin/insert_promoter_experiment/data/promoter_scores_with_swap/*/*.h5"
 
 @st.cache(allow_output_mutation=True)
 def get_data():
     dfs = []
-    for h5_file in glob.glob(h5_dirs):
-        dfs.append(akita_utils.format_io.h5_to_df(h5_file, drop_duplicates_key=None))    
+    for directory in [h5_dirs_1,h5_dirs_2]:
+        for h5_file in glob.glob(directory):
+            dfs.append(akita_utils.format_io.h5_to_df(h5_file, drop_duplicates_key=None)) 
     dfs = pd.concat(dfs)
+    
     dfs["mean_SCD_score"] = (dfs["SCD_h1_m1_t0"]+dfs["SCD_h1_m1_t1"]+dfs["SCD_h1_m1_t2"]+dfs["SCD_h1_m1_t3"]+dfs["SCD_h1_m1_t4"]+dfs["SCD_h1_m1_t5"])/6
+    
     dfs = dfs.drop(columns=['background_seqs']) # droping because it is constant
     return dfs
 dfs = get_data()
