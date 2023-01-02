@@ -215,13 +215,17 @@ def main():
         exclude_window=ctcf_exclude_window,
         verbose=True,
     )
+    
+    ###
+    # to change core-sites
+    ###
 
     core_sites = filter_sites_by_score(
         sites,
         score_key=score_key,
         upper_threshold=strong_thresh_pct,
         lower_threshold=weak_thresh_pct,
-        mode="head",
+        mode="tail",
         num_sites=options.fixed_core_num_motifs,
     )
     
@@ -240,12 +244,16 @@ def main():
     core_sites_df.reset_index(drop=True, inplace=True)
     core_sites_df.reset_index(inplace=True)
     
+    ###
+    # to change flank-sites
+    ###
+    
     flanks_sites = filter_sites_by_score(
         sites,
         score_key=score_key,
         upper_threshold=strong_thresh_pct,
         lower_threshold=weak_thresh_pct,
-        mode="head",
+        mode="tail",
         num_sites=options.flank_sets_num_motifs,
     )
 
