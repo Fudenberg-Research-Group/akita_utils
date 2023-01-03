@@ -1,0 +1,24 @@
+{
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "file",
+    "editor.formatOnPaste": true,
+    "[python]": {
+        // "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true
+    },
+    // "editor.formatOnType": true,
+    "diffEditor.codeLens": true,
+    "files.autoSave": "afterDelay",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.autoImportUserSymbols": true,
+    "python.analysis.completeFunctionParens": true,
+    "python.linting.flake8Enabled": true,
+    "python.formatting.provider": "none",
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    // "python.linting.mypyEnabled": true,
+    "editor.codeActionsOnSave": {
+    "source.organizeImports": true
+    },
+    // "editor.defaultFormatter": "ms-python.vscode-pylance"
+}

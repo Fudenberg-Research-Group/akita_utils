@@ -1,5 +1,5 @@
-FROM python:3.7-alpine
+FROM python:3.9
 COPY . /app
 WORKDIR /app
-RUN pip install .
+RUN pip install -e .
 CMD ["akita_utils"]

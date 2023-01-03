@@ -1,6 +1,7 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pysam
+
 from .dna_utils import dna_1hot, permute_seq_k
 from .stats_utils import insul_diamonds_scores
 
@@ -31,7 +32,7 @@ def create_flat_seqs_gen(
     """
     flat_seqs = []
     num_seqs = dataframe.shape[0]
-    genome_open = pysam.Fastafile(genome_fasta) 
+    genome_open = pysam.Fastafile(genome_fasta)
     for ind in range(num_seqs):
         locus_specification, shuffle_k, ctcf_thresh, scores_thresh,scores_pixelwise_thresh = dataframe.iloc[ind][["locus_specification","shuffle_parameter","ctcf_selection_threshold","map_score_threshold",'scores_pixelwise_thresh']]
         chrom, start, end = locus_specification.split(",")
@@ -63,8 +64,8 @@ def create_flat_seqs_gen(
 
 def _seq_batch_generator_flat_maps(seq_1hot, shuffle_k, batch_size):
     seq_1hot_batch = []
-    for i in range(batch_size):
-            seq_1hot_batch.append(permute_seq_k(seq_1hot, k=shuffle_k))
+    for _ in range(batch_size):
+        seq_1hot_batch.append(permute_seq_k(seq_1hot, k=shuffle_k))
     return np.array(seq_1hot_batch)
 
 def _calculate_scores_from_predictions(predictions):
