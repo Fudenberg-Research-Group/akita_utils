@@ -45,7 +45,7 @@ def create_flat_seqs_gen(
 
             # log.info(f"\nscores {scores} - pixelwise {scores_pixelwise} - custom {custom_scores}\n")
             for score_ind,score in enumerate(scores):
-                if np.all([(scores[score_ind]<scores_thresh),(scores_pixelwise[score_ind]< scores_pixelwise_thresh),(custom_scores[score_ind]>50)]):
+                if np.all([(scores[score_ind]<scores_thresh),(scores_pixelwise[score_ind]< scores_pixelwise_thresh),(custom_scores[score_ind]>53)]):
                     num_iters = max_iters
                     best_ind = score_ind
                     best_seq = seq_1hot_batch[best_ind]

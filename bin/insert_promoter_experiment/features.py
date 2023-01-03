@@ -143,5 +143,7 @@ feature_dataframe=feature_dataframe[["gene_id", "chrom", "start", "end", "strand
 feature_dataframe.to_csv(f'./data/feature_dataframe.tsv', sep='\t', index=False)
 
 
-# feature_df = bioframe.read_table(enhancer_dict["enh_chen_s1"], schema='bed3', header=1)
-# feature_df.to_csv(f"enhancer_data.tsv")
+enhancer_df = bioframe.read_table(enhancer_dict["enh_chen_s1"], schema='bed3', header=1)
+enhancer_df = bioframe_clean_autosomes(enhancer_df)
+# enhancer_df[["enhancer_symbol","enhancer_locus_specification"]] = enhancer_df.str.split(',',expand=True)
+enhancer_df.to_csv(f"./data/enhancer_data.csv")

@@ -192,8 +192,8 @@ def create_insertion(module_number, locus, strand, flank_bp, ctcf_score, swappin
     Creates an Insertion object (either a Gene or a CTCF) based on the given module number,
     locus, strand, and flank_bp values.
     """
-    threshold_for_strong_ctcf = 15
-    known_strong_ctcf = INSERT("strong_CTCF","chr11",22206811,22206830,[flank_bp,flank_bp],"+") # default known strong ctcf to pick flanks
+    # threshold_for_strong_ctcf = 15 will reactivate when needed
+    known_strong_ctcf = INSERT("strong_CTCF","chr3",103392976,103392995,[flank_bp,flank_bp],"+") # default known strong ctcf to pick flanks
     known_weak_ctcf = INSERT("weak_CTCF","chr4",88777220,88777239,[flank_bp,flank_bp],"+") # default known weak ctcf to pick flanks 
     chrom, start, end = locus.split(",")
     
@@ -205,9 +205,9 @@ def create_insertion(module_number, locus, strand, flank_bp, ctcf_score, swappin
         
     if module_number == 0: # ctcf
         insert = INSERT("unknown_ctcf", chrom, int(start), int(end), [flank_bp, flank_bp], strand)
-        if swapping_flanks=="weak_for_strong" and ctcf_score <= threshold_for_strong_ctcf:
+        if swapping_flanks=="all_for_strong": # and ctcf_score <= threshold_for_strong_ctcf:
             insert.replace_flanks(known_strong_ctcf)
-        if swapping_flanks=="strong_for_weak" and ctcf_score > threshold_for_strong_ctcf:
+        if swapping_flanks=="all_for_weak": # and ctcf_score > threshold_for_strong_ctcf:
             insert.replace_flanks(known_weak_ctcf)
         
     return insert        

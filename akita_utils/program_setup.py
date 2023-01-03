@@ -81,7 +81,7 @@ class INSERT(Insertion):
  
 
     def __str__(self):
-        return f"INSERT: {self.name} ({self.chrom}:{self.start}-{self.end} \n {self.flanks} \n {self.left_flank_length} \n {self.right_flank_length} \n {self.left_flank_chrom} \n {self.right_flank_chrom} \n {self.left_flank_start} \n {self.left_flank_end} \n {self.right_flank_start} \n {self.right_flank_end}"
+        return f"INSERT: {self.name} {self.chrom}:{self.start}-{self.end} \n {self.flanks} \n {self.left_flank_length} \n {self.right_flank_length} \n {self.left_flank_chrom} \n {self.right_flank_chrom} \n {self.left_flank_start} \n {self.left_flank_end} \n {self.right_flank_start} \n {self.right_flank_end}"
 
 
 

@@ -6,7 +6,7 @@ import numpy as np
 import bioframe
 import akita_utils.tsv_gen_utils
 import gtfparse
-
+from pathlib import Path
 
 # loading motifs
 score_key = "SCD"
@@ -35,7 +35,7 @@ strong_sites = akita_utils.tsv_gen_utils.filter_sites_by_score(
     lower_threshold=weak_thresh_pct,
     upper_threshold=strong_thresh_pct,
     mode="head",
-    num_sites=2
+    num_sites=5
 )
 
 weak_sites = akita_utils.tsv_gen_utils.filter_sites_by_score(
@@ -44,7 +44,7 @@ weak_sites = akita_utils.tsv_gen_utils.filter_sites_by_score(
     lower_threshold=weak_thresh_pct,
     upper_threshold=strong_thresh_pct,
     mode="tail",
-    num_sites=2
+    num_sites=5
 )
 
 
@@ -66,18 +66,16 @@ seq_coords_df = seq_coords_df["chrom"].map(str) +","+ seq_coords_df["start"].map
 ctcf_locus_specification_list = seq_coords_df.values.tolist() # to be modified to have modules attached
 
 
-#-------------------------------importing genes workflow--------------------------------------------------------
+#---------------importing genes + cropping upstream bps workflow-------------------------------
+current_file_path = Path(__file__)
+feature_data_tsv = current_file_path.parent / "data/feature_dataframe.tsv"
 
-feature_data_tsv = "/home1/kamulege/akita_utils/bin/insert_promoter_experiment/data/feature_dataframe.tsv"
 up_stream_bps = 10000 # Number of basepairs upstream, will become an option
-
 feature_dataframe = pd.read_csv(feature_data_tsv, sep="\t")
 feature_dataframe["start"] = feature_dataframe["start"]-[up_stream_bps]
 feature_dataframe.reset_index(drop=True, inplace=True)
 feature_dataframe["locus_specification"] = feature_dataframe["chrom"].map(str) +","+ feature_dataframe["start"].map(str) + "," + feature_dataframe["end"].map(str)+"#"+feature_dataframe["strand"].map(str)+"#"+feature_dataframe["SYMBOL"].map(str)
-
 gene_locus_specification_list = feature_dataframe["locus_specification"].values.tolist()[7:12]
-
 #-------------------------------------------------------------------------------------------------
 
 # setting up a grid search over parameters
@@ -97,13 +95,14 @@ cli_params = {
     'background_seqs': [2], 
     'spacer_bp': [i for i in range(0,61,10)],
     'locus_orientation':[">>","<<","<>","><"],
-    'swap_flanks': ["weak_for_strong","strong_for_weak"] # threshold(15) is hard coded in akita_utils.seq_gens.create_insertion (should i open to user?) 
+    'swap_flanks': ["all_for_strong","all_for_weak","no"] # threshold(15) is hard coded in akita_utils.seq_gens.create_insertion (should i open to user?) 
 }
             
 cli_param_set = list(itertools.product(*[v for v in cli_params.values()]))
 
 #-------------------------------------------------------------------------------------------------
 # filling missing table values (if a key was deleted in dictionary above or commented)
+
 parameters_combo_dataframe = pd.DataFrame(cli_param_set, columns=cli_params.keys())
 
 def fill_in_default_values(dataframe):
@@ -126,6 +125,7 @@ def fill_in_default_values(dataframe):
                              allow_duplicates=False)
 
 fill_in_default_values(parameters_combo_dataframe)
+
 #-------------------------------------------------------------------------------------------------
 
 # adapting dataframe to desired look
@@ -138,4 +138,4 @@ parameters_combo_dataframe["insert_flank_bp"] = parameters_combo_dataframe["ctcf
 
 os.makedirs(parameters_combo_dataframe.out_folder[0], exist_ok=True)
 storage_folder = parameters_combo_dataframe.out_folder[0]
-parameters_combo_dataframe.to_csv(f'{storage_folder}/parameters_combo_with_swap.tsv', sep='\t', index=False)
+parameters_combo_dataframe.to_csv(f'{storage_folder}/parameters_combo_all.tsv', sep='\t', index=False)
