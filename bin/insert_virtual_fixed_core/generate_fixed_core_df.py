@@ -80,11 +80,53 @@ def main():
     usage = "usage: %prog [options]"
     parser = OptionParser(usage)
     parser.add_option(
+        "--fixed-core-upper-threshold",
+        dest="fixed_core_upper_threshold",
+        default=99.0,
+        type="float",
+        help="Specify the upper (percentile) threshold of genomic SCD for filtering fixed CTCFs' cores to be tested",
+    )
+    parser.add_option(
+        "--fixed-core-lower-threshold",
+        dest="fixed_core_lower_threshold",
+        default=1.0,
+        type="float",
+        help="Specify the lower (percentile) threshold of genomic SCD for filtering fixed CTCFs' cores to be tested",
+    )
+    parser.add_option(
+        "--fixed-core-mode",
+        dest="fixed_core_mode",
+        default="head",
+        type="str",
+        help="Specify the mode for filtering the fixed CTCFs' cores to be tested",
+    )
+    parser.add_option(
         "--fixed-core-num",
         dest="fixed_core_num_motifs",
-        default=1,
+        default=10,
         type="int",
         help="Specify number of fixed CTCFs' cores to be tested",
+    )
+    parser.add_option(
+        "--flank-core-upper-threshold",
+        dest="flank_core_upper_threshold",
+        default=99.0,
+        type="float",
+        help="Specify the upper (percentile) threshold of genomic SCD for filtering flank CTCFs' cores to be tested",
+    )
+    parser.add_option(
+        "--flank-core-lower-threshold",
+        dest="flank_core_lower_threshold",
+        default=1.0,
+        type="float",
+        help="Specify the lower (percentile) threshold of genomic SCD for filtering flank CTCFs' cores to be tested",
+    )
+    parser.add_option(
+        "--flank-core-mode",
+        dest="flank_core_mode",
+        default="head",
+        type="str",
+        help="Specify the mode for filtering the flank CTCFs' cores to be tested",
     )
     parser.add_option(
         "--flank-sets-num",
@@ -193,8 +235,6 @@ def main():
 
     # loading motifs
     score_key = "SCD"
-    weak_thresh_pct = 1
-    strong_thresh_pct = 99
 
     sites = filter_boundary_ctcfs_from_h5(
         h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
@@ -223,9 +263,9 @@ def main():
     core_sites = filter_sites_by_score(
         sites,
         score_key=score_key,
-        upper_threshold=strong_thresh_pct,
-        lower_threshold=weak_thresh_pct,
-        mode="tail",
+        upper_threshold=options.fixed_core_upper_threshold,
+        lower_threshold=options.fixed_core_lower_threshold,
+        mode=options.fixed_core_mode,
         num_sites=options.fixed_core_num_motifs,
     )
     
@@ -251,9 +291,9 @@ def main():
     flanks_sites = filter_sites_by_score(
         sites,
         score_key=score_key,
-        upper_threshold=strong_thresh_pct,
-        lower_threshold=weak_thresh_pct,
-        mode="tail",
+        upper_threshold=options.flank_core_upper_threshold,
+        lower_threshold=options.flank_core_lower_threshold,
+        mode=options.flank_core_mode,
         num_sites=options.flank_sets_num_motifs,
     )
 

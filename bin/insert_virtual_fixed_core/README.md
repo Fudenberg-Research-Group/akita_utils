@@ -39,3 +39,20 @@ python generate_fixed_core_df.py --fixed-core-num 15 --flank-sets-num 15 --orien
 ```
 python multiGPU-virtual_fixed_core_experiment_flanks.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 15vs15strong.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o TEST --head-index 1 --model-index 1 --batch-size 4  --stats SCD -p 7 --max_proc 7 
 ```
+
+100vs100
+--------
+```
+python generate_fixed_core_df.py --fixed-core-num 100 --flank-sets-num 100 --orientation-string ">>" --flank-range 25,25 --backgrounds-indices 1,2,3 --filename 100vs100strong --verbose
+```
+
+Note, if only one flank range is needed, you need to provide it in the form "x,x"
+
+```
+python multiGPU-virtual_fixed_core_experiment_flanks.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 100vs100strong.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o 100VS100 --head-index 1 --model-index 1 --batch-size 4  --stats SCD -p 10 --max_proc 10
+```
+
+# change in arguments
+```
+python generate_fixed_core_df.py --fixed-core-upper-threshold 99.0 --fixed-core-lower-threshold 1.0 --fixed-core-mode head --fixed-core-num 100 --flank-core-upper-threshold 99.0 --flank-core-lower-threshold 1.0 --flank-core-mode head --flank-sets-num 100 --orientation-string ">>" --flank-range 25,25 --backgrounds-indices 1,2,3 --filename test_test --verbose
+```
