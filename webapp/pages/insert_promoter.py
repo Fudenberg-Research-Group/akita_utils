@@ -15,18 +15,18 @@ import akita_utils.format_io
 st.set_page_config(layout="wide")
 
 current_file_path = Path(__file__)
-h5_dirs_1 = current_file_path.parents[2] / "bin/insert_promoter_experiment/data/promoter_scores_no_swap/*/*.h5"
-h5_dirs_2 = current_file_path.parents[2] / "bin/insert_promoter_experiment/data/promoter_scores_with_swap/*/*.h5"
+h5_dirs_1 = current_file_path.parents[2] / "bin/insert_promoter_experiment/data/promoter_scores_all/*/*.h5"
+# h5_dirs_2 = current_file_path.parents[2] / "bin/insert_promoter_experiment/data/promoter_scores_with_swap/*/*.h5"
 
 h5_dirs_1 = f"{h5_dirs_1}"
-h5_dirs_2 = f"{h5_dirs_2}"
+# h5_dirs_2 = f"{h5_dirs_2}"
 
 @st.cache(allow_output_mutation=True)
 def get_data():
     dfs = []
-    for directory in [h5_dirs_1,h5_dirs_2]:
-        for h5_file in glob.glob(directory):
-            dfs.append(akita_utils.format_io.h5_to_df(h5_file, drop_duplicates_key=None)) 
+    # for directory in [h5_dirs_1,h5_dirs_2]:
+    for h5_file in glob.glob(h5_dirs_1):
+        dfs.append(akita_utils.format_io.h5_to_df(h5_file, drop_duplicates_key=None)) 
     dfs = pd.concat(dfs)
     
     dfs["mean_SCD_score"] = (dfs["SCD_h1_m1_t0"]+dfs["SCD_h1_m1_t1"]+dfs["SCD_h1_m1_t2"]+dfs["SCD_h1_m1_t3"]+dfs["SCD_h1_m1_t4"]+dfs["SCD_h1_m1_t5"])/6
