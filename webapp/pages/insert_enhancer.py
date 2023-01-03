@@ -15,13 +15,13 @@ import akita_utils.format_io
 st.set_page_config(layout="wide")
 
 current_file_path = Path(__file__)
-h5_dirs = current_file_path.parents[2] / "bin/insert_promoter_experiment/data/promoter_scores_all_ins/*/*.h5"
+h5_dirs = current_file_path.parents[2] / "bin/insert_promoter_experiment/data/enhancer_scores/*/*.h5"
 h5_dirs = f"{h5_dirs}"
 
 @st.cache(allow_output_mutation=True)
 def get_data():
     dfs = []
-    scd_stats = ["SCD","INS-16","INS-64"]
+    scd_stats = ["SCD"] # ,"INS-16","INS-64"
 
     for h5_file in glob.glob(h5_dirs):
         dfs.append(akita_utils.h5_to_df(h5_file, scd_stats, drop_duplicates_key=None))
@@ -42,10 +42,10 @@ create_data = {
                 "swap_flanks": "multiselect",
                 "ctcf_genomic_score": "multiselect"}
 
-all_widgets = sp.create_widgets(dfs, create_data, ignore_columns=["gene_locus_specification","insert_loci","out_folder","ctcf_strand","gene_strand","ctcf_locus_specification","insert_flank_bp"])
+all_widgets = sp.create_widgets(dfs, create_data, ignore_columns=["enhancer_locus_specification","insert_loci","out_folder","ctcf_strand","enhancer_strand","ctcf_locus_specification","insert_flank_bp","enhancer_flank_bp"])
 
 res = sp.filter_df(dfs, all_widgets)
-st.title("Insert Promoters Experiment")
+st.title("Insert Enhancers Experiment")
 st.header(f"Original DataFrame n={dfs.shape[0]}")
 st.dataframe(dfs)
 
@@ -108,9 +108,9 @@ else:
     # GENE FLANKS BOX PLOT 
     fig_gene_flanks = px.box(
         res,
-        x="gene_flank_bp",
+        x="enhancer_flank_bp",
         y="mean_SCD_score",
-        title="<b>Effect of gene flanks to SCD score</b>",
+        title="<b>Effect of enhancer flanks to SCD score</b>",
         color_discrete_sequence=["#0083B8"] * res.shape[0],
         template="plotly_white",
     )
