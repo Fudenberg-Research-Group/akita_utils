@@ -339,12 +339,6 @@ def write_snp(
     # increase dtype
     ref_preds = ref_preds.astype("float32")
     
-    
-    if "MSS" in scd_stats:
-        # current standard map selection scores
-        Map_sum_square_scores = np.sum(ref_preds**2, axis=-1).sum(axis=-1)
-        for target_ind in range(ref_preds.shape[1]):
-            scd_out[f"MSS_h{head_index}_m{model_index}_t{target_ind}"][si] = Map_sum_square_scores.astype("float16")
             
     if "MPS" in scd_stats:
         # current standard map selection scores

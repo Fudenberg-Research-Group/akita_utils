@@ -65,7 +65,7 @@ def main():
     parser.add_option(
         "-f",
         dest="genome_fasta",
-        default=None,
+        default="/home1/kamulege/basenji/data/human.hg38.genome",
         help="Genome FASTA for sequences [Default: %default]",
     )
     parser.add_option(

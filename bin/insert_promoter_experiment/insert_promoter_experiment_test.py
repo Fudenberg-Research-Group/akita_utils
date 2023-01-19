@@ -99,7 +99,7 @@ from basenji import dna_io
 
 import akita_utils
 from akita_utils import ut_dense, split_df_equally 
-from akita_utils.seq_gens import flexible_flank_modular_insertion_seqs_gen
+from akita_utils.seq_gens import flexible_flank_modular_insertion_seqs_gen, modular_offsets_insertion_seqs_gen
 
 ################################################################################
 # main
@@ -339,10 +339,12 @@ def main():
     # predict SNP scores, write output
 
     # initialize predictions stream
+    # preds_stream = stream.PredStreamGen(
+    #     seqnn_model, flexible_flank_modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open), batch_size
+    # )
     preds_stream = stream.PredStreamGen(
-        seqnn_model, flexible_flank_modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open), batch_size
+        seqnn_model, modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open), batch_size
     )
-    
     for exp in range(num_experiments):
         # get predictions
         preds = preds_stream[exp]

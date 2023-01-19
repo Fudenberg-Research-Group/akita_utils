@@ -32,10 +32,8 @@ os.environ['OPENBLAS_NUM_THREADS'] = '1'
 import pickle
 import subprocess
 import sys
-
 import h5py
 import numpy as np
-
 import akita_utils.slurm_gf as slurm
 
 ################################################################################

@@ -85,11 +85,18 @@ ctcf_locus_specification_list = seq_coords_df.values.tolist()  # to be modified 
 
 #---------------importing genes + cropping upstream bps workflow-------------------------------
 current_file_path = Path(__file__)
-feature_data_tsv = current_file_path.parent / "data/feature_dataframe.tsv"
+feature_data_tsv = current_file_path.parent / "data/tss_dataframe.tsv"
 
 up_stream_bps = 10000 # Number of basepairs upstream, will become an option
+
 feature_dataframe = pd.read_csv(feature_data_tsv, sep="\t")
-feature_dataframe["start"] = feature_dataframe["start"]-[up_stream_bps]
+
+for row in feature_dataframe.itertuples():
+    if row.strand == "+":
+        row.start = row.start - up_stream_bps
+    else:
+        row.end = row.end + up_stream_bps
+
 feature_dataframe.reset_index(drop=True, inplace=True)
 feature_dataframe["locus_specification"] = feature_dataframe["chrom"].map(str) +","+ feature_dataframe["start"].map(str) + "," + feature_dataframe["end"].map(str)+"#"+feature_dataframe["strand"].map(str)+"#"+feature_dataframe["SYMBOL"].map(str)
 gene_locus_specification_list = feature_dataframe["locus_specification"].values.tolist()[7:12]
@@ -105,14 +112,15 @@ gene_locus_specification_list = feature_dataframe["locus_specification"].values.
 
 cli_params = {
     'out_folder': ["data"],# should have appropriate permissions in case folder is absent (otherwise provide already existing folder), automaticaly will create ./data if commented
-    'ctcf_locus_specification': ctcf_locus_specification_list,
+    'ctcf_locus_specification_1': ctcf_locus_specification_list,
+    'ctcf_locus_specification_2': [ctcf_locus_specification_list[0]],
     'gene_locus_specification': gene_locus_specification_list,
-    'ctcf_flank_bp': [i for i in range(0,61,10)],
-    'gene_flank_bp': [i for i in range(0,101,20)],
+    'ctcf_flank_bp': [20],
+    'gene_flank_bp': [0],
     'background_seqs': [2], 
-    'spacer_bp': [i for i in range(0,61,10)],
+    'offsets_bp': [[0,60,10000]],
     'locus_orientation':[">>","<<","<>","><"],
-    'swap_flanks': ["all_for_strong","all_for_weak","no"] # threshold(15) is hard coded in akita_utils.seq_gens.create_insertion (should i open to user?) 
+    # 'swap_flanks': ["all_for_strong","all_for_weak","no"] # threshold(15) is hard coded in akita_utils.seq_gens.create_insertion (should i open to user?) 
 }
 
 cli_param_set = list(itertools.product(*[v for v in cli_params.values()]))
@@ -132,7 +140,7 @@ def fill_in_default_values(dataframe):
                        ('ctcf_flank_bp', 25),
                        ('gene_flank_bp', 0),
                        ('background_seqs', 0),
-                       ('spacer_bp', 50),
+                       ('offsets_bp', 50),
                        ('locus_orientation', ">>"),
                        ('swap_flanks', None),
                        ]

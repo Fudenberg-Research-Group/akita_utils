@@ -43,6 +43,7 @@ gpus = tf.config.experimental.list_physical_devices("GPU")
 #  tf.config.experimental.set_memory_growth(gpu, True)
 print(gpus)
 
+import basenji
 from basenji import seqnn
 from basenji import stream
 from basenji import dna_io

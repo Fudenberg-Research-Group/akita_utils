@@ -84,7 +84,7 @@ def main():
       help='Plot contact map for each allele [Default: %default]')
     
     parser.add_option('-o',dest='out_dir',
-      default='scd',
+      default='.',
       help='Output directory for tables and plots [Default: %default]')
     
     parser.add_option('-p', dest='processes',
@@ -150,6 +150,7 @@ def main():
         params_file = args[0]
         model_file = args[1]
         background_file = args[2]
+        
     elif len(args) == 5:
         # multi worker
         options_pkl_file = args[0]
@@ -163,8 +164,6 @@ def main():
         options = pickle.load(options_pkl)
         options_pkl.close()
 
-        # update output directory
-        options.out_dir = '%s/job%d' % (options.out_dir, worker_index)
     else:
         parser.error('Must provide parameters and model files and QTL VCF file')
 
@@ -218,7 +217,7 @@ def main():
         seq_coords_full = pd.read_csv(options.flat_seq_tsv_file, sep="\t")
         seq_coords_df = split_df_equally(seq_coords_full, options.processes, worker_index)
     else:
-        seq_coords_df = pd.read_csv(options.backgroung_chromosome_tsv_file, sep="\t")
+        seq_coords_df = pd.read_csv(options.flat_seq_tsv_file, sep="\t")
     
     num_experiments = len(seq_coords_df)
     log.info("===================================")
@@ -274,7 +273,7 @@ def main():
                 )
 
             plt.tight_layout()
-            plt.savefig(f"{options.out_dir}/seq_{no}.pdf")
+            plt.savefig(f"{options.out_dir}/job{worker_index}_seq{no}.pdf")
             plt.close()
         log.info(f"finished plotting! \ncheck {options.out_dir} for plots")
     

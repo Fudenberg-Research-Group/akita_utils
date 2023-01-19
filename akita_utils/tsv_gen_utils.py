@@ -40,10 +40,10 @@ def filter_boundary_ctcfs_from_h5(
     ## load scores from boundary mutagenesis, average chosen score across models
     dfs = []
     for h5_file in glob.glob(h5_dirs):
-        dfs.append(akita_utils.format_io.h5_to_df(h5_file))
+        dfs.append(akita_utils.format_io.h5_to_df(h5_file)) #,drop_duplicates_key=None
     df = dfs[0].copy()
-    df[score_key] = np.mean([df[score_key] for df in dfs], axis=0)
-
+    df[score_key] = pd.Series(np.mean([df[score_key] for df in dfs], axis=0))
+    # df = df.fillna(0) # fahad
     # append scores for full mut and all ctcf mut to table
     print("annotating each site with boundary-wide scores")
     score_10k = np.zeros((len(df),))
@@ -97,7 +97,7 @@ def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
     if (type(chrmsizes) is not dict) and (
         type(chrmsizes) is not pd.core.frame.DataFrame
     ):
-        chrmsizes = bioframe.read_chromsizes(chrmsizes)
+        chrmsizes = bioframe.read_chromsizes(chrmsizes, keep_default_na=False, skiprows=1)
     view_df = bioframe.from_any(chrmsizes)
     chromend_zones = view_df.copy()
     chromend_zones["start"] = chromend_zones["end"] - buffer_bp
@@ -144,8 +144,8 @@ def filter_sites_by_score(
 
     """
 
-    if mode not in ("head", "tail", "random"):
-        raise ValueError("a mode has to be one from: head, tail, random")
+    if mode not in ("head", "tail", "flat","random"):
+        raise ValueError("a mode has to be one from: head, tail, flat, random")
 
     upper_thresh = np.percentile(sites[score_key].values, upper_threshold)
     lower_thresh = np.percentile(sites[score_key].values, lower_threshold)
@@ -157,6 +157,7 @@ def filter_sites_by_score(
         ]
         .copy().drop_duplicates(subset=[score_key]).sort_values(score_key, ascending=False))
     
+    
     if num_sites != None:
         assert num_sites <= len(
             filtered_sites
@@ -166,6 +167,9 @@ def filter_sites_by_score(
             filtered_sites = filtered_sites[:num_sites]
         elif mode == "tail":
             filtered_sites = filtered_sites[-num_sites:]
+        elif mode == "flat":
+            filtered_sites['binned'] = pd.cut(filtered_sites['GC'], bins=num_sites)
+            filtered_sites = filtered_sites.groupby('binned').apply(lambda x: x.sample(1, random_state=42))
         else:
             filtered_sites = filtered_sites.sample(n=num_sites)
             

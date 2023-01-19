@@ -9,3 +9,11 @@ For spreading tasks across multiple GPUs (this assumes slurm_gf is in your pytho
 You can add a utility folder to your python path as follows:
 
 ```export PYTHONPATH="${PYTHONPATH}:/home1/myname/repositories/utility/"```
+
+
+huma data expt
+```python akita_motif_scd_multi.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model0_best.h5 /home1/kamulege/akita_utils/bin/disrupt_genomic_boundary_ctcfs/boundaries.motifs.ctcf.hg38.tsv -f /project/fudenber_735/genomes/hg38/hg38.fa --head-index 0 --batch-size 8 -m -q gpu -p 9 --time 8:00:00 --num_cpus 4 -o scd_human_ctcf_1 --gres gpu --constraint '[xeon-6130|xeon-2640v4]' --stats INS-16,INS-32,INS-64,INS-128,INS-256,SCD,SSD &```
+
+
+human tsv
+```python generate_human_ctcf_df.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model0_best.h5 /home1/kamulege/akita_utils/bin/disrupt_genomic_boundary_ctcfs/human_ctcf.ts```

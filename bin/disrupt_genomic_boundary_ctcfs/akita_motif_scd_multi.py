@@ -25,7 +25,7 @@ import sys
 import h5py
 import numpy as np
 
-import slurm_gf as slurm
+import akita_utils.slurm_gf as slurm
 
 """
 Derived from akita_scd_multi.py
@@ -232,11 +232,11 @@ def main():
         if not options.restart or not job_completed(options, pi):
             if options.cpu:
                 cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += "conda activate basenji;"
+                cmd += "conda activate basenji-gpu;" # fahad changed here
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
             else:
                 cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += "conda activate basenji;"
+                cmd += "conda activate basenji-gpu;" # fahad changed here
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
 
             cmd += " ${SLURM_SUBMIT_DIR}/akita_motif_scd.py %s %s %d" % (

@@ -175,7 +175,7 @@ def scan_motif(seq_1hot, motif, strand=None):
         stride=1,
         padding="SAME",
     ).numpy()[0]
-    if strand == "forward":
+    if strand == "forward" or "+":
         return scan_forward
     scan_reverse = tf.nn.conv1d(
         np.expand_dims(seq_1hot, 0).astype(float),
@@ -183,7 +183,7 @@ def scan_motif(seq_1hot, motif, strand=None):
         stride=1,
         padding="SAME",
     ).numpy()[0]
-    if strand == "reverse":
+    if strand == "reverse" or "-":
         return scan_reverse
     return np.maximum(scan_forward, scan_reverse).flatten()
 

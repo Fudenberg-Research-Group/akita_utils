@@ -40,13 +40,13 @@ def create_flat_seqs_gen(
         seq_1hot = dna_1hot(seq)
         num_iters = 0
         while num_iters < max_iters:
-            seq_1hot_batch = _seq_batch_generator_flat_maps(seq_1hot, shuffle_k, batch_size)
+            seq_1hot_batch = _seq_batch_generator_shuffled_seqs(seq_1hot, shuffle_k, batch_size)
             predictions = seqnn_model.predict(seq_1hot_batch, batch_size=batch_size)
             scores, scores_pixelwise, custom_scores = _calculate_scores_from_predictions(predictions)
 
             # log.info(f"\nscores {scores} - pixelwise {scores_pixelwise} - custom {custom_scores}\n")
             for score_ind,score in enumerate(scores):
-                if np.all([(scores[score_ind]<scores_thresh),(scores_pixelwise[score_ind]< scores_pixelwise_thresh),(custom_scores[score_ind]>53)]):
+                if np.all([(scores[score_ind]< scores_thresh),(scores_pixelwise[score_ind]< scores_pixelwise_thresh),(custom_scores[score_ind]>50)]):
                     num_iters = max_iters
                     best_ind = score_ind
                     best_seq = seq_1hot_batch[best_ind]
@@ -62,22 +62,25 @@ def create_flat_seqs_gen(
     return flat_seqs
 
 
-def _seq_batch_generator_flat_maps(seq_1hot, shuffle_k, batch_size):
+def _seq_batch_generator_shuffled_seqs(seq_1hot, shuffle_k, batch_size):
     seq_1hot_batch = []
     for _ in range(batch_size):
         seq_1hot_batch.append(permute_seq_k(seq_1hot, k=shuffle_k))
     return np.array(seq_1hot_batch)
 
+
 def _calculate_scores_from_predictions(predictions):
     scores = []
     scores_pixelwise =[]
     custom_score =[]
+    mae = []
     for seq_num in range(predictions.shape[0]):    
         ref_preds=predictions[seq_num,:,:]
-        scores_pixelwise += [np.max(np.abs(ref_preds), axis=-1)]
-        scores += [np.sum(ref_preds**2, axis=-1)]
+        scores_pixelwise += [np.max(ref_preds, axis=-1)]
+        mae += [np.mean(abs(ref_preds - ref_preds.mean(axis=0)), axis=0)]
+        scores += [np.sum(ref_preds**2, axis=0)]
         std = np.std(ref_preds, axis=0)
         mean = np.mean(ref_preds, axis=0)
-        custom_score +=  [3/mean + 2/std]
+        custom_score +=  [3/mean + 2/std] # remove. this score
         
-    return np.sum(scores,axis=1), np.max(scores_pixelwise, axis=1), np.min(custom_score,axis=1)
+    return np.max(scores,axis=1), np.max(scores_pixelwise, axis=1), np.min(custom_score,axis=1)
