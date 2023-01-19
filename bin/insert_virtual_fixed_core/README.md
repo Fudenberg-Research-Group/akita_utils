@@ -56,3 +56,23 @@ python multiGPU-virtual_fixed_core_experiment_flanks.py /project/fudenber_735/te
 ```
 python generate_fixed_core_df.py --fixed-core-upper-threshold 99.0 --fixed-core-lower-threshold 1.0 --fixed-core-mode head --fixed-core-num 100 --flank-core-upper-threshold 99.0 --flank-core-lower-threshold 1.0 --flank-core-mode head --flank-sets-num 100 --orientation-string ">>" --flank-range 25,25 --backgrounds-indices 1,2,3 --filename test_test --verbose
 ```
+
+100vs100 medium sites - percentile 60
+------------------------
+```
+python generate_fixed_core_df.py --fixed-core-upper-threshold 60.0 --fixed-core-lower-threshold 1.0 --fixed-core-mode head --fixed-core-num 100 --flank-core-upper-threshold 60.0 --flank-core-lower-threshold 1.0 --flank-core-mode head --flank-sets-num 100 --orientation-string ">>" --flank-range 25,25 --backgrounds-indices 1,2,3 --filename 100vs100medium_percentile60 --verbose
+```
+
+```
+python multiGPU-virtual_fixed_core_experiment_flanks.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 100vs100medium_percentile60.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o 100VS100medium --head-index 1 --model-index 1 --batch-size 4  --stats SCD -p 10 --max_proc 10
+```
+
+100vs100 medium sites - percentile 8-
+------------------------
+```
+python generate_fixed_core_df.py --fixed-core-upper-threshold 80.0 --fixed-core-lower-threshold 1.0 --fixed-core-mode head --fixed-core-num 100 --flank-core-upper-threshold 80.0 --flank-core-lower-threshold 1.0 --flank-core-mode head --flank-sets-num 100 --orientation-string ">>" --flank-range 25,25 --backgrounds-indices 1,2,3 --filename 100vs100medium_percentile80 --verbose
+```
+
+```
+python multiGPU-virtual_fixed_core_experiment_flanks.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 100vs100medium_percentile80.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o 100VS100medium_percentile80 --head-index 1 --model-index 1 --batch-size 4  --stats SCD -p 10 --max_proc 10
+```
