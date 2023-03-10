@@ -199,7 +199,8 @@ def main():
     parser.add_option(
         "--background-file",
         dest="background_file",
-        default="/project/fudenber_735/tensorflow_models/akita/v2/analysis/background_seqs.fa",
+        default= "/home1/kamulege/akita_utils/bin/background_seq_experiments/data/flat_seqs_model1/background_seqs.fa",
+        # "/project/fudenber_735/tensorflow_models/akita/v2/analysis/background_seqs.fa",
         help="file with insertion seqs in fasta format",
     )
 
@@ -290,6 +291,7 @@ def main():
     # filter for worker motifs
     if options.processes is not None:                    # multi-GPU option
         # determine boundaries from motif file
+        print(f"options.processes {options.processes }")
         seq_coords_full = pd.read_csv(motif_file, sep="\t")
         seq_coords_df = split_df_equally(seq_coords_full, options.processes, worker_index)
         
@@ -345,12 +347,21 @@ def main():
     preds_stream = stream.PredStreamGen(
         seqnn_model, modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open), batch_size
     )
+    
+    
+    # predictions index
+    pi = 0
+    
     for exp in range(num_experiments):
         # get predictions
-        preds = preds_stream[exp]
+        ref_preds = preds_stream[pi]
+        pi += 1
+        alt_preds = preds_stream[pi]
+        pi += 1
         # process SNP
         write_snp(
-            preds,
+            ref_preds,
+            alt_preds,
             scd_out,
             exp,
             head_index,
@@ -400,6 +411,7 @@ def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_l
 
 def write_snp(
     ref_preds,
+    alt_preds,
     scd_out,
     si,
     head_index,
@@ -407,7 +419,7 @@ def write_snp(
     diagonal_offset,
     scd_stats=["SCD"],
     plot_dir=None,
-    plot_lim_min=0.1,
+    plot_lim_min=0.2,
     plot_freq=100,
 ):
     """Write SNP predictions to HDF."""
@@ -416,11 +428,17 @@ def write_snp(
     
     # increase dtype
     ref_preds = ref_preds.astype("float32")
+    alt_preds = alt_preds.astype("float32")
+
+    # # sum across length
+    # ref_preds_sum = ref_preds.sum(axis=0)
+    # alt_preds_sum = alt_preds.sum(axis=0)     
         
     # compare reference to alternative via mean subtraction
     if "SCD" in scd_stats:
         # sum of squared diffs
-        sd2_preds = np.sqrt((ref_preds**2).sum(axis=0))
+        diff2_preds = (ref_preds - alt_preds) ** 2
+        sd2_preds = np.sqrt(diff2_preds.sum(axis=0))
         for target_ind in range(ref_preds.shape[1]):
             scd_out[f"SCD_h{head_index}_m{model_index}_t{target_ind}"][si] = sd2_preds[target_ind].astype("float16")
 
@@ -429,7 +447,6 @@ def write_snp(
         for stat in scd_stats:
             if "INS" in stat:
                 insul_window = int(stat.split("-")[1])
-                
                 for target_ind in range(ref_preds.shape[1]):
                     scd_out[f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][si] = akita_utils.stats_utils.insul_diamonds_scores(ref_map, window=insul_window)[target_ind].astype("float16")
 
@@ -437,18 +454,29 @@ def write_snp(
         log.info(f"plotting map for {si}")
         # convert back to dense
         ref_map = ut_dense(ref_preds, diagonal_offset)
-        _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4))
+        alt_map = ut_dense(alt_preds, diagonal_offset)
+        
+        _,axs = plt.subplots(3, ref_preds.shape[-1], figsize=(24, 12), sharey=True)
+        
         for ti in range(ref_preds.shape[-1]):
+            alt_map_ti = alt_map[..., ti]
             ref_map_ti = ref_map[..., ti]
+            
             # TEMP: reduce resolution
             ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
-            vmin = min(ref_map_ti.min(), ref_map_ti.min())
-            vmax = max(ref_map_ti.max(), ref_map_ti.max())
-            vmin = min(-plot_lim_min, vmin)
-            vmax = max(plot_lim_min, vmax)
+            alt_map_ti = block_reduce(alt_map_ti, (2, 2), np.mean)
+            
+#             vmin = min(ref_map_ti.min(), ref_map_ti.min())
+#             vmax = max(ref_map_ti.max(), ref_map_ti.max())
+            
+#             vmin = min(-plot_lim_min, vmin)
+#             vmax = max(plot_lim_min, vmax)
+            
+            vmin,vmax = -plot_lim_min,plot_lim_min # improvision for now!!!!!!!!!!!!!!!!!!!!!!!
+            
             sns.heatmap(
                 ref_map_ti,
-                ax=axs[ti],
+                ax=axs[0,ti],
                 center=0,
                 vmin=vmin,
                 vmax=vmax,
@@ -456,15 +484,63 @@ def write_snp(
                 xticklabels=False,
                 yticklabels=False,
             )
-
+            sns.heatmap(
+                alt_map_ti,
+                ax=axs[1,ti],
+                center=0,
+                vmin=vmin,
+                vmax=vmax,
+                cmap="RdBu_r",
+                xticklabels=False,
+                yticklabels=False,
+            )
+            sns.heatmap(
+                alt_map_ti - ref_map_ti,
+                ax=axs[2,ti],
+                center=0,
+                vmin=vmin,
+                vmax=vmax,
+                cmap="RdBu_r",
+                xticklabels=False,
+                yticklabels=False,
+            )
+            
+            axs[2,ti].set_title(f'SCD score {sd2_preds[ti]}')
+            
+            columns_to_keep = [key for key in scd_out.keys()]
+            
+            columns_to_remove_1 = []
+            for stat in scd_stats:
+                for model in range(8):
+                    for target in range(6):
+                        for head in range(2):
+                            columns_to_remove_1.append(f"{stat}_h{head}_m{model}_t{target}")
+            
+            # log.info(f"columns_to_remove_1 {columns_to_remove_1}")
+            
+                            
+            columns_to_remove = ['gene_flank_bp','ctcf_offset_2','ctcf_offset_1','ctcf_flank_bp_2','ctcf_flank_bp_1','insert_flank_bp','insert_offsets','insert_loci','num_of_motifs','enhancer_flank_bp','enhancer_locus_specification','gene_locus_specification','ctcf_locus_specification_1','ctcf_locus_specification_2','background_seqs','out_folder','ctcf_genomic_score_2','ctcf_genomic_score_1','promoter_num_of_motifs','enhancer_num_of_motifs']
+            
+            columns_to_remove += columns_to_remove_1
+            
+            # log.info(f"columns_to_remove {columns_to_remove}")
+            
+            columns_to_keep = list(set(columns_to_keep).difference(columns_to_remove))
+            string_combo = {f"{key}":scd_out[key][si] for key in columns_to_keep}  
+            string_combo = '\n'.join([f"{key}-{value}" for key, value in string_combo.items()])
+            axs[1,ti].set_title(string_combo)
+       
+        string_combo = {f"{key}":scd_out[key][si] for key in columns_to_keep}  
+        string_combo = ','.join([f"{key}-{value}" for key, value in string_combo.items()])
+        
         plt.tight_layout()
-        plt.savefig("%s/s%d.pdf" % (plot_dir, si))
+        plt.savefig(f"{plot_dir}/s{si}_{string_combo}.pdf")
         plt.close()
 
 ################################################################################
 # __main__
 ################################################################################
-
-
+               
 if __name__ == "__main__":
     main()
+    

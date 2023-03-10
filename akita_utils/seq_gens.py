@@ -2,6 +2,8 @@ from akita_utils.dna_utils import hot1_rc, dna_1hot
 import numpy as np
 import akita_utils.format_io
 from akita_utils.program_setup import LOCUS, INSERT, create_insertions_sequences
+
+
 ########################################
 #           insertion utils            #
 ########################################
@@ -108,11 +110,12 @@ def _multi_insert_offsets_casette(seq_1hot, seq_1hot_insertions, offsets_bp, ori
         insert_bp = len(seq_1hot_insertions[insertion_index])
         insertion_orientation_arrow = orientation_string[insertion_index]
         insertion_offset = offsets_bp[insertion_index]
-        
+
         if insertion_orientation_arrow == ">":
             output_seq[insertion_start_bp+insertion_offset : insertion_start_bp+insertion_offset+insert_bp] = seq_1hot_insertions[insertion_index]
         else:
             output_seq[insertion_start_bp+insertion_offset : insertion_start_bp+insertion_offset+insert_bp] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[insertion_index])
+                
     return output_seq
 
         
@@ -186,7 +189,10 @@ def modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):# de
         yield seq_1hot
         
         
-def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):# delimiter specification
+        
+        
+        
+def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open, motif_shuffle_threshold=10000):# delimiter specification
     """ sequence generator for making modular insertions from tsvs
         yields a one-hot encoded sequence
         that can be used as input to akita via PredStreamGen
@@ -195,16 +201,19 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
         seq_coords_df (dataframe): important colums spacer_bp,locus_orientation,background_seqs,insert_strand,insert_flank_bp,insert_loci 
         background_seqs (fasta): file containing background sequences
         genome_open (opened_fasta): fasta with chrom data
-
+        motif_shuffle_threshold (int): minimum allowed number of motifs in a seq before enacting the shuffling procedure
+        
     Yields:
         one-hot encoded sequence: sequence containing specified insertions
     """
-    
+    import pandas as pd
     for s in seq_coords_df.itertuples():
+        ref_and_pred = []
         seq_1hot_insertions = []
         offsets_bp = []
         orientation_string = s.locus_orientation
-        seq_1hot = background_seqs[s.background_seqs].copy()        
+        ref_seq_1hot = background_seqs[s.background_seqs].copy()  
+        ref_and_pred.append(ref_seq_1hot)
 
         for module_number in range(len(s.insert_loci.split("$"))):
             locus_specification = s.insert_loci.split("$")[module_number]
@@ -216,20 +225,34 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
                 if strand == "-":
                     seq_1hot_insertion = akita_utils.dna_utils.hot1_rc(seq_1hot_insertion)
                 
-                if s.gene_locus_specification is not np.nan:
-                    if s.num_of_motifs > 5:
+                if pd.notna(s.gene_locus_specification):
+                    if s.promoter_num_of_motifs > motif_shuffle_threshold:
                         motif = akita_utils.format_io.read_jaspar_to_numpy()
                         motif_window = len(motif)-3 #for compartibility ie (19-3=16 which is a multiple of 2,4,8 the shuffle parameters)
                         spans = generate_spans_start_positions(seq_1hot_insertion, motif, 8)
-                        seq_1hot_insertion = mask_spans(seq_1hot_insertion, spans, motif_window)
+                        seq_1hot_insertion = permute_spans(seq_1hot_insertion, spans, motif_window, 8)
+                        
+                if pd.notna(s.enhancer_locus_specification):
+                    if s.enhancer_num_of_motifs > motif_shuffle_threshold:
+                        motif = akita_utils.format_io.read_jaspar_to_numpy()
+                        motif_window = len(motif)-3 #for compartibility ie (19-3=16 which is a multiple of 2,4,8 the shuffle parameters)
+                        spans = generate_spans_start_positions(seq_1hot_insertion, motif, 8)
+                        seq_1hot_insertion = permute_spans(seq_1hot_insertion, spans, motif_window, 8) 
                 
                 seq_1hot_insertions.append(seq_1hot_insertion)
                 offsets_bp.append(insert_offset_bp)
 
-        seq_1hot = _multi_insert_offsets_casette(seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string)
-        yield seq_1hot
+        alt_seq_1hot = _multi_insert_offsets_casette(ref_seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string)
+        ref_and_pred.append(alt_seq_1hot)
+        
+        for seq in ref_and_pred:
+            yield seq
 
 
+            
+            
+            
+            
 def flexible_flank_modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
     """ sequence generator for making modular insertions from tsvs with more twist to flanks generation
         yields a one-hot encoded sequence

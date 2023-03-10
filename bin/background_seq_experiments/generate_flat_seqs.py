@@ -62,9 +62,10 @@ creating flat maps/seqs
 
 ################################################################################
 # main 
+# This script generates flat seqs following the flat_seq_tsv file and specified model
 ################################################################################
 def main():
-    usage = 'usage: %prog [options] <params_file> <model_file> <vcf_file>'
+    usage = 'usage: %prog [options] <params_file> <model_file> <flat_seq_tsv_file>'
     parser = OptionParser(usage)
     
     parser.add_option('-f', dest='genome_fasta',
@@ -139,24 +140,20 @@ def main():
       default=10,              
       help='maximum iterations')
 
-    parser.add_option('--flat_seq_tsv_file', dest='flat_seq_tsv_file',
-      default='/home1/kamulege/akita_utils/bin/background_seq_experiments/data/flat_seqs.tsv',           
-      help='flat_se tsv file')
-
     (options, args) = parser.parse_args()
 
     if len(args) == 3:
         # single worker
         params_file = args[0]
         model_file = args[1]
-        background_file = args[2]
+        flat_seq_tsv_file = args[2]
         
     elif len(args) == 5:
         # multi worker
         options_pkl_file = args[0]
         params_file = args[1]
         model_file = args[2]
-        background_file = args[3]
+        flat_seq_tsv_file = args[3]
         worker_index = int(args[4])
 
         # load options
@@ -214,10 +211,10 @@ def main():
     
     # filter for worker motifs
     if options.processes is not None:                    # multi-GPU option
-        seq_coords_full = pd.read_csv(options.flat_seq_tsv_file, sep="\t")
+        seq_coords_full = pd.read_csv(flat_seq_tsv_file, sep="\t")
         seq_coords_df = split_df_equally(seq_coords_full, options.processes, worker_index)
     else:
-        seq_coords_df = pd.read_csv(options.flat_seq_tsv_file, sep="\t")
+        seq_coords_df = pd.read_csv(flat_seq_tsv_file, sep="\t")
     
     num_experiments = len(seq_coords_df)
     log.info("===================================")
@@ -242,6 +239,7 @@ def main():
                 f.write(dna_io.hot1_dna(flat_seqs[i][0])+'\n')
         log.info(f"finished saving! \n plotting next if requested")
 
+
     #################################################################
     # plot flat sequences
 
@@ -252,15 +250,22 @@ def main():
         for no,pred in enumerate(preds):
             ref_preds = pred
             ref_map = ut_dense(ref_preds, hic_diags) # convert back to dense
-            _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4))
+            _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4), sharey=True)
+            
+            sd2_preds = np.sqrt((ref_preds**2).sum(axis=0))
+            max_scd = np.max(sd2_preds)
+            
             for ti in range(ref_preds.shape[-1]):
                 ref_map_ti = ref_map[..., ti]
                 # TEMP: reduce resolution
                 ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
-                vmin = min(ref_map_ti.min(), ref_map_ti.min())
-                vmax = max(ref_map_ti.max(), ref_map_ti.max())
-                vmin = min(-plot_lim_min, vmin)
-                vmax = max(plot_lim_min, vmax)
+                
+                # vmin = min(ref_map_ti.min(), ref_map_ti.min())
+                # vmax = max(ref_map_ti.max(), ref_map_ti.max())
+                # vmin = min(-plot_lim_min, vmin)
+                # vmax = max(plot_lim_min, vmax)
+                
+                vmin,vmax = -0.2,0.2
                 sns.heatmap(
                     ref_map_ti,
                     ax=axs[ti],
@@ -271,9 +276,10 @@ def main():
                     xticklabels=False,
                     yticklabels=False,
                 )
+                # axs[ti].set_title(f"SCD {np.sqrt((ref_preds**2).sum(axis=0))[ti]}") #\nMSS {np.sum(ref_preds**2, axis=0)[ti]}\nCS {Custom_score[ti]}
 
             plt.tight_layout()
-            plt.savefig(f"{options.out_dir}/job{worker_index}_seq{no}.pdf")
+            plt.savefig(f"{options.out_dir}/job{worker_index}_seq{no}_max-SCD{max_scd}.pdf")
             plt.close()
         log.info(f"finished plotting! \ncheck {options.out_dir} for plots")
     

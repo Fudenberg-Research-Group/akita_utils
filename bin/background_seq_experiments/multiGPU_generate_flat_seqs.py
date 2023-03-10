@@ -16,11 +16,9 @@
 # =========================================================================
 
 """
-multiGPU_generate_flat_background.py
-Derived from akita_motif_scd_multi.py (https://github.com/Fudenberg-Research-Group/akita_utils/blob/main/bin/disrupt_genomic_boundary_ctcfs/akita_motif_scd_multi.py)
+multiGPU_generate_flat_seqs.py
 
-Compute scores for motifs in a TSV file, using multiple processes.
-
+generate flat seqs following parameters in given TSV file, using multiple processes.
 Relies on slurm_gf.py to auto-generate slurm jobs.
 
 """
@@ -123,9 +121,9 @@ def main():
         type="int",
         help="Specify model index (from 0 to 7)",
     )
-    parser.add_option('--flat_seq_tsv_file', dest='flat_seq_tsv_file',
-      default='/home1/kamulege/akita_utils/bin/background_seq_experiments/data/flat_seqs.tsv',           
-      help='flat_se tsv file')
+    # parser.add_option('--flat_seq_tsv_file', dest='flat_seq_tsv_file',
+    #   default='/home1/kamulege/akita_utils/bin/background_seq_experiments/data/flat_seqs.tsv',           
+    #   help='flat_seq tsv file')
     
     parser.add_option('-s', dest='save_seqs',
       default=None,
@@ -211,6 +209,7 @@ def main():
         models_dir = args[0]
         tsv_file = args[1]
         
+        
         model_dir = models_dir+"/f"+str(options.model_index)+"c0/train/"
         model_file = model_dir+'model'+str(options.head_index)+'_best.h5'
         params_file = model_dir+"params.json" 
@@ -223,7 +222,7 @@ def main():
     
     # output directory
     
-    options.out_dir = f"{options.out_dir}/flat_seqs_model{options.model_index}"
+    options.out_dir = f"{options.out_dir}/flat_seqs_model{options.model_index}_head{options.head_index}"
     
     if not options.restart:
         if os.path.isdir(options.out_dir):
@@ -273,7 +272,7 @@ def main():
                 queue=options.queue,
                 gpu=num_gpu,
                 gres=options.gres,
-                mem=15000,
+                mem=25000,
                 time=options.time,
                 cpu=options.num_cpus,
                 constraint=options.constraint,

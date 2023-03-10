@@ -40,7 +40,7 @@ import akita_utils.slurm_gf as slurm
 # main
 ################################################################################
 def main():
-    usage = "usage: %prog [options] <params_file> <model_file> <tsv_file>"
+    usage = "usage: %prog [options] <models_dir> <tsv_file>"
     parser = OptionParser(usage)
 
     # scd
@@ -199,12 +199,18 @@ def main():
 
     (options, args) = parser.parse_args()
 
-    if len(args) != 3:
-        parser.error("Must provide parameters and model files and TSV file")
+    if len(args) != 2:
+        print(args)
+        parser.error("Must provide models directory and TSV file")
     else:
-        params_file = args[0]
-        model_file = args[1]
-        tsv_file = args[2]
+        models_dir = args[0]
+        tsv_file = args[1]
+        
+        model_dir = models_dir+"/f"+str(options.model_index)+"c0/train/"
+        model_file = model_dir+'model'+str(options.head_index)+'_best.h5'
+        params_file = model_dir+"params.json" 
+        
+        new_args = [params_file,model_file,tsv_file]
 
     #######################################################
     # prep work
@@ -238,7 +244,7 @@ def main():
 
             cmd += " ${SLURM_SUBMIT_DIR}/insert_promoter_experiment_test.py %s %s %d" % (
                 options_pkl_file,
-                " ".join(args),
+                " ".join(new_args),
                 pi,
             )
 

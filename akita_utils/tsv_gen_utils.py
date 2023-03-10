@@ -168,8 +168,8 @@ def filter_sites_by_score(
         elif mode == "tail":
             filtered_sites = filtered_sites[-num_sites:]
         elif mode == "flat":
-            filtered_sites['binned'] = pd.cut(filtered_sites['GC'], bins=num_sites)
-            filtered_sites = filtered_sites.groupby('binned').apply(lambda x: x.sample(1, random_state=42))
+            filtered_sites['binned'] = pd.cut(filtered_sites[score_key], bins=num_sites)
+            filtered_sites = filtered_sites.groupby('binned').apply(lambda x: x.head(1))
         else:
             filtered_sites = filtered_sites.sample(n=num_sites)
             

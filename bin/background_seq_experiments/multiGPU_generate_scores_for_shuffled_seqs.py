@@ -16,11 +16,9 @@
 # =========================================================================
 
 """
-multiGPU_background_scores_exploration_bulk.py
-Derived from akita_motif_scd_multi.py (https://github.com/Fudenberg-Research-Group/akita_utils/blob/main/bin/disrupt_genomic_boundary_ctcfs/akita_motif_scd_multi.py)
+multiGPU_generate_scores_for_shuffled_seqs.py
 
-Compute scores for motifs in a TSV file, using multiple processes.
-
+Compute scores for shuffled seqs in a given TSV file, using multiple processes.
 Relies on slurm_gf.py to auto-generate slurm jobs.
 
 """

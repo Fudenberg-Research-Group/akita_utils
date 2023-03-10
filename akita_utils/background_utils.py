@@ -44,9 +44,9 @@ def create_flat_seqs_gen(
             predictions = seqnn_model.predict(seq_1hot_batch, batch_size=batch_size)
             scores, scores_pixelwise, custom_scores = _calculate_scores_from_predictions(predictions)
 
-            # log.info(f"\nscores {scores} - pixelwise {scores_pixelwise} - custom {custom_scores}\n")
+            # log.info(f"\nSCD_scores {scores} - pixelwise {scores_pixelwise} - custom {custom_scores}\n")
             for score_ind,score in enumerate(scores):
-                if np.all([(scores[score_ind]< scores_thresh),(scores_pixelwise[score_ind]< scores_pixelwise_thresh),(custom_scores[score_ind]>50)]):
+                if scores[score_ind]< scores_thresh and scores_pixelwise[score_ind]< scores_pixelwise_thresh and custom_scores[score_ind]>20:
                     num_iters = max_iters
                     best_ind = score_ind
                     best_seq = seq_1hot_batch[best_ind]
@@ -78,9 +78,9 @@ def _calculate_scores_from_predictions(predictions):
         ref_preds=predictions[seq_num,:,:]
         scores_pixelwise += [np.max(ref_preds, axis=-1)]
         mae += [np.mean(abs(ref_preds - ref_preds.mean(axis=0)), axis=0)]
-        scores += [np.sum(ref_preds**2, axis=0)]
+        scores += [np.sqrt((ref_preds**2).sum(axis=0))] # SCD
         std = np.std(ref_preds, axis=0)
         mean = np.mean(ref_preds, axis=0)
-        custom_score +=  [3/mean + 2/std] # remove. this score
+        custom_score +=  [3/mean + 2/std] # remove this score?!!!  maybe not
         
     return np.max(scores,axis=1), np.max(scores_pixelwise, axis=1), np.min(custom_score,axis=1)

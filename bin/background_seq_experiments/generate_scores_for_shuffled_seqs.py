@@ -41,9 +41,10 @@ creating flat maps/seqs
 '''
 ################################################################################
 # main
+# This scripts takes the shuffled seqs tsv and specified model to generate the scores for each shuffled seq
 ################################################################################
 def main():
-    usage = "usage: %prog [options] <params_file> <model_file> <motifs_file>"
+    usage = "usage: %prog [options] <params_file> <model_file> <shuffled_seqs_tsv>"
     parser = OptionParser(usage)
     parser.add_option(
         "-f",
@@ -122,7 +123,7 @@ def main():
     parser.add_option(
         "--head-index",
         dest="head_index",
-        default=0,
+        default=1,
         type="int",
         help="Specify head index (0=human 1=mus)",
     )
@@ -155,14 +156,14 @@ def main():
         # single worker
         params_file = args[0]
         model_file = args[1]
-        motif_file = args[2]
+        shuffled_seqs_tsv = args[2]
 
     elif len(args) == 5:                 # muliti-GPU option
         # multi worker
         options_pkl_file = args[0]
         params_file = args[1]
         model_file = args[2]
-        motif_file = args[3]
+        shuffled_seqs_tsv = args[3]
         worker_index = int(args[4])
 
         # load options
@@ -228,12 +229,12 @@ def main():
     # filter for worker motifs
     if options.processes is not None:                    # multi-GPU option
         # determine boundaries from motif file
-        seq_coords_full = pd.read_csv(motif_file, sep="\t")
+        seq_coords_full = pd.read_csv(shuffled_seqs_tsv, sep="\t")
         seq_coords_df = split_df_equally(seq_coords_full, options.processes, worker_index)
         
     else:
         # read motif positions from csv
-        seq_coords_df = pd.read_csv(motif_file, sep="\t")
+        seq_coords_df = pd.read_csv(shuffled_seqs_tsv, sep="\t")
         
     num_experiments = len(seq_coords_df)
     
