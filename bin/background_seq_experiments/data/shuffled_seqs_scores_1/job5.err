@@ -1,0 +1,64 @@
+2023-02-03 22:45:49,772 - INFO - Note: NumExpr detected 20 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 8.
+2023-02-03 22:45:49,772 - INFO - NumExpr defaulting to 8 threads.
+2023-02-03 22:45:51,763 - INFO - []
+2023-02-03 22:45:51,795 - INFO - 
+++++++++++++++++++
+
+2023-02-03 22:45:51,795 - INFO - INPUT
+2023-02-03 22:45:51,795 - INFO - 
+++++++++++++++++++
+
+2023-02-03 22:45:51,796 - INFO - options 
+ {'genome_fasta': None, 'plot_lim_min': 0.1, 'plot_freq': 100, 'plot_map': False, 'out_dir': './', 'processes': None, 'rc': False, 'shifts': '0', 'scd_stats': 'SCD,MSS,MPS,CS', 'targets_file': None, 'batch_size': 4, 'head_index': 1, 'model_index': 0, 'background_file': '/project/fudenber_735/tensorflow_models/akita/v2/analysis/background_seqs.fa'}
+2023-02-03 22:45:51,796 - INFO - 
+++++++++++++++++++
+
+2023-02-03 22:45:51,796 - INFO - args 
+ ['/home1/kamulege/akita_utils/bin/background_seq_experiments/data/shuffled_seqs_scores_1/options.pkl', '/project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json', '/project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5', '/home1/kamulege/akita_utils/bin/background_seq_experiments/data/shuffled_seqs.tsv', '5']
+2023-02-03 22:45:51,796 - INFO - 
+++++++++++++++++++
+
+2023-02-03 22:45:51.876647: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  SSE4.1 SSE4.2 AVX AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-02-03 22:45:53,986 - INFO - ===================================
+2023-02-03 22:45:53,987 - INFO - Number of experiements = 32 
+ It's not number of predictions. Num of predictions is this 32 x 4
+2023-02-03 22:45:53,987 - INFO - ===================================
+2023-02-03 22:45:53,991 - INFO - initialised stats SCD
+2023-02-03 22:45:53,992 - INFO - initialised stats MPS
+2023-02-03 22:45:53,993 - INFO - initialised stats CS
+2023-02-03 22:45:53,994 - INFO - initialized
+2023-02-03 22:47:50.768940: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:116] None of the MLIR optimization passes are enabled (registered 2)
+2023-02-03 22:47:50.777206: I tensorflow/core/platform/profile_utils/cpu_utils.cc:112] CPU Frequency: 2394380000 Hz
+2023-02-03 22:51:03,636 - INFO - writting SNP predictions for experiment 0
+2023-02-03 22:51:03,660 - INFO - writting SNP predictions for experiment 1
+2023-02-03 22:51:03,682 - INFO - writting SNP predictions for experiment 2
+2023-02-03 22:51:03,704 - INFO - writting SNP predictions for experiment 3
+2023-02-03 22:51:03,726 - INFO - writting SNP predictions for experiment 4
+2023-02-03 22:51:03,748 - INFO - writting SNP predictions for experiment 5
+2023-02-03 22:51:03,769 - INFO - writting SNP predictions for experiment 6
+2023-02-03 22:51:03,791 - INFO - writting SNP predictions for experiment 7
+2023-02-03 22:51:03,813 - INFO - writting SNP predictions for experiment 8
+2023-02-03 22:51:03,835 - INFO - writting SNP predictions for experiment 9
+2023-02-03 22:51:03,857 - INFO - writting SNP predictions for experiment 10
+2023-02-03 22:51:03,879 - INFO - writting SNP predictions for experiment 11
+2023-02-03 22:51:03,900 - INFO - writting SNP predictions for experiment 12
+2023-02-03 22:51:03,922 - INFO - writting SNP predictions for experiment 13
+2023-02-03 22:51:03,944 - INFO - writting SNP predictions for experiment 14
+2023-02-03 22:51:03,965 - INFO - writting SNP predictions for experiment 15
+2023-02-03 22:51:03,987 - INFO - writting SNP predictions for experiment 16
+2023-02-03 22:51:04,009 - INFO - writting SNP predictions for experiment 17
+2023-02-03 22:51:04,030 - INFO - writting SNP predictions for experiment 18
+2023-02-03 22:51:04,052 - INFO - writting SNP predictions for experiment 19
+2023-02-03 22:51:04,074 - INFO - writting SNP predictions for experiment 20
+2023-02-03 22:51:04,096 - INFO - writting SNP predictions for experiment 21
+2023-02-03 22:51:04,118 - INFO - writting SNP predictions for experiment 22
+2023-02-03 22:51:04,139 - INFO - writting SNP predictions for experiment 23
+2023-02-03 22:51:04,161 - INFO - writting SNP predictions for experiment 24
+2023-02-03 22:51:04,183 - INFO - writting SNP predictions for experiment 25
+2023-02-03 22:51:04,204 - INFO - writting SNP predictions for experiment 26
+2023-02-03 22:51:04,226 - INFO - writting SNP predictions for experiment 27
+2023-02-03 22:51:04,248 - INFO - writting SNP predictions for experiment 28
+2023-02-03 22:51:04,270 - INFO - writting SNP predictions for experiment 29
+2023-02-03 22:51:04,291 - INFO - writting SNP predictions for experiment 30
+2023-02-03 22:51:04,313 - INFO - writting SNP predictions for experiment 31

@@ -1,0 +1,6 @@
+out_folder	mutation_method	locus_specification	shuffle_parameter	ctcf_selection_threshold	map_score_threshold	scores_pixelwise_thresh	GC_content
+data	permute_whole_seq	chr1,187889664,189200384	8	8	50	0.5	0.3422370910644531
+data	permute_whole_seq	chr2,184338432,185649152	8	8	50	0.5	0.3419776916503906
+data	permute_whole_seq	chr1,194770944,196081664	8	8	50	0.5	0.3416709899902344
+data	permute_whole_seq	chr1,194115584,195426304	8	8	50	0.5	0.34165115356445314
+data	permute_whole_seq	chr1,190511104,191821824	8	8	50	0.5	0.3415245056152344

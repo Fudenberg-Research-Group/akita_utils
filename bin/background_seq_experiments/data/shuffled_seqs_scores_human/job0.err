@@ -1,0 +1,160 @@
+2023-02-10 01:35:42,511 - INFO - Note: NumExpr detected 32 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 8.
+2023-02-10 01:35:42,511 - INFO - NumExpr defaulting to 8 threads.
+2023-02-10 01:35:45,305 - INFO - []
+2023-02-10 01:35:45,346 - INFO - 
+++++++++++++++++++
+
+2023-02-10 01:35:45,346 - INFO - INPUT
+2023-02-10 01:35:45,346 - INFO - 
+++++++++++++++++++
+
+2023-02-10 01:35:45,346 - INFO - options 
+ {'genome_fasta': None, 'plot_lim_min': 0.1, 'plot_freq': 100, 'plot_map': False, 'out_dir': './', 'processes': None, 'rc': False, 'shifts': '0', 'scd_stats': 'SCD,MSS,MPS,CS', 'targets_file': None, 'batch_size': 4, 'head_index': 1, 'model_index': 0, 'background_file': '/project/fudenber_735/tensorflow_models/akita/v2/analysis/background_seqs.fa'}
+2023-02-10 01:35:45,346 - INFO - 
+++++++++++++++++++
+
+2023-02-10 01:35:45,346 - INFO - args 
+ ['/home1/kamulege/akita_utils/bin/background_seq_experiments/data/shuffled_seqs_scores_human/options.pkl', '/project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json', '/project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model0_best.h5', '/home1/kamulege/akita_utils/bin/background_seq_experiments/data/shuffled_seqs_human.tsv', '0']
+2023-02-10 01:35:45,346 - INFO - 
+++++++++++++++++++
+
+2023-02-10 01:35:45.415313: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  SSE4.1 SSE4.2 AVX AVX2 AVX512F FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-02-10 01:35:47,412 - INFO - ===================================
+2023-02-10 01:35:47,412 - INFO - Number of experiements = 128 
+ It's not number of predictions. Num of predictions is this 128 x 4
+2023-02-10 01:35:47,412 - INFO - ===================================
+2023-02-10 01:35:47,418 - INFO - initialised stats SCD
+2023-02-10 01:35:47,419 - INFO - initialised stats MPS
+2023-02-10 01:35:47,419 - INFO - initialised stats CS
+2023-02-10 01:35:47,420 - INFO - initialized
+2023-02-10 01:38:54.143777: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:116] None of the MLIR optimization passes are enabled (registered 2)
+2023-02-10 01:38:54.151459: I tensorflow/core/platform/profile_utils/cpu_utils.cc:112] CPU Frequency: 2100000000 Hz
+2023-02-10 01:45:06,382 - INFO - writting SNP predictions for experiment 0
+2023-02-10 01:45:06,407 - INFO - writting SNP predictions for experiment 1
+2023-02-10 01:45:06,428 - INFO - writting SNP predictions for experiment 2
+2023-02-10 01:45:06,448 - INFO - writting SNP predictions for experiment 3
+2023-02-10 01:45:06,469 - INFO - writting SNP predictions for experiment 4
+2023-02-10 01:45:06,489 - INFO - writting SNP predictions for experiment 5
+2023-02-10 01:45:06,510 - INFO - writting SNP predictions for experiment 6
+2023-02-10 01:45:06,531 - INFO - writting SNP predictions for experiment 7
+2023-02-10 01:45:06,551 - INFO - writting SNP predictions for experiment 8
+2023-02-10 01:45:06,572 - INFO - writting SNP predictions for experiment 9
+2023-02-10 01:45:06,592 - INFO - writting SNP predictions for experiment 10
+2023-02-10 01:45:06,613 - INFO - writting SNP predictions for experiment 11
+2023-02-10 01:45:06,635 - INFO - writting SNP predictions for experiment 12
+2023-02-10 01:45:06,657 - INFO - writting SNP predictions for experiment 13
+2023-02-10 01:45:06,677 - INFO - writting SNP predictions for experiment 14
+2023-02-10 01:45:06,697 - INFO - writting SNP predictions for experiment 15
+2023-02-10 01:45:06,718 - INFO - writting SNP predictions for experiment 16
+2023-02-10 01:45:06,740 - INFO - writting SNP predictions for experiment 17
+2023-02-10 01:45:06,763 - INFO - writting SNP predictions for experiment 18
+2023-02-10 01:45:06,785 - INFO - writting SNP predictions for experiment 19
+2023-02-10 01:45:06,808 - INFO - writting SNP predictions for experiment 20
+2023-02-10 01:45:06,830 - INFO - writting SNP predictions for experiment 21
+2023-02-10 01:45:06,853 - INFO - writting SNP predictions for experiment 22
+2023-02-10 01:45:06,874 - INFO - writting SNP predictions for experiment 23
+2023-02-10 01:45:06,896 - INFO - writting SNP predictions for experiment 24
+2023-02-10 01:45:06,917 - INFO - writting SNP predictions for experiment 25
+2023-02-10 01:45:06,939 - INFO - writting SNP predictions for experiment 26
+2023-02-10 01:45:06,960 - INFO - writting SNP predictions for experiment 27
+2023-02-10 01:45:06,981 - INFO - writting SNP predictions for experiment 28
+2023-02-10 01:45:07,000 - INFO - writting SNP predictions for experiment 29
+2023-02-10 01:45:07,023 - INFO - writting SNP predictions for experiment 30
+2023-02-10 01:45:07,046 - INFO - writting SNP predictions for experiment 31
+2023-02-10 01:45:07,069 - INFO - writting SNP predictions for experiment 32
+2023-02-10 01:45:07,092 - INFO - writting SNP predictions for experiment 33
+2023-02-10 01:45:07,113 - INFO - writting SNP predictions for experiment 34
+2023-02-10 01:45:07,134 - INFO - writting SNP predictions for experiment 35
+2023-02-10 01:45:07,155 - INFO - writting SNP predictions for experiment 36
+2023-02-10 01:45:07,176 - INFO - writting SNP predictions for experiment 37
+2023-02-10 01:45:07,198 - INFO - writting SNP predictions for experiment 38
+2023-02-10 01:45:07,221 - INFO - writting SNP predictions for experiment 39
+2023-02-10 01:45:07,243 - INFO - writting SNP predictions for experiment 40
+2023-02-10 01:45:07,266 - INFO - writting SNP predictions for experiment 41
+2023-02-10 01:45:07,287 - INFO - writting SNP predictions for experiment 42
+2023-02-10 01:45:07,308 - INFO - writting SNP predictions for experiment 43
+2023-02-10 01:45:07,329 - INFO - writting SNP predictions for experiment 44
+2023-02-10 01:45:07,349 - INFO - writting SNP predictions for experiment 45
+2023-02-10 01:45:07,369 - INFO - writting SNP predictions for experiment 46
+2023-02-10 01:45:07,389 - INFO - writting SNP predictions for experiment 47
+2023-02-10 01:45:07,410 - INFO - writting SNP predictions for experiment 48
+2023-02-10 01:45:07,430 - INFO - writting SNP predictions for experiment 49
+2023-02-10 01:45:07,450 - INFO - writting SNP predictions for experiment 50
+2023-02-10 01:45:07,471 - INFO - writting SNP predictions for experiment 51
+2023-02-10 01:45:07,491 - INFO - writting SNP predictions for experiment 52
+2023-02-10 01:45:07,511 - INFO - writting SNP predictions for experiment 53
+2023-02-10 01:45:07,532 - INFO - writting SNP predictions for experiment 54
+2023-02-10 01:45:07,553 - INFO - writting SNP predictions for experiment 55
+2023-02-10 01:45:07,573 - INFO - writting SNP predictions for experiment 56
+2023-02-10 01:45:07,594 - INFO - writting SNP predictions for experiment 57
+2023-02-10 01:45:07,614 - INFO - writting SNP predictions for experiment 58
+2023-02-10 01:45:07,634 - INFO - writting SNP predictions for experiment 59
+2023-02-10 01:45:07,655 - INFO - writting SNP predictions for experiment 60
+2023-02-10 01:45:07,676 - INFO - writting SNP predictions for experiment 61
+2023-02-10 01:45:07,697 - INFO - writting SNP predictions for experiment 62
+2023-02-10 01:45:07,718 - INFO - writting SNP predictions for experiment 63
+2023-02-10 01:53:48,714 - INFO - writting SNP predictions for experiment 64
+2023-02-10 01:53:48,737 - INFO - writting SNP predictions for experiment 65
+2023-02-10 01:53:48,756 - INFO - writting SNP predictions for experiment 66
+2023-02-10 01:53:48,775 - INFO - writting SNP predictions for experiment 67
+2023-02-10 01:53:48,795 - INFO - writting SNP predictions for experiment 68
+2023-02-10 01:53:48,814 - INFO - writting SNP predictions for experiment 69
+2023-02-10 01:53:48,833 - INFO - writting SNP predictions for experiment 70
+2023-02-10 01:53:48,851 - INFO - writting SNP predictions for experiment 71
+2023-02-10 01:53:48,871 - INFO - writting SNP predictions for experiment 72
+2023-02-10 01:53:48,890 - INFO - writting SNP predictions for experiment 73
+2023-02-10 01:53:48,909 - INFO - writting SNP predictions for experiment 74
+2023-02-10 01:53:48,928 - INFO - writting SNP predictions for experiment 75
+2023-02-10 01:53:48,947 - INFO - writting SNP predictions for experiment 76
+2023-02-10 01:53:48,966 - INFO - writting SNP predictions for experiment 77
+2023-02-10 01:53:48,985 - INFO - writting SNP predictions for experiment 78
+2023-02-10 01:53:49,004 - INFO - writting SNP predictions for experiment 79
+2023-02-10 01:53:49,024 - INFO - writting SNP predictions for experiment 80
+2023-02-10 01:53:49,043 - INFO - writting SNP predictions for experiment 81
+2023-02-10 01:53:49,061 - INFO - writting SNP predictions for experiment 82
+2023-02-10 01:53:49,080 - INFO - writting SNP predictions for experiment 83
+2023-02-10 01:53:49,099 - INFO - writting SNP predictions for experiment 84
+2023-02-10 01:53:49,119 - INFO - writting SNP predictions for experiment 85
+2023-02-10 01:53:49,138 - INFO - writting SNP predictions for experiment 86
+2023-02-10 01:53:49,157 - INFO - writting SNP predictions for experiment 87
+2023-02-10 01:53:49,176 - INFO - writting SNP predictions for experiment 88
+2023-02-10 01:53:49,195 - INFO - writting SNP predictions for experiment 89
+2023-02-10 01:53:49,214 - INFO - writting SNP predictions for experiment 90
+2023-02-10 01:53:49,233 - INFO - writting SNP predictions for experiment 91
+2023-02-10 01:53:49,252 - INFO - writting SNP predictions for experiment 92
+2023-02-10 01:53:49,271 - INFO - writting SNP predictions for experiment 93
+2023-02-10 01:53:49,290 - INFO - writting SNP predictions for experiment 94
+2023-02-10 01:53:49,309 - INFO - writting SNP predictions for experiment 95
+2023-02-10 01:53:49,328 - INFO - writting SNP predictions for experiment 96
+2023-02-10 01:53:49,348 - INFO - writting SNP predictions for experiment 97
+2023-02-10 01:53:49,367 - INFO - writting SNP predictions for experiment 98
+2023-02-10 01:53:49,386 - INFO - writting SNP predictions for experiment 99
+2023-02-10 01:53:49,405 - INFO - writting SNP predictions for experiment 100
+2023-02-10 01:53:49,423 - INFO - writting SNP predictions for experiment 101
+2023-02-10 01:53:49,443 - INFO - writting SNP predictions for experiment 102
+2023-02-10 01:53:49,462 - INFO - writting SNP predictions for experiment 103
+2023-02-10 01:53:49,481 - INFO - writting SNP predictions for experiment 104
+2023-02-10 01:53:49,500 - INFO - writting SNP predictions for experiment 105
+2023-02-10 01:53:49,519 - INFO - writting SNP predictions for experiment 106
+2023-02-10 01:53:49,538 - INFO - writting SNP predictions for experiment 107
+2023-02-10 01:53:49,557 - INFO - writting SNP predictions for experiment 108
+2023-02-10 01:53:49,576 - INFO - writting SNP predictions for experiment 109
+2023-02-10 01:53:49,595 - INFO - writting SNP predictions for experiment 110
+2023-02-10 01:53:49,614 - INFO - writting SNP predictions for experiment 111
+2023-02-10 01:53:49,633 - INFO - writting SNP predictions for experiment 112
+2023-02-10 01:53:49,652 - INFO - writting SNP predictions for experiment 113
+2023-02-10 01:53:49,671 - INFO - writting SNP predictions for experiment 114
+2023-02-10 01:53:49,690 - INFO - writting SNP predictions for experiment 115
+2023-02-10 01:53:49,710 - INFO - writting SNP predictions for experiment 116
+2023-02-10 01:53:49,729 - INFO - writting SNP predictions for experiment 117
+2023-02-10 01:53:49,747 - INFO - writting SNP predictions for experiment 118
+2023-02-10 01:53:49,766 - INFO - writting SNP predictions for experiment 119
+2023-02-10 01:53:49,785 - INFO - writting SNP predictions for experiment 120
+2023-02-10 01:53:49,805 - INFO - writting SNP predictions for experiment 121
+2023-02-10 01:53:49,824 - INFO - writting SNP predictions for experiment 122
+2023-02-10 01:53:49,843 - INFO - writting SNP predictions for experiment 123
+2023-02-10 01:53:49,862 - INFO - writting SNP predictions for experiment 124
+2023-02-10 01:53:49,881 - INFO - writting SNP predictions for experiment 125
+2023-02-10 01:53:49,900 - INFO - writting SNP predictions for experiment 126
+2023-02-10 01:53:49,919 - INFO - writting SNP predictions for experiment 127

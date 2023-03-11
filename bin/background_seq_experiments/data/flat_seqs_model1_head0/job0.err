@@ -1,0 +1,21 @@
+2023-02-10 15:22:42,715 - INFO - Note: NumExpr detected 20 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 8.
+2023-02-10 15:22:42,715 - INFO - NumExpr defaulting to 8 threads.
+2023-02-10 15:22:45,965 - INFO - []
+2023-02-10 15:22:46,136 - INFO - Batch size 4
+2023-02-10 15:22:46.207620: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  SSE4.1 SSE4.2 AVX AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-02-10 15:22:48,674 - INFO - ===================================
+2023-02-10 15:22:48,674 - INFO - Number of experiements = 5 
+ It's not number of predictions. Num of predictions is upper bounded by 40 x 4 for each experiment
+2023-02-10 15:22:48,674 - INFO - ===================================
+2023-02-10 15:22:49.946253: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:116] None of the MLIR optimization passes are enabled (registered 2)
+2023-02-10 15:22:49.946733: I tensorflow/core/platform/profile_utils/cpu_utils.cc:112] CPU Frequency: 2394550000 Hz
+2023-02-10 15:25:28,226 - INFO - success: best seq, map score 18.078125, pixelwise 0.1024169921875, custom 26.046875
+2023-02-10 15:33:51,158 - INFO - success: best seq, map score 20.5, pixelwise 0.0888671875, custom 24.84375
+2023-02-10 15:35:45,931 - INFO - success: best seq, map score 22.625, pixelwise 0.0657958984375, custom 20.03125
+2023-02-10 15:44:40,328 - INFO - success: best seq, map score 16.015625, pixelwise 0.119140625, custom 27.390625
+2023-02-10 15:51:07,596 - INFO - success: best seq, map score 17.546875, pixelwise 0.0594482421875, custom 24.109375
+2023-02-10 15:51:12,403 - INFO - finished saving! 
+ plotting next if requested
+2023-02-10 15:54:31,009 - INFO - finished plotting! 
+check data/flat_seqs_model1_head0 for plots

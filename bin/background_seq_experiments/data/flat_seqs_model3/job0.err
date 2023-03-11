@@ -1,0 +1,79 @@
+2023-02-03 15:22:26,819 - INFO - Note: NumExpr detected 20 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 8.
+2023-02-03 15:22:26,819 - INFO - NumExpr defaulting to 8 threads.
+2023-02-03 15:22:46,067 - INFO - []
+2023-02-03 15:22:46,123 - INFO - Batch size 4
+2023-02-03 15:22:46.201914: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  SSE4.1 SSE4.2 AVX AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-02-03 15:22:48,466 - INFO - ===================================
+2023-02-03 15:22:48,466 - INFO - Number of experiements = 20 
+ It's not number of predictions. Num of predictions is upper bounded by 30 x 4 for each experiment
+2023-02-03 15:22:48,466 - INFO - ===================================
+2023-02-03 15:22:49.671774: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:116] None of the MLIR optimization passes are enabled (registered 2)
+2023-02-03 15:22:49.672235: I tensorflow/core/platform/profile_utils/cpu_utils.cc:112] CPU Frequency: 2394450000 Hz
+2023-02-03 15:34:13,529 - INFO - ******* last iteration *******
+scores: [128. 256. 256. 256.] 
+scores pixelwise: [0.1191 0.4988 0.2394 0.2578] 
+custom scores: [37.34 11.91 21.28 18.89]
+2023-02-03 15:38:22,978 - INFO - success: best seq, map score 66.5625, pixelwise 0.0018339157104492188, custom 58.0
+2023-02-03 15:40:16,672 - INFO - success: best seq, map score 65.5625, pixelwise -0.00738525390625, custom 56.6875
+2023-02-03 15:51:34,495 - INFO - ******* last iteration *******
+scores: [105.06 256.   128.   128.  ] 
+scores pixelwise: [0.1235  0.1658  0.06525 0.06274] 
+custom scores: [55.62 18.31 34.16 33.44]
+2023-02-03 15:56:07,923 - INFO - success: best seq, map score 64.0, pixelwise 0.0029582977294921875, custom 56.71875
+2023-02-03 15:59:01,510 - INFO - success: best seq, map score 66.5, pixelwise 0.0303802490234375, custom 51.46875
+2023-02-03 15:59:01,511 - INFO - success: best seq, map score 64.5625, pixelwise 0.0215911865234375, custom 54.28125
+2023-02-03 16:10:28,815 - INFO - success: best seq, map score 67.875, pixelwise 0.03857421875, custom 54.53125
+2023-02-03 16:22:42,059 - INFO - ******* last iteration *******
+scores: [115.8 128.  256.  128. ] 
+scores pixelwise: [0.03806 0.03021 0.1624  0.0939 ] 
+custom scores: [25.62 28.19 11.69 31.44]
+2023-02-03 16:34:32,018 - INFO - success: best seq, map score 67.125, pixelwise 0.018890380859375, custom 50.90625
+2023-02-03 16:46:45,902 - INFO - ******* last iteration *******
+scores: [168.1 256.  128.  256. ] 
+scores pixelwise: [0.0094 0.4172 0.0737 0.1603] 
+custom scores: [36.3   6.03 36.5  13.64]
+2023-02-03 16:58:59,288 - INFO - ******* last iteration *******
+scores: [128. 256. 128. 512.] 
+scores pixelwise: [0.2267  0.2344  0.08466 0.4695 ] 
+custom scores: [29.62  16.55  25.28   7.438]
+2023-02-03 17:11:11,794 - INFO - ******* last iteration *******
+scores: [130.  256.  256.  259.8] 
+scores pixelwise: [0.1503  0.04636 0.1923  0.5664 ] 
+custom scores: [30.6  19.86 15.84 21.81]
+2023-02-03 17:23:23,617 - INFO - ******* last iteration *******
+scores: [1078.   192.1  182.8  387.5] 
+scores pixelwise: [1.215  0.2437 0.1061 0.2583] 
+custom scores: [ 4.203 21.25  21.69  20.28 ]
+2023-02-03 17:35:36,074 - INFO - ******* last iteration *******
+scores: [128.  115.9 128.  256. ] 
+scores pixelwise: [0.1606  0.2778  0.05612 0.2822 ] 
+custom scores: [15.91    1.1875 17.72    5.812 ]
+2023-02-03 17:47:47,827 - INFO - ******* last iteration *******
+scores: [1024.  256.  256.  249.] 
+scores pixelwise: [0.5996  0.1552  0.1675  0.12115] 
+custom scores: [ 6.188 23.94  13.8   37.88 ]
+2023-02-03 18:00:00,227 - INFO - ******* last iteration *******
+scores: [512.  279.5 512.  256. ] 
+scores pixelwise: [0.6685 0.551  0.595  0.0731] 
+custom scores: [-0.1875 12.58    5.92   22.11  ]
+2023-02-03 18:12:13,665 - INFO - ******* last iteration *******
+scores: [256. 256. 258. 256.] 
+scores pixelwise: [0.1019  0.2888  0.07263 0.1532 ] 
+custom scores: [21.31 12.41 18.67 22.47]
+2023-02-03 18:24:26,220 - INFO - ******* last iteration *******
+scores: [1227.  512.  256.  394.] 
+scores pixelwise: [1.183   0.1967  0.08875 0.2124 ] 
+custom scores: [-50.16    2.531  22.98   14.11 ]
+2023-02-03 18:36:39,722 - INFO - ******* last iteration *******
+scores: [ 512.  512.  512. 1024.] 
+scores pixelwise: [0.254  0.3352 0.2239 0.5933] 
+custom scores: [11.5    3.484 16.19   8.86 ]
+2023-02-03 18:48:54,084 - INFO - ******* last iteration *******
+scores: [ 512.  386.  584. 1024.] 
+scores pixelwise: [0.2095 0.2418 0.729  0.3306] 
+custom scores: [ 5.406 13.516  9.19   7.625]
+2023-02-03 18:49:00,869 - INFO - finished saving! 
+ plotting next if requested
+2023-02-03 18:54:54,212 - INFO - finished plotting! 
+check data/flat_seqs_model3 for plots

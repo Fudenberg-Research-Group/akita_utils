@@ -1,0 +1,25 @@
+2023-02-10 14:34:00,874 - INFO - Note: NumExpr detected 20 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 8.
+2023-02-10 14:34:00,875 - INFO - NumExpr defaulting to 8 threads.
+2023-02-10 14:34:04,125 - INFO - []
+2023-02-10 14:34:04,163 - INFO - Batch size 4
+2023-02-10 14:34:04.235535: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  SSE4.1 SSE4.2 AVX AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-02-10 14:34:06,394 - INFO - ===================================
+2023-02-10 14:34:06,394 - INFO - Number of experiements = 5 
+ It's not number of predictions. Num of predictions is upper bounded by 40 x 4 for each experiment
+2023-02-10 14:34:06,394 - INFO - ===================================
+2023-02-10 14:34:07.589358: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:116] None of the MLIR optimization passes are enabled (registered 2)
+2023-02-10 14:34:07.589850: I tensorflow/core/platform/profile_utils/cpu_utils.cc:112] CPU Frequency: 2394635000 Hz
+2023-02-10 14:34:30,643 - INFO - success: best seq, map score 16.0, pixelwise 0.08135986328125, custom 20.359375
+2023-02-10 14:34:30,644 - INFO - success: best seq, map score 16.0, pixelwise 0.08709716796875, custom 21.40625
+2023-02-10 14:36:47,623 - INFO - success: best seq, map score 16.5, pixelwise 0.1627197265625, custom 26.5625
+2023-02-10 14:38:42,566 - INFO - success: best seq, map score 23.765625, pixelwise 0.1370849609375, custom 20.65625
+2023-02-10 14:51:46,149 - INFO - success: best seq, map score 23.703125, pixelwise 0.0804443359375, custom 22.3125
+2023-02-10 15:12:50,440 - INFO - ******* last iteration *******
+scores: [46.28 45.25 45.25 45.25] 
+scores pixelwise: [0.295  0.2488 0.1312 0.2703] 
+custom scores: [9.75  8.83  9.234 9.36 ]
+2023-02-10 15:12:55,043 - INFO - finished saving! 
+ plotting next if requested
+2023-02-10 15:16:10,976 - INFO - finished plotting! 
+check data/flat_seqs_model0_head0 for plots

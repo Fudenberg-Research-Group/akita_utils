@@ -1,0 +1,14 @@
+2023-02-07 11:46:56,146 - INFO - Note: NumExpr detected 32 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 8.
+2023-02-07 11:46:56,147 - INFO - NumExpr defaulting to 8 threads.
+2023-02-07 11:47:10,001 - INFO - []
+2023-02-07 11:47:10,184 - INFO - Batch size 4
+2023-02-07 11:47:10.260922: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  SSE4.1 SSE4.2 AVX AVX2 AVX512F FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-02-07 11:47:13,922 - INFO - ===================================
+2023-02-07 11:47:13,923 - INFO - Number of experiements = 20 
+ It's not number of predictions. Num of predictions is upper bounded by 40 x 4 for each experiment
+2023-02-07 11:47:13,923 - INFO - ===================================
+2023-02-07 11:47:15.409896: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:116] None of the MLIR optimization passes are enabled (registered 2)
+2023-02-07 11:47:15.410343: I tensorflow/core/platform/profile_utils/cpu_utils.cc:112] CPU Frequency: 2100000000 Hz
+/var/spool/slurm/d/job13592724/slurm_script: line 13: 239427 Killed                  ${SLURM_SUBMIT_DIR}/generate_flat_seqs.py data/flat_seqs_model7/options.pkl /project/fudenber_735/tensorflow_models/akita/v2/models/f7c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f7c0/train/model1_best.h5 data/flat_seqs.tsv 0
+slurmstepd: error: Detected 1 oom-kill event(s) in StepId=13592724.batch. Some of your processes may have been killed by the cgroup out-of-memory handler.

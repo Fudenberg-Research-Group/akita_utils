@@ -1,0 +1,95 @@
+2023-02-07 13:13:35,903 - INFO - Note: NumExpr detected 32 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 8.
+2023-02-07 13:13:35,903 - INFO - NumExpr defaulting to 8 threads.
+2023-02-07 13:13:45,991 - INFO - []
+2023-02-07 13:13:46,074 - INFO - Batch size 4
+2023-02-07 13:13:46.146184: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  SSE4.1 SSE4.2 AVX AVX2 AVX512F FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-02-07 13:13:48,436 - INFO - ===================================
+2023-02-07 13:13:48,437 - INFO - Number of experiements = 20 
+ It's not number of predictions. Num of predictions is upper bounded by 40 x 4 for each experiment
+2023-02-07 13:13:48,437 - INFO - ===================================
+2023-02-07 13:13:49.476191: I tensorflow/compiler/mlir/mlir_graph_optimization_pass.cc:116] None of the MLIR optimization passes are enabled (registered 2)
+2023-02-07 13:13:49.476636: I tensorflow/core/platform/profile_utils/cpu_utils.cc:112] CPU Frequency: 2100000000 Hz
+2023-02-07 13:26:14,911 - INFO - ******* last iteration *******
+scores: [400.5  126.56 256.   128.9 ] 
+scores pixelwise: [0.4336  0.08875 0.1503  0.1194 ] 
+custom scores: [ 8.16   35.53    0.2812 32.47  ]
+2023-02-07 13:38:47,015 - INFO - ******* last iteration *******
+scores: [143.1 256.  256.  128. ] 
+scores pixelwise: [0.08795 0.2866  0.1466  0.1554 ] 
+custom scores: [31.38  16.39  14.766 28.94 ]
+2023-02-07 13:51:24,255 - INFO - ******* last iteration *******
+scores: [256.  256.  512.  256.5] 
+scores pixelwise: [0.1447 0.1086 0.1552 0.1743] 
+custom scores: [11.06  19.19   6.453 15.625]
+2023-02-07 14:03:43,573 - INFO - ******* last iteration *******
+scores: [512. 256. 128. 512.] 
+scores pixelwise: [0.2524  0.127   0.02766 0.5835 ] 
+custom scores: [ 6.484 15.28  32.34  -1.094]
+2023-02-07 14:16:17,399 - INFO - ******* last iteration *******
+scores: [ 69.8 603.5 487.  313.5] 
+scores pixelwise: [0.11743 0.4106  0.2607  0.10004] 
+custom scores: [42.16   7.156  8.59  18.67 ]
+2023-02-07 14:22:22,855 - INFO - success: best seq, map score 64.375, pixelwise 0.0190582275390625, custom 55.5625
+2023-02-07 14:34:59,876 - INFO - ******* last iteration *******
+scores: [256.  256.  256.  494.5] 
+scores pixelwise: [0.0542 0.1234 0.1444 0.1813] 
+custom scores: [26.03 13.94 16.1  12.55]
+2023-02-07 14:47:19,021 - INFO - ******* last iteration *******
+scores: [344.8 256.  256.  512. ] 
+scores pixelwise: [0.2708 0.105  0.1836 0.2479] 
+custom scores: [15.53 19.11 18.25  6.39]
+2023-02-07 14:59:47,484 - INFO - ******* last iteration *******
+scores: [ 256.8  336.5 1024.   704. ] 
+scores pixelwise: [0.206  0.1176 0.6543 0.587 ] 
+custom scores: [16.3   14.31   3.531  6.484]
+2023-02-07 15:12:16,067 - INFO - ******* last iteration *******
+scores: [512. 256. 512. 595.] 
+scores pixelwise: [0.1698  0.07635 0.226   0.5444 ] 
+custom scores: [ 10.734  21.61    2.688 -11.06 ]
+2023-02-07 15:24:35,810 - INFO - ******* last iteration *******
+scores: [256.  512.  512.  129.1] 
+scores pixelwise: [0.1532 0.465  0.3093 0.0845] 
+custom scores: [19.98   6.406  6.312 31.03 ]
+2023-02-07 15:37:12,475 - INFO - ******* last iteration *******
+scores: [512.  261.8 275.  595. ] 
+scores pixelwise: [0.437  0.406  0.0988 0.1743] 
+custom scores: [  1.422  13.81   16.75  -25.06 ]
+2023-02-07 15:49:30,782 - INFO - ******* last iteration *******
+scores: [1024.   512.  1024.   256.2] 
+scores pixelwise: [0.3418 0.4539 0.372  0.1753] 
+custom scores: [-8.375  9.41   5.625 21.98 ]
+2023-02-07 16:01:58,997 - INFO - ******* last iteration *******
+scores: [ 512.   256.   484.8 1024. ] 
+scores pixelwise: [0.0721  0.12225 0.09955 0.268  ] 
+custom scores: [ 9.81 16.94 16.72  3.61]
+2023-02-07 16:14:31,450 - INFO - ******* last iteration *******
+scores: [ 257.8 1024.   262.2 1024. ] 
+scores pixelwise: [0.06903 0.2465  0.06082 0.307  ] 
+custom scores: [20.47   4.266 24.42  10.92 ]
+2023-02-07 16:27:01,038 - INFO - ******* last iteration *******
+scores: [ 512. 1024.  512.  708.] 
+scores pixelwise: [0.2517 0.799  0.1597 0.2593] 
+custom scores: [10.75   -1.0625 14.22   11.89  ]
+2023-02-07 16:40:02,593 - INFO - ******* last iteration *******
+scores: [ 369. 1024. 1024. 2048.] 
+scores pixelwise: [0.2245 0.1986 0.264  0.4883] 
+custom scores: [-20.31    6.516   3.5    -9.81 ]
+/home1/kamulege/akita_utils/akita_utils/background_utils.py:84: RuntimeWarning: overflow encountered in true_divide
+  custom_score +=  [3/mean + 2/std] # remove. this score
+2023-02-07 16:53:25,026 - INFO - ******* last iteration *******
+scores: [1024.  1024.   515.   513.5] 
+scores pixelwise: [0.436  0.3528 0.3333 0.492 ] 
+custom scores: [ -4.812   -1.5625 -23.56    -8.    ]
+2023-02-07 17:08:21,188 - INFO - ******* last iteration *******
+scores: [ 704.5 1024.   429.2  499. ] 
+scores pixelwise: [0.6733 0.259  0.2515 0.1816] 
+custom scores: [ -8.19 -39.62 -10.06 -50.88]
+2023-02-07 17:24:17,832 - INFO - ******* last iteration *******
+scores: [620.5 512.  512.  512. ] 
+scores pixelwise: [0.56   0.3296 0.2642 0.3562] 
+custom scores: [ -9.66  -5.78 -68.7  -38.12]
+2023-02-07 17:24:18,690 - INFO - finished saving! 
+ plotting next if requested
+2023-02-07 17:25:00,763 - INFO - finished plotting! 
+check data/flat_seqs_model1 for plots
