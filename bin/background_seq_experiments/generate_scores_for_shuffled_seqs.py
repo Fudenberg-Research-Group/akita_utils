@@ -35,13 +35,15 @@ from basenji import seqnn, stream, dna_io
 import akita_utils
 from akita_utils.utils import ut_dense, split_df_equally 
 from akita_utils.seq_gens import background_exploration_seqs_gen
+
+################################################################################
 '''
 creating flat maps/seqs
 
+This scripts takes a tsv (oftenly shuffled seqs) and specified model to be used to generate the scores for each shuffled seq
+
 '''
-################################################################################
-# main
-# This scripts takes the shuffled seqs tsv and specified model to generate the scores for each shuffled seq
+ 
 ################################################################################
 def main():
     usage = "usage: %prog [options] <params_file> <model_file> <shuffled_seqs_tsv>"

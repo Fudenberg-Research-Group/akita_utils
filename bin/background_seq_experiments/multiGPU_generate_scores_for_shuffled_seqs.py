@@ -15,14 +15,6 @@
 # limitations under the License.
 # =========================================================================
 
-"""
-multiGPU_generate_scores_for_shuffled_seqs.py
-
-Compute scores for shuffled seqs in a given TSV file, using multiple processes.
-Relies on slurm_gf.py to auto-generate slurm jobs.
-
-"""
-
 from optparse import OptionParser
 import os
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
@@ -36,7 +28,14 @@ import numpy as np
 import akita_utils.slurm_gf as slurm
 
 ################################################################################
-# main
+
+"""
+multiGPU_generate_scores_for_shuffled_seqs.py
+
+Compute scores for shuffled seqs in a given TSV file, using multiple processes.
+Relies on slurm_gf.py to auto-generate slurm jobs.
+
+"""
 ################################################################################
 def main():
     usage = "usage: %prog [options] <params_file> <model_file> <tsv_file>"
