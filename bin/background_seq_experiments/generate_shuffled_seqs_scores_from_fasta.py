@@ -25,8 +25,9 @@ sns.set(style='ticks', font_scale=1.3)
 
 import tensorflow as tf
 if tf.__version__[0] == '1':
-  tf.compat.v1.enable_eager_execution()
+    tf.compat.v1.enable_eager_execution()
 gpus = tf.config.experimental.list_physical_devices('GPU')
+
 #for gpu in gpus:
 #  tf.config.experimental.set_memory_growth(gpu, True)
 log.info(gpus)
@@ -35,13 +36,11 @@ from basenji import seqnn, stream, dna_io
 import akita_utils
 from akita_utils.utils import ut_dense, split_df_equally 
 from akita_utils.seq_gens import fasta_shuffled_seq_gen
-'''
-generating scores for shuffled seqs from fasta
 
-'''
 ################################################################################
-# main
-# This script generates scores for the shuffled seqs in the input fasta file
+'''
+This script generates scores for the shuffled seqs in the input fasta file
+'''
 ################################################################################
 def main():
     usage = "usage: %prog [options] <params_file> <model_file> <shuffled_seqs_fasta_file>"
@@ -271,10 +270,8 @@ def initialize_output_h5(out_dir, scd_stats, shuffled_seqs_fasta_file, target_id
     seq_IDs = [line for line in open(shuffled_seqs_fasta_file) if line.startswith(">")]
     num_experiments = num = len(seq_IDs)
     scd_out = h5py.File(f"{out_dir}/scd.h5", "w")
-    
 
     scd_out.create_dataset("locus_specification" ,shape=(num_experiments,),data=np.array(seq_IDs).astype("S")) # 
-        
 
     # initialize scd stats
     for scd_stat in scd_stats:
@@ -333,7 +330,6 @@ def write_snp(
         for target_ind in range(ref_preds.shape[1]):
             scd_out[f"SCD_h{head_index}_m{model_index}_t{target_ind}"][si] = sd2_preds[target_ind].astype("float16")
             
-            
     if "MSS" in scd_stats:
         # sum of square diffs
         s_preds = np.sum(ref_preds**2, axis=0)
@@ -366,8 +362,6 @@ def write_snp(
             # vmax = max(plot_lim_min, vmax)
             
             vmin,vmax = -0.1,0.1
-            
-            
             
             sns.heatmap(
                 ref_map_ti,

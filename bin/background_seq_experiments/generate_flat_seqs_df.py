@@ -4,80 +4,75 @@ import itertools
 import pandas as pd
 import numpy as np
 import bioframe
+import argparse
 from akita_utils.tsv_gen_utils import calculate_GC, filter_sites_by_score  # reminder. this function renamed to a more general name (filter dataframe by key)
 
 ################################################################################
-# main
-#This script generates a dataframe for seqs to be used to generate flat seqs with specified parameters
+'''
+This script generates a dataframe for seqs to be used to generate flat seqs with specified parameters (same as generate_shuffled_seqs_df.py) with two additional parameters
+
+(1) map_score_threshold
+(2) scores_pixelwise_thresh
+
+'''
 ################################################################################
 
+# ---------------- typical arguments for choice of bed (mouse or human) ------------------------
+# these are bed files with intervals the models were trained on.
 
-#---------------on boarding (these will be transformed to args) choose mouse or human------------------
-# chrom_seq_bed_file = '/project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed' #mouse
-# genome_fasta = '/project/fudenber_735/genomes/mm10/mm10.fa'#mouse
-
-# chrom_seq_bed_file = '/project/fudenber_735/tensorflow_models/akita/v2/data/hg38/sequences.bed' #human
+# seq_bed_file = '/project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed' #mouse
+# genome_fasta = '/project/fudenber_735/genomes/mm10/mm10.fa' #mouse
+# seq_bed_file = '/project/fudenber_735/tensorflow_models/akita/v2/data/hg38/sequences.bed' #human
 # genome_fasta = '/project/fudenber_735/genomes/hg38/hg38.fa'#human
-#-------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', dest='genome_fasta', help='fasta file', required=True)
-    parser.add_argument('-chrom_seq_bed_file', dest='chrom_seq_bed_file', help='bed file for the seqs under investigation', required=True)
-    parser.add_argument('-o', dest='output_file_dir', help='where to store output', required=True)
-    
-    
+    parser.add_argument('-seq_bed_file', dest='seq_bed_file', help='bed file for the seqs under investigation', required=True)
+    parser.add_argument('--output_filename', dest='output_filename', default='data/flat_seqs_test.tsv', help='output_filename')
+    parser.add_argument('--shuffle_parameter', nargs='+', default=[8], type=int, help='List of integers')
+    parser.add_argument('--ctcf_selection_threshold', default=[8], nargs='+', type=int, help='List of integers')
+    parser.add_argument('--mutation_method', nargs='+', default=['permute_whole_seq'], help='List of strings')
+    parser.add_argument('--num_sites', type=int, default=5, help='number of loci to select')
+    parser.add_argument('--mode', default='flat', help='loci selection criteria') 
+    parser.add_argument('--map_score_threshold', type=int, nargs='+',default=[60], help='maximum allowable map score')
+    parser.add_argument('--scores_pixelwise_thresh', type=int, nargs='+',default=[0.2], help='maximum allowable intensity of a single pixel in a map')
     args = parser.parse_args()
     
-    # prepare dataframe for desired chromosomes and calculate GC content(using bioframe)
-    dataframe = calculate_GC(args.chrom_seq_bed_file,args.genome_fasta)
+    # prepare dataframe with chromosomes and calculate GC content(using bioframe)
+    seq_df = pd.read_csv(args.seq_bed_file, sep='\t', header=None, names=['chrom', 'start', 'end', 'fold'])
+    general_seq_gc_df = bioframe.frac_gc(seq_df, bioframe.load_fasta(args.genome_fasta), return_input=True)
     
-    # carefull with parameters here, sample selection
-    new_dataframe = filter_sites_by_score(dataframe,score_key="GC",upper_threshold=99,lower_threshold=1,mode="tail",num_sites=5)
-
-    # polishing the dataframe to fit expected input
-    new_dataframe = new_dataframe["chrom"].map(str) +","+ new_dataframe["start"].map(str) + "," + new_dataframe["end"].map(str)+"-"+new_dataframe["GC"].map(str)
-    locus_specification_list = new_dataframe.values.tolist()
     #-------------------------------------------------------------------------------------------------
-
     # INSTRUCTIONS TO FILL IN PARAMETERS BELOW
-    # Provide appropriate parameters as possible.
-    # Comment the entire line of the parameter you dont want to provide(or dont know).
-    # If you comment a parameter, check that you are confertable with the default value!
+    # Provide as many appropriate parameters as possible.
     # To simulate multiple values of the same parameter, provide in a list format i.e [first value,second value,third value, etc]
-
-    cli_params = {
-        'locus_specification': locus_specification_list, 
-        'shuffle_parameter': [8],
-        'ctcf_selection_threshold': [8],
-        'map_score_threshold': [60], # this is SCD score
-        'scores_pixelwise_thresh':[0.2],
-    }
-
-    cli_param_set = list(itertools.product(*[v for v in cli_params.values()]))
-    parameters_combo_dataframe = pd.DataFrame(cli_param_set, columns=cli_params.keys())
-    fill_in_default_values(parameters_combo_dataframe)
-
-    parameters_combo_dataframe[["locus_specification",'GC_content']] = parameters_combo_dataframe["locus_specification"].str.split('-',expand=True)
-    os.makedirs(parameters_combo_dataframe.out_folder[0], exist_ok=True)
-    parameters_combo_dataframe.to_csv(f'{args.output_file_dir}', sep='\t', index=False)
-
-
-def fill_in_default_values(dataframe):
-    "function to fill in missing important parameters"
-    parameter_space = [('out_folder', 'data'),
-                       ('locus_specification', 'chr12,113_500_000,118_500_000-0.35'),
-                       ('shuffle_parameter', 8),
-                       ('mutation_method', 'permute_whole_seq'),
-                       ('ctcf_selection_threshold', 8),
-                       ('map_score_threshold', 64),
-                       ('scores_pixelwise_thresh', 0.2)]
     
-    for (parameter, default_value) in parameter_space:
-        if parameter not in dataframe.columns:
-            dataframe.insert(1, parameter, default_value,
-                             allow_duplicates=False)
+    grid_search_params = {
+        'shuffle_parameter': args.shuffle_parameter,
+        'ctcf_selection_threshold': args.ctcf_selection_threshold,
+        'mutation_method': args.mutation_method,
+        'map_score_threshold': args.map_score_threshold, # this is SCD score
+        'scores_pixelwise_thresh':args.scores_pixelwise_thresh,
+    }
+    
+    # sampling seq_df dataframe respecting GC content
+    seq_gc_df = filter_sites_by_score(general_seq_gc_df,score_key="GC",upper_threshold=99,lower_threshold=1,mode=args.mode,num_sites=args.num_sites) 
+    
+    # fixing locus specific x-tics together before grid_search
+    seq_gc_df = seq_gc_df["chrom"].map(str) +","+ seq_gc_df["start"].map(str) + "," + seq_gc_df["end"].map(str)+"-"+seq_gc_df["GC"].map(str)
+    locus_list = seq_gc_df.values.tolist()
+    
+    grid_search_params['locus_specification']= locus_list
+
+    grid_search_param_set = list(itertools.product(*[v for v in grid_search_params.values()]))
+    parameters_combo_dataframe = pd.DataFrame(grid_search_param_set, columns=grid_search_params.keys())
+    parameters_combo_dataframe[["locus_specification",'GC_content']] = parameters_combo_dataframe["locus_specification"].str.split('-',expand=True)
+    
+    # os.makedirs(, exist_ok=True)
+    parameters_combo_dataframe.to_csv(f'{args.output_filename}', sep='\t', index=False)
             
 ################################################################################
 # __main__
