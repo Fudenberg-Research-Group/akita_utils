@@ -18,7 +18,7 @@
 ###################################################
 
 """
-insert_promoter_experiment.py
+insert_experiment.py
 derived from akita_insert.py (https://github.com/Fudenberg-Research-Group/akita_utils/blob/flank_experiment/bin/akita_insert.py)
 
 
@@ -60,9 +60,12 @@ from __future__ import print_function
 
 from optparse import OptionParser
 import json
-import os
 
-# import os
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+log = logging.getLogger(__name__)
+
+import os
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 import pdb
@@ -88,7 +91,7 @@ if tf.__version__[0] == "1":
 gpus = tf.config.experimental.list_physical_devices("GPU")
 # for gpu in gpus:
 #  tf.config.experimental.set_memory_growth(gpu, True)
-print(gpus)
+log.info(gpus)
 
 from basenji import seqnn
 from basenji import stream
@@ -96,7 +99,7 @@ from basenji import dna_io
 
 import akita_utils
 from akita_utils import ut_dense, split_df_equally 
-from akita_utils.seq_gens import modular_insertion_seqs_gen
+from akita_utils.seq_gens import flexible_flank_modular_insertion_seqs_gen, modular_offsets_insertion_seqs_gen
 
 ################################################################################
 # main
@@ -202,15 +205,13 @@ def main():
 
     (options, args) = parser.parse_args()
     
-    print("\n++++++++++++++++++\n")
-    print("INPUT")
-    print("\n++++++++++++++++++\n")
-    print("options")
-    print(options)
-    print("\n++++++++++++++++++\n")
-    print("args", args)
-    print(args)
-    print("\n++++++++++++++++++\n")
+    log.info("\n++++++++++++++++++\n")
+    log.info("INPUT")
+    log.info("\n++++++++++++++++++\n")
+    log.info(f"options \n {options}")
+    log.info("\n++++++++++++++++++\n")
+    log.info(f"args \n {args}")
+    log.info("\n++++++++++++++++++\n")
     
     if len(args) == 3:
         # single worker
@@ -298,8 +299,9 @@ def main():
         
     num_experiments = len(seq_coords_df)
     
-    print("===================================")
-    print("Number of experiements = ", num_experiments)  # Warning! It's not number of predictions. Num of predictions is this number x5 or x6
+    log.info("===================================")
+    log.info(f"Number of experiements = {num_experiments} \n It's not number of predictions. Num of predictions is this {num_experiments} x {batch_size}")
+    log.info("===================================") 
     
     # open genome FASTA
     genome_open = pysam.Fastafile(options.genome_fasta)          # needs to be closed at some point
@@ -331,16 +333,18 @@ def main():
         model_index
     )
 
-    print("initialized")
+    log.info("initialized")
 
     #################################################################
     # predict SNP scores, write output
 
     # initialize predictions stream
+    # preds_stream = stream.PredStreamGen(
+    #     seqnn_model, flexible_flank_modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open), batch_size
+    # )
     preds_stream = stream.PredStreamGen(
-        seqnn_model, modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open), batch_size
+        seqnn_model, modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open), batch_size
     )
-    
     for exp in range(num_experiments):
         # get predictions
         preds = preds_stream[exp]
@@ -371,7 +375,7 @@ def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_l
     seq_coords_df_dtypes = seq_coords_df.dtypes
 
     for key in seq_coords_df:
-        print(key, seq_coords_df_dtypes[key])
+        # log.info(f"{key, seq_coords_df_dtypes[key]})
         if seq_coords_df_dtypes[key] is np.dtype("O"):
             scd_out.create_dataset(key, data=seq_coords_df[key].values.astype("S"))
         else:
@@ -408,7 +412,7 @@ def write_snp(
 ):
     """Write SNP predictions to HDF."""
     
-    print(si)
+    log.info(f"writting SNP predictions for {si}")
     
     # increase dtype
     ref_preds = ref_preds.astype("float32")
@@ -430,7 +434,7 @@ def write_snp(
                     scd_out[f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][si] = akita_utils.stats_utils.insul_diamonds_scores(ref_map, window=insul_window)[target_ind].astype("float16")
 
     if (plot_dir is not None) and (np.mod(si, plot_freq) == 0):
-        print("plotting ", si)
+        log.info(f"plotting map for {si}")
         # convert back to dense
         ref_map = ut_dense(ref_preds, diagonal_offset)
         _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4))
