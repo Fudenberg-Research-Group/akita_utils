@@ -81,7 +81,7 @@ def main():
 
     grid_search_params = {
         'background_seqs': args.background_seqs,
-        'locus_orientation': [">>>>"],#,"<<>>","><>>","<>>>",["<",">"], #[">>","<<","<>","><"],
+        'locus_orientation': [">>>"],#,"<<>>","><>>","<>>>",["<",">"], #[">>","<<","<>","><"],
         }
     
     
@@ -99,12 +99,12 @@ def main():
 
     
     #---------------importing promoters (Comment this block of the parameters if not inserting promoters)--------------------------------
-    TSS_data_tsv = current_file_path.parent / "data/tss_dataframe.tsv"
-    TSS_dataframe = pd.read_csv(TSS_data_tsv, sep="\t")
-    gene_locus_specification_list = generate_promoter_list(TSS_dataframe,genome_open, motif_threshold=0,up_stream_bps = 20000)
-    grid_search_params['gene_locus_specification'] = gene_locus_specification_list
-    grid_search_params['gene_flank_bp'] = [0]
-    grid_search_params['gene_offset'] = [100000,300000] #np.logspace(5, 5.0, num=1, dtype = int), -100000,100000,,-200000,-300000
+    # TSS_data_tsv = current_file_path.parent / "data/tss_dataframe.tsv"
+    # TSS_dataframe = pd.read_csv(TSS_data_tsv, sep="\t")
+    # gene_locus_specification_list = generate_promoter_list(TSS_dataframe,genome_open, motif_threshold=0,up_stream_bps = 20000)
+    # grid_search_params['gene_locus_specification'] = gene_locus_specification_list
+    # grid_search_params['gene_flank_bp'] = [0]
+    # grid_search_params['gene_offset'] = [100000,300000] #np.logspace(5, 5.0, num=1, dtype = int), -100000,100000,,-200000,-300000
 
     
     #---------------importing enhancers (Comment this block of the parameters if not inserting enhancers)-------------------------------
@@ -121,7 +121,7 @@ def main():
     parameters_combo_dataframe = pd.DataFrame(grid_search_params_set, columns=grid_search_params.keys())
     fill_in_default_values(parameters_combo_dataframe)
     parameter_dataframe_reorganisation(parameters_combo_dataframe)
-    parameters_combo_dataframe.to_csv(f'{args.out_dir}', sep='\t', index=False)
+    parameters_combo_dataframe.to_csv(f'{args.out_dir}.tsv', sep='\t', index=False)
 
 # -------------------------------------------------------------------------------------------------
     # used functions below
@@ -255,7 +255,7 @@ def generate_enhancer_list(feature_dataframe, genome_open, motif_threshold=1,spe
 
 def parameter_dataframe_reorganisation(parameters_combo_dataframe):
     
-    log.info(f"columns {parameters_combo_dataframe.columns}  \n ********* {parameters_combo_dataframe['ctcf_locus_specification_1']} \n ******** {parameters_combo_dataframe['ctcf_locus_specification_1'].at[0]}")
+    # log.info(f"columns {parameters_combo_dataframe.columns}  \n ********* {parameters_combo_dataframe['ctcf_locus_specification_1']} \n ******** {parameters_combo_dataframe['ctcf_locus_specification_1'].at[0]}")
     
     # adapting dataframe to desired look
     if  parameters_combo_dataframe['ctcf_locus_specification_1'].at[0]:
