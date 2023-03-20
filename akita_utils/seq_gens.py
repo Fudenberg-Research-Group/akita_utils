@@ -1,11 +1,15 @@
-
 from akita_utils.dna_utils import hot1_rc, dna_1hot
 import numpy as np
 import akita_utils.format_io
-from akita_utils.program_setup import Locus, Gene, CTCF, create_insertions_sequences
+from akita_utils.program_setup import create_insertions_sequences
 ########################################
 #           insertion utils            #
 ########################################
+
+
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+log = logging.getLogger(__name__)
 
 
 def _insert_casette(
@@ -82,6 +86,35 @@ def _multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_
             output_seq[offset : offset + insert_bp] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[i])
     return output_seq
 
+
+def _multi_insert_offsets_casette(seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string):
+    """insert multiple inserts in the seq at once
+
+    Args:
+        seq_1hot : seq to be modified
+        seq_1hot_insertions (list): inserts to be inserted in the string
+        spacer_bp (int): seperating basepairs between the inserts
+        orientation_string (string): string with orientations of the inserts
+
+    Returns:
+        modified seq with all the insertions
+    """
+    
+    assert len(seq_1hot_insertions)==len(orientation_string)==len(offsets_bp), "insertions, orientations and/or offsets dont match, please check"
+    seq_length = seq_1hot.shape[0]
+    output_seq = seq_1hot.copy()
+    insertion_start_bp = seq_length // 2
+    for insertion_index, insertion in enumerate(seq_1hot_insertions):
+        insert_bp = len(seq_1hot_insertions[insertion_index])
+        insertion_orientation_arrow = orientation_string[insertion_index]
+        insertion_offset = offsets_bp[insertion_index]
+        
+        if insertion_orientation_arrow == ">":
+            output_seq[insertion_start_bp+insertion_offset : insertion_start_bp+insertion_offset+insert_bp] = seq_1hot_insertions[insertion_index]
+        else:
+            output_seq[insertion_start_bp+insertion_offset : insertion_start_bp+insertion_offset+insert_bp] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[insertion_index])
+    return output_seq
+
         
 def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
     """sequence generator for making insertions from tsvs
@@ -117,10 +150,10 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
         
         seq_1hot = _insert_casette(seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string)
         
-        yield seq_1hot
-        
+        yield seq_1hot 
 
-def modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
+
+def modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):# delimiter specification
     """ sequence generator for making modular insertions from tsvs
         yields a one-hot encoded sequence
         that can be used as input to akita via PredStreamGen
@@ -133,7 +166,7 @@ def modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
     Yields:
         one-hot encoded sequence: sequence containing specified insertions
     """
-    
+
     for s in seq_coords_df.itertuples():
         seq_1hot_insertions = []
         spacer_bp = s.spacer_bp
@@ -150,6 +183,52 @@ def modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
             seq_1hot_insertions.append(seq_1hot_insertion)
 
         seq_1hot = _multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_string)
+        yield seq_1hot
+        
+        
+def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):# delimiter specification
+    """ sequence generator for making modular insertions from tsvs
+        yields a one-hot encoded sequence
+        that can be used as input to akita via PredStreamGen
+
+    Args:
+        seq_coords_df (dataframe): important colums spacer_bp,locus_orientation,background_seqs,insert_strand,insert_flank_bp,insert_loci 
+        background_seqs (fasta): file containing background sequences
+        genome_open (opened_fasta): fasta with chrom data
+
+    Yields:
+        one-hot encoded sequence: sequence containing specified insertions
+    """
+    
+    for s in seq_coords_df.itertuples():
+        seq_1hot_insertions = []
+        offsets_bp = []
+        orientation_string = s.locus_orientation
+        seq_1hot = background_seqs[s.background_seqs].copy()        
+
+        for module_number in range(len(s.insert_loci.split("$"))):
+            locus_specification = s.insert_loci.split("$")[module_number]
+            if locus_specification != "None":
+                chrom,start,end,strand = locus_specification.split(",")
+                insert_offset_bp = int(s.insert_offsets.split("$")[module_number])
+                flank_bp = int(s.insert_flank_bp.split("$")[module_number])
+                seq_1hot_insertion = akita_utils.dna_utils.dna_1hot(genome_open.fetch(chrom, int(start) - flank_bp, int(end) + flank_bp).upper())
+                if strand == "-":
+                    seq_1hot_insertion = akita_utils.dna_utils.hot1_rc(seq_1hot_insertion)
+                
+#                 if s.gene_locus_specification is not np.nan:
+                    
+                    
+#                     if s.num_of_motifs > 5:
+#                         motif = akita_utils.format_io.read_jaspar_to_numpy()
+#                         motif_window = len(motif)-3 #for compartibility ie (19-3=16 which is a multiple of 2,4,8 the shuffle parameters)
+#                         spans = generate_spans_start_positions(seq_1hot_insertion, motif, 8)
+#                         seq_1hot_insertion = mask_spans(seq_1hot_insertion, spans, motif_window)
+                
+                seq_1hot_insertions.append(seq_1hot_insertion)
+                offsets_bp.append(insert_offset_bp)
+
+        seq_1hot = _multi_insert_offsets_casette(seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string)
         yield seq_1hot
 
 
@@ -171,16 +250,16 @@ def flexible_flank_modular_insertion_seqs_gen(seq_coords_df, background_seqs, ge
         spacer_bp = s.spacer_bp
         orientation_string = s.locus_orientation
         seq_1hot = background_seqs[s.background_seqs].copy()        
-        custom_locus = Locus([CTCF,Gene])
+        custom_locus = LOCUS([INSERT])
         swapping_flanks = s.swap_flanks  # whether/how we are swapping flanks
-
+        ctcf_score = s.ctcf_genomic_score
+        
         for module_number in range(len(s.insert_strand.split("$"))):
             # figuring out a way to tell if module is a ctcf or gene, currently it is easy to tell from tsv
             locus = s.insert_loci.split("$")[module_number]
-            flank_bp = int(s.insert_flank_bp.split("$")[module_number])
             chrom,start,end = locus.split(",")
+            flank_bp = int(s.insert_flank_bp.split("$")[module_number])
             strand = s.insert_strand.split("$")[module_number]
-            ctcf_score = s.ctcf_genomic_score
             insert = create_insertion(module_number, locus, strand, flank_bp, ctcf_score, swapping_flanks)
             custom_locus.insert(insert)
 
@@ -193,20 +272,25 @@ def create_insertion(module_number, locus, strand, flank_bp, ctcf_score, swappin
     Creates an Insertion object (either a Gene or a CTCF) based on the given module number,
     locus, strand, and flank_bp values.
     """
-    threshold_for_strong_ctcf = 15
-    known_strong_ctcf = CTCF("strong","chr11",22206811,22206830,[flank_bp,flank_bp],"+") # default known strong ctcf to pick flanks
-    known_weak_ctcf = CTCF("weak","chr4",88777220,88777239,[flank_bp,flank_bp],"+") # default known weak ctcf to pick flanks 
+    # threshold_for_strong_ctcf = 15 will reactivate when needed
+    known_strong_ctcf = INSERT("strong_CTCF","chr3",103392976,103392995,[flank_bp,flank_bp],"+") # default known strong ctcf to pick flanks
+    known_weak_ctcf = INSERT("weak_CTCF","chr4",88777220,88777239,[flank_bp,flank_bp],"+") # default known weak ctcf to pick flanks 
     chrom, start, end = locus.split(",")
     
-    if module_number == 0: # gene
-        return Gene("unkwown", chrom, int(start), int(end), strand)
-    elif module_number == 1: # ctcf
-        ctcf = CTCF("unknown", chrom, int(start), int(end), [flank_bp, flank_bp], strand)
-        if swapping_flanks=="weak_for_strong" and ctcf_score <= threshold_for_strong_ctcf:
-            ctcf.replace_flanks(known_strong_ctcf)
-        if swapping_flanks=="strong_for_weak" and ctcf_score > threshold_for_strong_ctcf:
-            ctcf.replace_flanks(known_weak_ctcf)
-        return ctcf        
+    if module_number == 1: #gene
+        insert = INSERT("unknown_gene", chrom, int(start), int(end), [flank_bp, flank_bp], strand)
+        # ------------------will be activated when needed to change gene flanks---------------
+        # if swapping_flanks=="gene_for_other_region" and (gene_symbol in list_of_genes_of_intrest) :
+        #     insert.replace_flanks(other_region_location_insert_specification)
+        
+    if module_number == 0: # ctcf
+        insert = INSERT("unknown_ctcf", chrom, int(start), int(end), [flank_bp, flank_bp], strand)
+        if swapping_flanks=="all_for_strong": # and ctcf_score <= threshold_for_strong_ctcf:
+            insert.replace_flanks(known_strong_ctcf)
+        if swapping_flanks=="all_for_weak": # and ctcf_score > threshold_for_strong_ctcf:
+            insert.replace_flanks(known_weak_ctcf)
+        
+    return insert        
         
         
 def generate_spans_start_positions(seq_1hot, motif, threshold):
@@ -328,6 +412,16 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open):
             yield random_seq_permutation(wt_1hot)
         else:
             raise ValueError(f"Unrecognized parameters, check your dataframe")
+            
+def fasta_shuffled_seq_gen(shuffled_seqs_fasta_file):
+    # shuffled_seqs = []
+    with open(shuffled_seqs_fasta_file,'r') as f:
+        for line in f.readlines():
+            if '>' in line: continue
+            shuffled_seq = dna_1hot(line.strip()) 
+            # shuffled_seqs += [shuffled_seq]
+    # for seq in shuffled_seqs:
+            yield shuffled_seq
 
 ########################################
 #           deletion utils             #
