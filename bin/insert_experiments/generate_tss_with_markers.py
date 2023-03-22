@@ -125,6 +125,15 @@ def label_DE_status(
 
     return df_out
 
+
+def generate_promoter_df(feature_dataframe,up_stream_bps = 10000):
+    for row in feature_dataframe.itertuples():
+        if row.strand == "+":
+            feature_dataframe['start'].at[row.Index] = row.start - up_stream_bps
+        else:
+            feature_dataframe['end'].at[row.Index] = row.end + up_stream_bps
+    return feature_dataframe
+
 #-------------------------------not used yet --------------------------------
 chip_dir = ('/project/fudenber_735/collaborations/karissa_2022/'+
             '2022_09_features_for_RNAseq/ChIP-seq_in_WT-parental-E14/')
@@ -206,20 +215,32 @@ enhancer_df = bioframe.read_table(enhancer_dict["enh_chen_s1"], schema='bed3', h
 enhancer_df = bioframe_clean_autosomes(enhancer_df)
 nbins=1
 
-enhancer_NIPBL_df = pd.DataFrame(generate_signal_matrix(enhancer_df,chip_folder+nipbl,nbins=nbins),columns=[f"NIPBL_score_{i}" for i in range(nbins)])  
-enhancer_H3K27Ac_df = pd.DataFrame(generate_signal_matrix(enhancer_df,chip_folder+promoter,nbins=nbins),columns=[f"H3K27Ac_score_{i}" for i in range(nbins)])
-merged_df = pd.concat([enhancer_df.reset_index(drop=True),enhancer_NIPBL_df.reset_index(drop=True),enhancer_H3K27Ac_df.reset_index(drop=True)], axis=1) # 
+enhancer_NIPBL_df = pd.DataFrame(generate_signal_matrix(enhancer_df,chip_folder+nipbl,nbins=nbins),columns=[f"enhancer_NIPBL_score_{i}" for i in range(nbins)])  
+enhancer_H3K27Ac_df = pd.DataFrame(generate_signal_matrix(enhancer_df,chip_folder+promoter,nbins=nbins),columns=[f"enhancer_H3K27Ac_score_{i}" for i in range(nbins)])
+enhancer_merged_df = pd.concat([enhancer_df.reset_index(drop=True),enhancer_NIPBL_df.reset_index(drop=True),enhancer_H3K27Ac_df.reset_index(drop=True)], axis=1) # 
+enhancer_merged_df.to_csv("./data/enhancer_score_sample.csv")
+
+
+promoter_df = generate_promoter_df(tss_df,up_stream_bps = 20000)
+promoter_NIPBL_df = pd.DataFrame(generate_signal_matrix(promoter_df,chip_folder+nipbl,nbins=nbins),columns=[f"promoter_NIPBL_score_{i}" for i in range(nbins)])  
+promoter_H3K27Ac_df = pd.DataFrame(generate_signal_matrix(promoter_df,chip_folder+promoter,nbins=nbins),columns=[f"promoter_H3K27Ac_score_{i}" for i in range(nbins)])
+promoter_merged_df = pd.concat([promoter_df.reset_index(drop=True),promoter_NIPBL_df.reset_index(drop=True),promoter_H3K27Ac_df.reset_index(drop=True)], axis=1)
+promoter_merged_df.to_csv("./data/promoter_score_sample.csv")
+
+
+
+
 
 # print(merged_df) 
-merged_df['NIPBL_signal'] = 'non_significant'
-merged_df.loc[merged_df["NIPBL_score_0"] >= 4, 'NIPBL_signal'] = 'significant' 
-merged_df = merged_df.loc[merged_df['NIPBL_signal'] == 'significant' ].reset_index(drop=True)
+# merged_df['NIPBL_signal'] = 'non_significant'
+# merged_df.loc[merged_df["NIPBL_score_0"] >= 4, 'NIPBL_signal'] = 'significant' 
+# merged_df = merged_df.loc[merged_df['NIPBL_signal'] == 'significant' ].reset_index(drop=True)
 
-merged_df['H3K27Ac_signal'] = 'non_significant'
-merged_df.loc[merged_df["H3K27Ac_score_0"] >= 20, 'H3K27Ac_signal'] = 'significant'
-merged_df = merged_df.loc[merged_df['H3K27Ac_signal'] == 'significant' ].reset_index(drop=True)
+# merged_df['H3K27Ac_signal'] = 'non_significant'
+# merged_df.loc[merged_df["H3K27Ac_score_0"] >= 20, 'H3K27Ac_signal'] = 'significant'
+# merged_df = merged_df.loc[merged_df['H3K27Ac_signal'] == 'significant' ].reset_index(drop=True)
 
-merged_df.to_csv("./data/enhancer_score_tail_sample.csv") 
+ 
 
 # experiental stuff down ****************************************************
 # nipbl_df = bioframe.read_table(bed_dict['Nipbl'], schema='bed3', header=1)

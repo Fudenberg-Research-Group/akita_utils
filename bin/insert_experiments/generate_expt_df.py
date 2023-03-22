@@ -63,7 +63,7 @@ def main():
     parser.add_argument('-score_key', dest='score_key', default='SCD')
     parser.add_argument('-h5_dirs', dest='h5_dirs', help='h5_dirs', default="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5")
     parser.add_argument('-mode', dest='mode', default='flat')
-    parser.add_argument('-num_sites', dest='num_sites', default=5, type=int)
+    parser.add_argument('-num_sites', dest='num_sites', default=10, type=int)
     parser.add_argument('-background_seqs', nargs = '+', dest='background_seqs', default=[0], type=int)
     parser.add_argument('-o', dest='out_dir', default="default_exp_data", help="where to store output")
     
@@ -81,7 +81,7 @@ def main():
 
     grid_search_params = {
         'background_seqs': args.background_seqs,
-        'locus_orientation': [">>>"],#,"<<>>","><>>","<>>>",["<",">"], #[">>","<<","<>","><"],
+        'locus_orientation': [">>"],#,"<<>>","><>>","<>>>",["<",">"], #[">>","<<","<>","><"],
         }
     
     
@@ -89,11 +89,12 @@ def main():
     ctcf_locus_specification_list = generate_ctcf_positons(args.h5_dirs,args.rmsk_file,args.jaspar_file,args.score_key,args.mode,args.num_sites)
     
     # configure the offsets carefully to create either boundaries or TADs
-    grid_search_params['ctcf_locus_specification_1'] = [ctcf_locus_specification_list[-1]]
+    
+    grid_search_params['ctcf_locus_specification_1'] = [ctcf_locus_specification_list[-1],ctcf_locus_specification_list[0]]
     grid_search_params['ctcf_flank_bp_1'] = [20]
     grid_search_params['ctcf_offset_1'] = [0]
     
-    grid_search_params['ctcf_locus_specification_2'] = [ctcf_locus_specification_list[-1]]
+    grid_search_params['ctcf_locus_specification_2'] = ctcf_locus_specification_list
     grid_search_params['ctcf_flank_bp_2'] = [20]
     grid_search_params['ctcf_offset_2'] = [120]
 
@@ -102,26 +103,30 @@ def main():
     # TSS_data_tsv = current_file_path.parent / "data/tss_dataframe.tsv"
     # TSS_dataframe = pd.read_csv(TSS_data_tsv, sep="\t")
     # gene_locus_specification_list = generate_promoter_list(TSS_dataframe,genome_open, motif_threshold=0,up_stream_bps = 20000)
+    
+    # promoter_data_csv = current_file_path.parent / "data/promoter_score_sample.csv"  #enhancer_score_test
+    # promoter_dataframe = pd.read_csv(promoter_data_csv, sep=",")
+    # gene_locus_specification_list = generate_promoter_list_v2(promoter_dataframe, genome_open, motif_threshold=1)
     # grid_search_params['gene_locus_specification'] = gene_locus_specification_list
     # grid_search_params['gene_flank_bp'] = [0]
-    # grid_search_params['gene_offset'] = [100000,300000] #np.logspace(5, 5.0, num=1, dtype = int), -100000,100000,,-200000,-300000
+    # grid_search_params['gene_offset'] = [100000] #np.logspace(5, 5.0, num=1, dtype = int), ,,-200000,-300000
 
     
     #---------------importing enhancers (Comment this block of the parameters if not inserting enhancers)-------------------------------
-    enhancer_data_csv = current_file_path.parent / "data/enhancer_score_tail_sample.csv"  #enhancer_score_test
-    enhancer_dataframe = pd.read_csv(enhancer_data_csv, sep=",")
-    enhancer_locus_specification_list = generate_enhancer_list(enhancer_dataframe, genome_open, motif_threshold=0) #   specification_list=[0],
-    grid_search_params['enhancer_locus_specification'] =  enhancer_locus_specification_list
-    grid_search_params['enhancer_flank_bp'] = [0]
-    grid_search_params['enhancer_offset'] = [50000]    #,450000,,-450000,400000,-50000,-400000
+    # enhancer_data_csv = current_file_path.parent / "data/enhancer_score_sample.csv"  #enhancer_score_test
+    # enhancer_dataframe = pd.read_csv(enhancer_data_csv, sep=",")
+    # enhancer_locus_specification_list = generate_enhancer_list(enhancer_dataframe, genome_open, motif_threshold=0) #   specification_list=[0],
+    # grid_search_params['enhancer_locus_specification'] =  enhancer_locus_specification_list
+    # grid_search_params['enhancer_flank_bp'] = [0]
+    # grid_search_params['enhancer_offset'] = [50000]    #,450000,,-450000,400000,-50000,-400000
     
     
     #--------------- grid search of provided parameters -------------------------------
     grid_search_params_set = list(itertools.product(*[v for v in grid_search_params.values()]))
     parameters_combo_dataframe = pd.DataFrame(grid_search_params_set, columns=grid_search_params.keys())
     fill_in_default_values(parameters_combo_dataframe)
-    parameter_dataframe_reorganisation(parameters_combo_dataframe)
-    parameters_combo_dataframe.to_csv(f'{args.out_dir}.tsv', sep='\t', index=False)
+    parameters_combo_dataframe = parameter_dataframe_reorganisation(parameters_combo_dataframe)
+    parameters_combo_dataframe.to_csv(f"{args.out_dir}.tsv", sep='\t', index=False)
 
 # -------------------------------------------------------------------------------------------------
     # used functions below
@@ -223,7 +228,7 @@ def generate_promoter_list(feature_dataframe,genome_open,up_stream_bps = 10000, 
     
     feature_dataframe = feature_dataframe[True == (feature_dataframe["promoter_num_of_motifs"] <= motif_threshold)]
     feature_dataframe.reset_index(drop=True, inplace=True)
-    feature_dataframe["locus_specification"] = feature_dataframe["chrom"].map(str) +","+ feature_dataframe["start"].map(str) + "," + feature_dataframe["end"].map(str)+","+feature_dataframe["strand"].map(str)+"#"+feature_dataframe["Geneid"].map(str)+"#"+feature_dataframe["promoter_num_of_motifs"].map(str)
+    feature_dataframe["locus_specification"] = feature_dataframe["chrom"].map(str) +","+ feature_dataframe["start"].map(str) + "," + feature_dataframe["end"].map(str)+","+feature_dataframe["strand"].map(str)+"#"+feature_dataframe["Geneid"].map(str)+"#"+feature_dataframe["promoter_num_of_motifs"].map(str)+"#"+feature_dataframe["promoter_NIPBL_score_0"].map(str)+"#"+feature_dataframe["promoter_H3K27Ac_score_0"].map(str)
     return feature_dataframe["locus_specification"].values.tolist()
 
 
@@ -242,7 +247,7 @@ def generate_enhancer_list(feature_dataframe, genome_open, motif_threshold=1,spe
     
     feature_dataframe = feature_dataframe[True == (feature_dataframe["enhancer_num_of_motifs"] <= motif_threshold)]
     feature_dataframe.reset_index(drop=True, inplace=True)
-    feature_dataframe["locus_specification"] = feature_dataframe["chrom"].map(str) +","+ feature_dataframe["start"].map(str) + "," + feature_dataframe["end"].map(str)+"," + feature_dataframe["strand"].map(str)+"#"+feature_dataframe["enhancer_symbol"].map(str)+"#"+feature_dataframe["enhancer_num_of_motifs"].map(str)+"#"+feature_dataframe["NIPBL_score_0"].map(str)+"#"+feature_dataframe["H3K27Ac_score_0"].map(str)
+    feature_dataframe["locus_specification"] = feature_dataframe["chrom"].map(str) +","+ feature_dataframe["start"].map(str) + "," + feature_dataframe["end"].map(str)+"," + feature_dataframe["strand"].map(str)+"#"+feature_dataframe["enhancer_symbol"].map(str)+"#"+feature_dataframe["enhancer_num_of_motifs"].map(str)+"#"+feature_dataframe["enhancer_NIPBL_score_0"].map(str)+"#"+feature_dataframe["enhancer_H3K27Ac_score_0"].map(str)
     
     if specification_list: 
         enhancer_locus_specification_list = []
@@ -252,6 +257,36 @@ def generate_enhancer_list(feature_dataframe, genome_open, motif_threshold=1,spe
         enhancer_locus_specification_list = feature_dataframe["locus_specification"].values.tolist()
 
     return enhancer_locus_specification_list
+
+
+def generate_promoter_list_v2(feature_dataframe, genome_open, motif_threshold=1,specification_list=None):
+    # feature_dataframe["enhancer_num_of_motifs"] = None # initialisation
+    # for row in feature_dataframe.itertuples(): 
+    #     seq_1hot = akita_utils.dna_utils.dna_1hot(genome_open.fetch(row.chrom,row.start,row.end)) 
+    #     motif = akita_utils.format_io.read_jaspar_to_numpy()
+    #     num_of_motifs = len(akita_utils.seq_gens.generate_spans_start_positions(seq_1hot, motif, 8))
+    #     feature_dataframe["enhancer_num_of_motifs"].at[row.Index] = num_of_motifs
+    
+    feature_dataframe = filter_by_ctcf(feature_dataframe)
+    feature_dataframe = feature_dataframe.rename(columns={"count": "promoter_num_of_motifs"})
+    
+    feature_dataframe = feature_dataframe[True == (feature_dataframe["promoter_num_of_motifs"] <= motif_threshold)]
+    feature_dataframe.reset_index(drop=True, inplace=True)
+    feature_dataframe["locus_specification"] = feature_dataframe["chrom"].map(str) +","+ feature_dataframe["start"].map(str) + "," + feature_dataframe["end"].map(str)+"," + feature_dataframe["strand"].map(str)+"#"+feature_dataframe["Geneid"].map(str)+"#"+feature_dataframe["promoter_num_of_motifs"].map(str)+"#"+feature_dataframe["promoter_NIPBL_score_0"].map(str)+"#"+feature_dataframe["promoter_H3K27Ac_score_0"].map(str)
+    
+    if specification_list: 
+        enhancer_locus_specification_list = []
+        for ind in specification_list:
+            enhancer_locus_specification_list += [feature_dataframe["locus_specification"].values.tolist()[ind]]
+    else:
+        enhancer_locus_specification_list = feature_dataframe["locus_specification"].values.tolist()
+
+    return enhancer_locus_specification_list
+
+
+
+
+
 
 def parameter_dataframe_reorganisation(parameters_combo_dataframe):
     
@@ -267,12 +302,18 @@ def parameter_dataframe_reorganisation(parameters_combo_dataframe):
     if  parameters_combo_dataframe["gene_locus_specification"].at[0]:
         parameters_combo_dataframe['gene_symbol'] = parameters_combo_dataframe["gene_locus_specification"].str.split('#',expand=True)[1]
         parameters_combo_dataframe['promoter_num_of_motifs'] = parameters_combo_dataframe["gene_locus_specification"].str.split('#',expand=True)[2]
+        parameters_combo_dataframe['promoter_NIPBL_signal'] = parameters_combo_dataframe["gene_locus_specification"].str.split('#',expand=True)[3]
+        parameters_combo_dataframe['promoter_H3K27Ac_signal'] = parameters_combo_dataframe["gene_locus_specification"].str.split('#',expand=True)[4]
         parameters_combo_dataframe['gene_locus_specification'] = parameters_combo_dataframe["gene_locus_specification"].str.split('#',expand=True)[0]
+
+#         parameters_combo_dataframe['gene_symbol'] = parameters_combo_dataframe["gene_locus_specification"].str.split('#',expand=True)[1]
+#         parameters_combo_dataframe['promoter_num_of_motifs'] = parameters_combo_dataframe["gene_locus_specification"].str.split('#',expand=True)[2]
+#         parameters_combo_dataframe['gene_locus_specification'] = parameters_combo_dataframe["gene_locus_specification"].str.split('#',expand=True)[0]
     if  parameters_combo_dataframe["enhancer_locus_specification"].at[0]:
         parameters_combo_dataframe['enhancer_symbol'] = parameters_combo_dataframe["enhancer_locus_specification"].str.split('#',expand=True)[1]
         parameters_combo_dataframe['enhancer_num_of_motifs'] = parameters_combo_dataframe["enhancer_locus_specification"].str.split('#',expand=True)[2]
-        parameters_combo_dataframe['NIPBL_signal'] = parameters_combo_dataframe["enhancer_locus_specification"].str.split('#',expand=True)[3]
-        parameters_combo_dataframe['H3K27Ac_signal'] = parameters_combo_dataframe["enhancer_locus_specification"].str.split('#',expand=True)[4]
+        parameters_combo_dataframe['enhancer_NIPBL_signal'] = parameters_combo_dataframe["enhancer_locus_specification"].str.split('#',expand=True)[3]
+        parameters_combo_dataframe['enhancer_H3K27Ac_signal'] = parameters_combo_dataframe["enhancer_locus_specification"].str.split('#',expand=True)[4]
         parameters_combo_dataframe['enhancer_locus_specification'] = parameters_combo_dataframe["enhancer_locus_specification"].str.split('#',expand=True)[0]
 
 

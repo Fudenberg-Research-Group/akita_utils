@@ -169,8 +169,12 @@ def filter_sites_by_score(
         elif mode == "tail":
             filtered_sites = filtered_sites[-num_sites:]
         elif mode == "flat":
+            n_rows = len(filtered_sites)
+            indices = np.linspace(0, n_rows-1, num=num_sites, dtype=np.int)
+            filtered_sites = filtered_sites.iloc[indices]
             # filtered_sites = filtered_sites.sample(n=num_sites, stratify=filtered_sites[score_key], random_state=42) 
-            filtered_sites = filtered_sites.groupby(score_key).apply(lambda x: x.sample(n=num_sites, replace=True)).reset_index(drop=True)
+            # filtered_sites = filtered_sites.groupby(score_key).apply(lambda x: x.sample(n=num_sites, replace=False)).reset_index(drop=True)
+
 
         else:
             filtered_sites = filtered_sites.sample(n=num_sites)
