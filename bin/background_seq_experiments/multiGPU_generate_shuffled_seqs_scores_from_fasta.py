@@ -16,11 +16,9 @@
 # =========================================================================
 
 """
-multiGPU_generate_flat_background.py
-Derived from akita_motif_scd_multi.py (https://github.com/Fudenberg-Research-Group/akita_utils/blob/main/bin/disrupt_genomic_boundary_ctcfs/akita_motif_scd_multi.py)
+multiGPU_generate_shuffled_seqs_scores_from_fasta.py
 
-Compute scores for motifs in a TSV file, using multiple processes.
-
+Compute scores for seqs in a given fasta file, using multiple processes.
 Relies on slurm_gf.py to auto-generate slurm jobs.
 
 """
@@ -41,7 +39,7 @@ import akita_utils.slurm_gf as slurm
 # main
 ################################################################################
 def main():
-    usage = "usage: %prog [options] <params_file> <model_file> <tsv_file>"
+    usage = "usage: %prog [options] <models_dir> <fasta_file>" #<params_file> <model_file> <tsv_file>"
     parser = OptionParser(usage)
 
     # scd
@@ -75,7 +73,7 @@ def main():
     parser.add_option(
         "-o",
         dest="out_dir",
-        default="scd",
+        default="./",
         help="Output directory for tables and plots [Default: %default]",
     )
     parser.add_option(
@@ -126,19 +124,7 @@ def main():
         type="int",
         help="Specify model index (from 0 to 7)",
     )
-    ## insertion-specific options
-    parser.add_option('--backgounds_file', dest='backgroung_chromosome_tsv_file',
-      default='/home1/kamulege/akita_utils/bin/background_seq_experiments/data/background_seq.tsv',           
-      help='backgounds tsv file')
-    
-    parser.add_option('-s', dest='save_seqs',
-      default=None,
-      help='Save the final seqs in fasta format')  
-    
-    parser.add_option('--max_iters', dest='max_iters',
-      default=10,              
-      help='maximum iterations')
-    
+
     # multi
     parser.add_option(
         "--cpu",
@@ -157,7 +143,7 @@ def main():
     parser.add_option(
         "--name",
         dest="name",
-        default="scd",
+        default="shuf_fasta",
         help="SLURM name prefix [Default: %default]",
     )
     parser.add_option(
@@ -204,16 +190,26 @@ def main():
     )
 
     (options, args) = parser.parse_args()
-
-    if len(args) != 3:
-        parser.error("Must provide parameters and model files and TSV file")
+        
+        
+    if len(args) != 2:
+        print(args)
+        parser.error("Must provide models directory and fasta file")
     else:
-        params_file = args[0]
-        model_file = args[1]
-        tsv_file = args[2]
-
+        models_dir = args[0]
+        fasta_file = args[1]
+        
+        model_dir = models_dir+"/f"+str(options.model_index)+"c0/train/"
+        model_file = model_dir+'model'+str(options.head_index)+'_best.h5'
+        params_file = model_dir+"params.json" 
+        
+        new_args = [params_file,model_file,fasta_file]
+        options.name = f"{options.name}_m{options.model_index}"
+        
     #######################################################
     # prep work
+    
+    options.out_dir = f"{options.out_dir}/shuffled_seqs_scores_model{options.model_index}_head{options.head_index}"
     
     # output directory
     if not options.restart:
@@ -243,9 +239,9 @@ def main():
                 # cmd += "conda activate basenji;"      #changed
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
 
-            cmd += " ${SLURM_SUBMIT_DIR}/generate_flat_background.py %s %s %d" % (
+            cmd += " ${SLURM_SUBMIT_DIR}/generate_shuffled_seqs_scores_from_fasta.py %s %s %d" % (
                 options_pkl_file,
-                " ".join(args),
+                " ".join(new_args),
                 pi,
             )
 
@@ -273,7 +269,7 @@ def main():
     slurm.multi_run(
         jobs, max_proc=options.max_proc, verbose=False, launch_sleep=10, update_sleep=60
     )
-
+    
 
 def job_completed(options, pi):
     """Check whether a specific job has generated its
@@ -287,3 +283,4 @@ def job_completed(options, pi):
 ################################################################################
 if __name__ == "__main__":
     main()
+    

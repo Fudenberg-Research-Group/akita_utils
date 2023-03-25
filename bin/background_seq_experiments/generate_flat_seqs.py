@@ -16,6 +16,12 @@
 # =========================================================================
 from __future__ import print_function
 
+
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+log = logging.getLogger(__name__)
+
+
 from optparse import OptionParser
 import json
 import os
@@ -40,7 +46,7 @@ if tf.__version__[0] == '1':
 gpus = tf.config.experimental.list_physical_devices('GPU')
 #for gpu in gpus:
 #  tf.config.experimental.set_memory_growth(gpu, True)
-print(gpus)
+log.info(gpus)
 
 from basenji import seqnn
 from basenji import stream
@@ -56,9 +62,10 @@ creating flat maps/seqs
 
 ################################################################################
 # main 
+# This script generates flat seqs following the flat_seq_tsv file and specified model
 ################################################################################
 def main():
-    usage = 'usage: %prog [options] <params_file> <model_file> <vcf_file>'
+    usage = 'usage: %prog [options] <params_file> <model_file> <flat_seq_tsv_file>'
     parser = OptionParser(usage)
     
     parser.add_option('-f', dest='genome_fasta',
@@ -78,7 +85,7 @@ def main():
       help='Plot contact map for each allele [Default: %default]')
     
     parser.add_option('-o',dest='out_dir',
-      default='scd',
+      default='.',
       help='Output directory for tables and plots [Default: %default]')
     
     parser.add_option('-p', dest='processes',
@@ -133,23 +140,20 @@ def main():
       default=10,              
       help='maximum iterations')
 
-    parser.add_option('--backgounds_file', dest='backgroung_chromosome_tsv_file',
-      default='/home1/kamulege/akita_utils/bin/background_seq_experiments/data/background_seqs.tsv',           
-      help='backgounds tsv file')
-
     (options, args) = parser.parse_args()
 
     if len(args) == 3:
         # single worker
         params_file = args[0]
         model_file = args[1]
-        background_file = args[2]
+        flat_seq_tsv_file = args[2]
+        
     elif len(args) == 5:
         # multi worker
         options_pkl_file = args[0]
         params_file = args[1]
         model_file = args[2]
-        background_file = args[3]
+        flat_seq_tsv_file = args[3]
         worker_index = int(args[4])
 
         # load options
@@ -157,8 +161,6 @@ def main():
         options = pickle.load(options_pkl)
         options_pkl.close()
 
-        # update output directory
-        options.out_dir = '%s/job%d' % (options.out_dir, worker_index)
     else:
         parser.error('Must provide parameters and model files and QTL VCF file')
 
@@ -166,7 +168,6 @@ def main():
         os.mkdir(options.out_dir)
 
     options.shifts = [int(shift) for shift in options.shifts.split(',')]
-    options.scd_stats = options.scd_stats.split(',')
 
     random.seed(44)
 
@@ -183,7 +184,7 @@ def main():
         batch_size = params_train['batch_size']
     else: 
         batch_size = options.batch_size
-    print(f"Batch size {batch_size}")
+    log.info(f"Batch size {batch_size}")
 
     if options.targets_file is not None:
         targets_df = pd.read_csv(options.targets_file, sep='\t', index_col=0)
@@ -210,15 +211,15 @@ def main():
     
     # filter for worker motifs
     if options.processes is not None:                    # multi-GPU option
-        seq_coords_full = pd.read_csv(options.backgroung_chromosome_tsv_file, sep="\t")
+        seq_coords_full = pd.read_csv(flat_seq_tsv_file, sep="\t")
         seq_coords_df = split_df_equally(seq_coords_full, options.processes, worker_index)
     else:
-        seq_coords_df = pd.read_csv(options.backgroung_chromosome_tsv_file, sep="\t")
+        seq_coords_df = pd.read_csv(flat_seq_tsv_file, sep="\t")
     
     num_experiments = len(seq_coords_df)
-    print("===================================")
-    print("Number of experiements = ", num_experiments)  # Warning! It's not number of predictions. Num of predictions is this number x batch size
-    
+    log.info("===================================")
+    log.info(f"Number of experiements = {num_experiments} \n It's not number of predictions. Num of predictions is upper bounded by {options.max_iters} x {batch_size} for each experiment")
+    log.info("===================================")    
     #################################################################
     # create flat sequences
     
@@ -234,8 +235,10 @@ def main():
     if options.save_seqs is not None:  
         with open(f'{options.out_dir}/background_seqs.fa','w') as f:
             for i in range(len(flat_seqs)):
-                f.write('>shuffled_chr'+str(i)+'_score'+str(int(flat_seqs[i][2]))+'_pixelwise'+str(int(flat_seqs[i][3]*1000))+'\n')
-                f.write(dna_io.hot1_dna(flat_seqs[i][0])+'\n')  
+                f.write('>shuffled_chr'+str(i)+'_score'+str(int(flat_seqs[i][2]))+'_pixelwise'+str(int(flat_seqs[i][3]))+'\n')
+                f.write(dna_io.hot1_dna(flat_seqs[i][0])+'\n')
+        log.info(f"finished saving! \n plotting next if requested")
+
 
     #################################################################
     # plot flat sequences
@@ -247,15 +250,22 @@ def main():
         for no,pred in enumerate(preds):
             ref_preds = pred
             ref_map = ut_dense(ref_preds, hic_diags) # convert back to dense
-            _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4))
+            _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4), sharey=True)
+            
+            sd2_preds = np.sqrt((ref_preds**2).sum(axis=0))
+            max_scd = np.max(sd2_preds)
+            
             for ti in range(ref_preds.shape[-1]):
                 ref_map_ti = ref_map[..., ti]
                 # TEMP: reduce resolution
                 ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
-                vmin = min(ref_map_ti.min(), ref_map_ti.min())
-                vmax = max(ref_map_ti.max(), ref_map_ti.max())
-                vmin = min(-plot_lim_min, vmin)
-                vmax = max(plot_lim_min, vmax)
+                
+                # vmin = min(ref_map_ti.min(), ref_map_ti.min())
+                # vmax = max(ref_map_ti.max(), ref_map_ti.max())
+                # vmin = min(-plot_lim_min, vmin)
+                # vmax = max(plot_lim_min, vmax)
+                
+                vmin,vmax = -0.2,0.2
                 sns.heatmap(
                     ref_map_ti,
                     ax=axs[ti],
@@ -266,17 +276,15 @@ def main():
                     xticklabels=False,
                     yticklabels=False,
                 )
+                # axs[ti].set_title(f"SCD {np.sqrt((ref_preds**2).sum(axis=0))[ti]}") #\nMSS {np.sum(ref_preds**2, axis=0)[ti]}\nCS {Custom_score[ti]}
 
             plt.tight_layout()
-            plt.savefig("%s/seq_%d.pdf" % (options.out_dir, no))
+            plt.savefig(f"{options.out_dir}/job{worker_index}_seq{no}_max-SCD{max_scd}.pdf")
             plt.close()
+        log.info(f"finished plotting! \ncheck {options.out_dir} for plots")
     
 ################################################################################
 # __main__
 ################################################################################
 if __name__ == '__main__':
       main()
-
-
-
- 

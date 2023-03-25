@@ -3,6 +3,11 @@
 # =========================================================================
 from __future__ import print_function
 
+
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+log = logging.getLogger(__name__)
+
 from optparse import OptionParser
 import json
 import os
@@ -24,21 +29,24 @@ if tf.__version__[0] == '1':
 gpus = tf.config.experimental.list_physical_devices('GPU')
 #for gpu in gpus:
 #  tf.config.experimental.set_memory_growth(gpu, True)
-print(gpus)
+log.info(gpus)
 
 from basenji import seqnn, stream, dna_io
 import akita_utils
 from akita_utils.utils import ut_dense, split_df_equally 
 from akita_utils.seq_gens import background_exploration_seqs_gen
+
+################################################################################
 '''
 creating flat maps/seqs
 
+This scripts takes a tsv (oftenly shuffled seqs) and specified model to be used to generate the scores for each shuffled seq
+
 '''
-################################################################################
-# main
+ 
 ################################################################################
 def main():
-    usage = "usage: %prog [options] <params_file> <model_file> <motifs_file>"
+    usage = "usage: %prog [options] <params_file> <model_file> <shuffled_seqs_tsv>"
     parser = OptionParser(usage)
     parser.add_option(
         "-f",
@@ -97,7 +105,7 @@ def main():
     parser.add_option(
         "--stats",
         dest="scd_stats",
-        default="SCD",
+        default="SCD,MSS,MPS,CS",
         help="Comma-separated list of stats to save. [Default: %default]",
     )
     parser.add_option(
@@ -117,7 +125,7 @@ def main():
     parser.add_option(
         "--head-index",
         dest="head_index",
-        default=0,
+        default=1,
         type="int",
         help="Specify head index (0=human 1=mus)",
     )
@@ -138,28 +146,26 @@ def main():
 
     (options, args) = parser.parse_args()
     
-    print("\n++++++++++++++++++\n")
-    print("INPUT")
-    print("\n++++++++++++++++++\n")
-    print("options")
-    print(options)
-    print("\n++++++++++++++++++\n")
-    print("args", args)
-    print(args)
-    print("\n++++++++++++++++++\n")
+    log.info("\n++++++++++++++++++\n")
+    log.info("INPUT")
+    log.info("\n++++++++++++++++++\n")
+    log.info(f"options \n {options}")
+    log.info("\n++++++++++++++++++\n")
+    log.info(f"args \n {args}")
+    log.info("\n++++++++++++++++++\n")
     
     if len(args) == 3:
         # single worker
         params_file = args[0]
         model_file = args[1]
-        motif_file = args[2]
+        shuffled_seqs_tsv = args[2]
 
     elif len(args) == 5:                 # muliti-GPU option
         # multi worker
         options_pkl_file = args[0]
         params_file = args[1]
         model_file = args[2]
-        motif_file = args[3]
+        shuffled_seqs_tsv = args[3]
         worker_index = int(args[4])
 
         # load options
@@ -225,17 +231,18 @@ def main():
     # filter for worker motifs
     if options.processes is not None:                    # multi-GPU option
         # determine boundaries from motif file
-        seq_coords_full = pd.read_csv(motif_file, sep="\t")
+        seq_coords_full = pd.read_csv(shuffled_seqs_tsv, sep="\t")
         seq_coords_df = split_df_equally(seq_coords_full, options.processes, worker_index)
         
     else:
         # read motif positions from csv
-        seq_coords_df = pd.read_csv(motif_file, sep="\t")
+        seq_coords_df = pd.read_csv(shuffled_seqs_tsv, sep="\t")
         
     num_experiments = len(seq_coords_df)
     
-    print("===================================")
-    print("Number of experiements = ", num_experiments)         # Warning! It's not number of predictions. Num of predictions is this number x5 or x6
+    log.info("===================================")
+    log.info(f"Number of experiements = {num_experiments} \n It's not number of predictions. Num of predictions is this {num_experiments} x {batch_size}")
+    log.info("===================================") 
     
     # open genome FASTA
     genome_open = pysam.Fastafile(options.genome_fasta)          # needs to be closed at some point
@@ -253,7 +260,7 @@ def main():
         model_index
     )
 
-    print("initialized")
+    log.info("initialized")
 
     #################################################################
     # predict SNP scores, write output
@@ -300,6 +307,7 @@ def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_l
 
     # initialize scd stats
     for scd_stat in scd_stats:
+        log.info(f"initialised stats {scd_stat}")
         
         if scd_stat in seq_coords_df.keys():
             raise KeyError("check input tsv for clashing score name")
@@ -329,8 +337,25 @@ def write_snp(
 ):
     """Write SNP predictions to HDF."""
     
+    log.info(f"writting SNP predictions for experiment {si}")
+    
     # increase dtype
     ref_preds = ref_preds.astype("float32")
+    
+            
+    if "MPS" in scd_stats:
+        # current standard map selection scores
+        Max_scores_pixelwise = np.max(np.abs(ref_preds), axis=0)
+        for target_ind in range(ref_preds.shape[1]):
+            scd_out[f"MPS_h{head_index}_m{model_index}_t{target_ind}"][si] = Max_scores_pixelwise[target_ind].astype("float16")
+            
+    if "CS" in scd_stats: 
+        # customised scores for exploration
+        std = np.std(ref_preds, axis=0)
+        mean = np.mean(ref_preds, axis=0)
+        Custom_score = 3/mean + 2/std 
+        for target_ind in range(ref_preds.shape[1]):
+            scd_out[f"CS_h{head_index}_m{model_index}_t{target_ind}"][si] = Custom_score[target_ind].astype("float16")
         
     # compare reference to alternative via mean subtraction
     if "SCD" in scd_stats:
@@ -349,7 +374,7 @@ def write_snp(
                     scd_out[f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][si] = akita_utils.stats_utils.insul_diamonds_scores(ref_map, window=insul_window)[target_ind].astype("float16")
 
     if (plot_dir is not None) and (np.mod(si, plot_freq) == 0):
-        print("plotting ", si)
+        log.info(f"plotting {si}")
         # convert back to dense
         ref_map = ut_dense(ref_preds, diagonal_offset)
         _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4))

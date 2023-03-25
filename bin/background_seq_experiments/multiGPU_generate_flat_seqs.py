@@ -16,11 +16,9 @@
 # =========================================================================
 
 """
-multiGPU_background_scores_exploration_bulk.py
-Derived from akita_motif_scd_multi.py (https://github.com/Fudenberg-Research-Group/akita_utils/blob/main/bin/disrupt_genomic_boundary_ctcfs/akita_motif_scd_multi.py)
+multiGPU_generate_flat_seqs.py
 
-Compute scores for motifs in a TSV file, using multiple processes.
-
+generate flat seqs following parameters in given TSV file, using multiple processes.
 Relies on slurm_gf.py to auto-generate slurm jobs.
 
 """
@@ -37,14 +35,17 @@ import h5py
 import numpy as np
 import akita_utils.slurm_gf as slurm
 
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+log = logging.getLogger(__name__)
+
 ################################################################################
 # main
 ################################################################################
 def main():
-    usage = "usage: %prog [options] <params_file> <model_file> <tsv_file>"
+    usage = "usage: %prog [options] <models_dir> <tsv_file>"
     parser = OptionParser(usage)
 
-    # scd
     parser.add_option(
         "-f",
         dest="genome_fasta",
@@ -75,7 +76,7 @@ def main():
     parser.add_option(
         "-o",
         dest="out_dir",
-        default="scd",
+        default=".",
         help="Output directory for tables and plots [Default: %default]",
     )
     parser.add_option(
@@ -91,12 +92,6 @@ def main():
         default="0",
         type="str",
         help="Ensemble prediction shifts [Default: %default]",
-    )
-    parser.add_option(
-        "--stats",
-        dest="scd_stats",
-        default="SCD,SSD",
-        help="Comma-separated list of stats to save. [Default: %default]",
     )
     parser.add_option(
         "-t",
@@ -126,14 +121,19 @@ def main():
         type="int",
         help="Specify model index (from 0 to 7)",
     )
-    ## insertion-specific options
-    parser.add_option(
-        "--background-file",
-        dest="background_file",
-        default="/project/fudenber_735/tensorflow_models/akita/v2/analysis/background_seqs.fa",
-        help="file with insertion seqs in fasta format",
-    )
-
+    # parser.add_option('--flat_seq_tsv_file', dest='flat_seq_tsv_file',
+    #   default='/home1/kamulege/akita_utils/bin/background_seq_experiments/data/flat_seqs.tsv',           
+    #   help='flat_seq tsv file')
+    
+    parser.add_option('-s', dest='save_seqs',
+      default=None,
+      help='Save the final seqs in fasta format')  
+    
+    parser.add_option('--max_iters', dest='max_iters',
+      default=10,
+      type="int",
+      help='maximum iterations')
+    
     # multi
     parser.add_option(
         "--cpu",
@@ -152,7 +152,7 @@ def main():
     parser.add_option(
         "--name",
         dest="name",
-        default="scd",
+        default="flat",
         help="SLURM name prefix [Default: %default]",
     )
     parser.add_option(
@@ -199,21 +199,35 @@ def main():
     )
 
     (options, args) = parser.parse_args()
+    
+    
 
-    if len(args) != 3:
-        parser.error("Must provide parameters and model files and TSV file")
+    if len(args) != 2:
+        print(args)
+        parser.error("Must provide models directory and TSV file")
     else:
-        params_file = args[0]
-        model_file = args[1]
-        tsv_file = args[2]
+        models_dir = args[0]
+        tsv_file = args[1]
+        
+        
+        model_dir = models_dir+"/f"+str(options.model_index)+"c0/train/"
+        model_file = model_dir+'model'+str(options.head_index)+'_best.h5'
+        params_file = model_dir+"params.json" 
+        
+        new_args = [params_file,model_file,tsv_file]
+        options.name = f"{options.name}_m{options.model_index}"
 
     #######################################################
     # prep work
     
     # output directory
+    
+    options.out_dir = f"{options.out_dir}/flat_seqs_model{options.model_index}_head{options.head_index}"
+    
     if not options.restart:
         if os.path.isdir(options.out_dir):
-            print("Please remove %s" % options.out_dir, file=sys.stderr)
+            log.info(f"File {options.out_dir} already exists, please remove it")
+            print(f"File {options.out_dir} already exists, please remove it")
             exit(1)
         os.mkdir(options.out_dir)
 
@@ -238,9 +252,9 @@ def main():
                 # cmd += "conda activate basenji;"      #changed
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
 
-            cmd += " ${SLURM_SUBMIT_DIR}/background_scores_exploration_bulk.py %s %s %d" % (
+            cmd += " ${SLURM_SUBMIT_DIR}/generate_flat_seqs.py %s %s %d" % (
                 options_pkl_file,
-                " ".join(args),
+                " ".join(new_args),
                 pi,
             )
 
@@ -258,7 +272,7 @@ def main():
                 queue=options.queue,
                 gpu=num_gpu,
                 gres=options.gres,
-                mem=15000,
+                mem=25000,
                 time=options.time,
                 cpu=options.num_cpus,
                 constraint=options.constraint,
@@ -268,7 +282,7 @@ def main():
     slurm.multi_run(
         jobs, max_proc=options.max_proc, verbose=False, launch_sleep=10, update_sleep=60
     )
-    
+
 
 def job_completed(options, pi):
     """Check whether a specific job has generated its
