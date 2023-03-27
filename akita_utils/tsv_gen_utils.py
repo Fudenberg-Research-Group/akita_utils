@@ -573,17 +573,3 @@ def add_background(seq_coords_df, background_indices_list):
     seq_coords_df["background_index"] = background_ls
 
     return seq_coords_df
-
-
-
-
-def calculate_GC(chrom_seq_bed_file,genome_fasta):
-    "takes a bed file and fasta, splits it in akita feedable windows, calculates GC content and adds a column GC"
-    chromsizes = bioframe.read_chromsizes(chrom_seq_bed_file,chrom_patterns=("^chr1$", "^chr2$", "^chr3$"))
-    raw_dataframe = pd.DataFrame(chromsizes)
-    raw_dataframe['end'] = raw_dataframe['length']+ 1310720 # akita's window size (open to another selection method)
-    raw_dataframe = raw_dataframe.reset_index()
-    raw_dataframe.rename(columns = {'index' : 'chrom', 'length':'start'}, inplace = True)
-    final_chrom_dataframe = bioframe.frac_gc(raw_dataframe, bioframe.load_fasta(genome_fasta), return_input=True)
-    return final_chrom_dataframe
-
