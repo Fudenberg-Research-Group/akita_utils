@@ -345,9 +345,9 @@ def write_snp(
             
     if "MPS" in scd_stats:
         # current standard map selection scores
-        Max_scores_pixelwise = np.max(np.abs(ref_preds), axis=0)
+        max_pixelwise_scores = np.max(np.abs(ref_preds), axis=0)
         for target_ind in range(ref_preds.shape[1]):
-            scd_out[f"MPS_h{head_index}_m{model_index}_t{target_ind}"][si] = Max_scores_pixelwise[target_ind].astype("float16")
+            scd_out[f"MPS_h{head_index}_m{model_index}_t{target_ind}"][si] = max_pixelwise_scores[target_ind].astype("float16")
             
     if "CS" in scd_stats: 
         # customised scores for exploration

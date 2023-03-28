@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import bioframe
 import argparse
-from akita_utils.tsv_gen_utils import calculate_GC, filter_sites_by_score  # reminder. this function needs to be renamed to a more general name (filter dataframe by key)
+import akita_utils.tsv_gen_utils 
 
             
 ################################################################################
@@ -50,7 +50,7 @@ def main():
     parser.add_argument('--ctcf_selection_threshold', default=[8], nargs='+', type=int, help='List of integers')
     parser.add_argument('--mutation_method', nargs='+', default=['permute_whole_seq'], help='List of strings')
     parser.add_argument('--num_sites', type=int, default=20, help='number of loci to select')
-    parser.add_argument('--mode', default='flat', help='loci selection criteria') 
+    parser.add_argument('--mode', default='uniform', help='loci selection criteria') 
     args = parser.parse_args()
     
     # prepare dataframe with chromosomes and calculate GC content(using bioframe)
@@ -60,7 +60,7 @@ def main():
     #-------------------------------------------------------------------------------------------------
     # INSTRUCTIONS TO FILL IN PARAMETERS BELOW
     # Provide as many appropriate parameters as possible.
-    # To simulate multiple values of the same parameter, provide in a list format i.e [first value,second value,third value, etc]
+    # To generate multiple maps, provide individual parameters in list format, [first_value, second_value, third_value, etc]
     
     grid_search_params = {
         'shuffle_parameter': args.shuffle_parameter,
@@ -69,9 +69,9 @@ def main():
     }
     
     # sampling seq_df dataframe respecting GC content
-    seq_gc_df = filter_sites_by_score(general_seq_gc_df,score_key="GC",upper_threshold=99,lower_threshold=1,mode=args.mode,num_sites=args.num_sites) 
+    seq_gc_df = akita_utils.tsv_gen_utils.filter_sites_by_score(general_seq_gc_df,score_key="GC",upper_threshold=99,lower_threshold=1,mode=args.mode,num_sites=args.num_sites) 
     
-    # fixing locus specific x-tics together before grid_search
+    # fixing locus specific chacteristics together before grid_search
     seq_gc_df = seq_gc_df["chrom"].map(str) +","+ seq_gc_df["start"].map(str) + "," + seq_gc_df["end"].map(str)+"-"+seq_gc_df["GC"].map(str)
     locus_list = seq_gc_df.values.tolist()
     

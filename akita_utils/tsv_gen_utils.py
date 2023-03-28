@@ -144,8 +144,8 @@ def filter_sites_by_score(
 
     """
 
-    if mode not in ("head", "tail", "flat","random"):
-        raise ValueError("a mode has to be one from: head, tail, flat, random")
+    if mode not in ("head", "tail", "uniform","random"):
+        raise ValueError("a mode has to be one from: head, tail, uniform, random")
 
     upper_thresh = np.percentile(sites[score_key].values, upper_threshold)
     lower_thresh = np.percentile(sites[score_key].values, lower_threshold)
@@ -167,7 +167,7 @@ def filter_sites_by_score(
             filtered_sites = filtered_sites[:num_sites]
         elif mode == "tail":
             filtered_sites = filtered_sites[-num_sites:]
-        elif mode == "flat":
+        elif mode == "uniform":
             filtered_sites['binned'] = pd.cut(filtered_sites[score_key], bins=num_sites)
             filtered_sites = filtered_sites.groupby('binned').apply(lambda x: x.head(1))
         else:

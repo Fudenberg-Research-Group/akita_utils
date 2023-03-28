@@ -356,11 +356,6 @@ def write_snp(
             ref_map_ti = ref_map[..., ti]
             # TEMP: reduce resolution
             ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
-            # vmin = min(ref_map_ti.min(), ref_map_ti.min())
-            # vmax = max(ref_map_ti.max(), ref_map_ti.max())
-            # vmin = min(-plot_lim_min, vmin)
-            # vmax = max(plot_lim_min, vmax)
-            
             vmin,vmax = -0.1,0.1
             
             sns.heatmap(

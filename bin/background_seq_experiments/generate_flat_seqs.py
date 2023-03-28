@@ -218,7 +218,7 @@ def main():
     
     num_experiments = len(seq_coords_df)
     log.info("===================================")
-    log.info(f"Number of experiements = {num_experiments} \n It's not number of predictions. Num of predictions is upper bounded by {options.max_iters} x {batch_size} for each experiment")
+    log.info(f"Number of experiements = {num_experiments} \n It's not equal to number of predictions. The number of predictions is upper bounded by {options.max_iters} x {batch_size} for each experiment while looking for a seq with desired qualities")
     log.info("===================================")    
     #################################################################
     # create flat sequences
@@ -259,12 +259,7 @@ def main():
                 ref_map_ti = ref_map[..., ti]
                 # TEMP: reduce resolution
                 ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
-                
-                # vmin = min(ref_map_ti.min(), ref_map_ti.min())
-                # vmax = max(ref_map_ti.max(), ref_map_ti.max())
-                # vmin = min(-plot_lim_min, vmin)
-                # vmax = max(plot_lim_min, vmax)
-                
+
                 vmin,vmax = -0.2,0.2
                 sns.heatmap(
                     ref_map_ti,
