@@ -1,0 +1,6 @@
+shuffle_parameter	ctcf_selection_threshold	mutation_method	map_score_threshold	scores_pixelwise_thresh	locus_specification	GC_content
+8	8	permute_whole_seq	60	0.2	chr14,31537152,32847872	0.3898475646972656
+8	8	permute_whole_seq	60	0.2	chr1,85989376,87300096	0.41812896728515625
+8	8	permute_whole_seq	60	0.2	chr10,20682752,21993472	0.44637451171875
+8	8	permute_whole_seq	60	0.2	chr13,81993728,83304448	0.4746528625488281
+8	8	permute_whole_seq	60	0.2	chr16,15964160,17274880	0.5029197692871094
