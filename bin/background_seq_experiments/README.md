@@ -33,7 +33,7 @@
       
    - (8) generating flat seqs fasta file for further expts and sample pdfs
    
-           python generate_flat_seqs.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 /scratch1/kamulege/flat_seqs_x.tsv --stats SCD,MPS,CS -o data/flat_seqs_x
+           python generate_flat_seqs.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 /scratch1/kamulege/flat_seqs_x.tsv --stats SCD,MPS,CS -o data/flat_seqs_x -f /project/fudenber_735/genomes/mm10/mm10.fa
    
    - (9) generating flat seqs fasta file for further expts and sample pdfs using multiple processes
 
