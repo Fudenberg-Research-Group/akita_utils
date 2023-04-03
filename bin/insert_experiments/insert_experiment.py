@@ -22,7 +22,7 @@ insert_experiment.py
 derived from akita_insert.py (https://github.com/Fudenberg-Research-Group/akita_utils/blob/flank_experiment/bin/akita_insert.py)
 
 
-This scripts computes insertion scores for promoter insertions from a tsv file
+This scripts computes insertion scores for different insertions from a tsv file
 where one row represents a single experiment.
 The insertion scores are added as next keys in the h5 format file.
 

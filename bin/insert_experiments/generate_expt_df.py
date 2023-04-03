@@ -28,7 +28,7 @@ Background with;
     CTCF-Ehancer-Promoter
     
     
-By changing offsets of CTCFs, on can experiment with;
+By changing offsets of CTCFs, on can experiment with creating;
 
     Boundary(close CTCFs): ['ctcf_offset_1' = 0,'ctcf_offset_2' = 120]
     TADs:  ['ctcf_offset_1' = -490000,'ctcf_offset_2' = 490000]

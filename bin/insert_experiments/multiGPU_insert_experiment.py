@@ -19,7 +19,8 @@
 multiGPU_insert_experiment.py
 Derived from akita_motif_scd_multi.py (https://github.com/Fudenberg-Research-Group/akita_utils/blob/main/bin/disrupt_genomic_boundary_ctcfs/akita_motif_scd_multi.py)
 
-Compute scores for insertions in a TSV file, using multiple processes.
+This scripts computes insertion scores for different insertions from a tsv file
+where one row represents a single experiment, using multiple processes.
 
 Relies on slurm_gf.py to auto-generate slurm jobs.
 

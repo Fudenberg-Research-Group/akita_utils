@@ -1,3 +1,13 @@
+'''
+This scripts explores /project/fudenber_735/collaborations/karissa_2022 which contains data about different markers 
+like NIPBL and H3K27 Acetylation and creates three dataframes,
+
+    - Transcription start sites
+    - Prmoters with coreesponding markers
+    - Enhancers with corresponding markers
+    
+These dataframes are used in different experimental settings later on in the experiments
+'''
 import pandas as pd
 import numpy as np
 import bbi
