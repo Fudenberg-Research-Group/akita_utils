@@ -8,14 +8,172 @@ like NIPBL and H3K27 Acetylation and creates three dataframes,
     
 These dataframes are used in different experimental settings later on in the experiments
 '''
+
 import pandas as pd
 import numpy as np
 import bbi
 from gtfparse import read_gtf
+import argparse
 import bioframe
 from akita_utils.dna_utils import scan_motif
 from akita_utils.seq_gens import generate_spans_start_positions
 
+
+######################################################################
+# main
+######################################################################
+def main():
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-u", dest="up_stream_bps", help="number of basepairs upstream to consider as promoter", default=20000, type=int)
+
+    args = parser.parse_args()
+    
+    
+    chip_dir = (
+        "/project/fudenber_735/collaborations/karissa_2022/"
+        + "2022_09_features_for_RNAseq/ChIP-seq_in_WT-parental-E14/"
+    )
+    bed_dict = {
+        "H3K27Ac": chip_dir + "H3K27ac_EA92-97_peaks.xls.bed",
+        "CTCF": chip_dir + "CTCF_peaks_called_on_4reps_foundInatLeast2reps_noBlacklist.bed",
+        "Nipbl": chip_dir + "Nipbl_112.175.197.114.177.196_peaks.xls.bed",
+        "Rad21": chip_dir
+        + "RAD21_peaks_called_on_6reps_foundInatLeast3reps_noBlacklist.bed",
+    }
+
+    # Load Chip-Seq files
+    chip_folder = "/project/fudenber_735/collaborations/karissa_2022/2022_09_features_for_RNAseq/ChIP-seq_in_WT-parental-E14/"
+
+    ctcf_new = "CTCF_E14_RSC13new-22-37-60_average.bw"
+    rad21 = "RAD21_E14_RSC12new-21-36-59-74_average.bw"
+    nipbl = "NIPBL_E14_EA112-EA175_average.bw"
+    ring1b = "RING1B_E14_RSC24-39-62_average.bw"
+    H3K27Ac = "H3K27Ac_mESCs_EA92-EA94_average.bw"
+
+    dataset_folder = "/project/fudenber_735/collaborations/karissa_2022/2022_09_features_for_RNAseq/Published_datasets/"
+    chen_s1 = "Enhancers_Chen2012_S1_remapped_mm10.bed"
+    whythe_super = "Super-enhancers_mESCs_(OSN-MED1)_Wythe-Cell-2023_mm10-lifetover.bed"
+
+    enhancer_dict = {
+        "enh_chen_s1": dataset_folder + chen_s1,
+        "enh_wythe_super": dataset_folder + whythe_super,
+    }
+
+    bed_dict = {**bed_dict, **enhancer_dict}  # dict with all required data
+
+
+    proj = (
+        "/project/fudenber_735/collaborations/karissa_2022/"
+        + "20220812_EA18-1_RNAseq-Analysis_forGeoff/"
+    )
+
+    # Importing day 1 depletion in ESCs DEGS
+    day1_sigRes = (
+        "EA18.1_ESC_1d-depletion_DESeq2/20220817_EA18-1_resSig_ESC_1d-depletion.csv"
+    )
+
+    # Sample count data for the non-significant results
+    normalized_counts = (
+        "EA18.1_ESC_1d-depletion_DESeq2/20220817_EA18-1_ESC-1d_sf-normalized.csv"
+    )
+    vst_normalized_counts = "EA18.1_ESC_1d-depletion_DESeq2/20220817_EA18-1_ESC-1d_sf-normalized_vst-transformed.csv"
+    feature_counts = "20220816_featureCounts.csv"
+
+    WT_samples = ["KHRNA1", "KHRNA7", "KHRNA13", "KHRNA22", "KHRNA23", "KHRNA50"]
+    day1_res_df = pd.read_csv(proj + day1_sigRes)
+
+
+    # import table of raw feature counts and calculate average
+    feat_counts_df = pd.read_csv(proj + feature_counts).rename(
+        columns={"Unnamed: 0": "Geneid"}
+    )
+    feat_counts_df["avg"] = feat_counts_df[WT_samples].mean(axis="columns")
+    # print('raw feature counts shape: ', str(feat_counts_df.shape))
+
+    # import table of normalized feature counts and calculate average
+    vst_counts_df = pd.read_csv(proj + vst_normalized_counts).rename(
+        columns={"Unnamed: 0": "Geneid"}
+    )
+    vst_counts_df["avg"] = vst_counts_df[WT_samples].mean(axis="columns")
+    # print('vst normalized feature counts shape: ', str(vst_counts_df.shape))
+
+    feat_counts_df = feat_counts_df.merge(
+        vst_counts_df, on="Geneid", how="left", suffixes=("_counts", "_vst_counts")
+    )
+    feat_counts_df["avg_vst_counts"].fillna(feat_counts_df["avg_counts"], inplace=True)
+
+    # print(feat_counts_df.shape)
+    # print(feat_counts_df['avg_vst_counts'].isna().sum())
+
+    # add average normalized counts value to results df
+    day1_res_df = day1_res_df.merge(
+        feat_counts_df[["Geneid", "avg_vst_counts", "avg_counts"]], on="Geneid", how="outer"
+    )
+    df = day1_res_df.copy()
+
+    tss_df = read_gtf(
+        "/project/fudenber_735/collaborations/karissa_2022/"
+        + "old/RNAseq/STAR_Gencode_alignment/tss_annotions_gencode.vM23.primary_assembly.gtf"
+    )
+    tss_intervals = get_tss_gene_intervals(tss_df)
+    tss_intervals["tss"] = tss_intervals["start"].copy()
+
+    ### create df with intervals & expression data
+    tss_df = tss_intervals.merge(
+        df.copy(), how="left", left_on="gene_id", right_on="Geneid"
+    )
+    tss_df = label_DE_status(tss_df)
+    tss_df = tss_df.query("avg_counts> 5").copy()
+    tss_df.to_csv(f"./data/tss_dataframe.tsv", sep="\t", index=False)
+
+
+    enhancer_df = bioframe.read_table(enhancer_dict["enh_chen_s1"], schema="bed3", header=1)
+    enhancer_df = bioframe_clean_autosomes(enhancer_df)
+    nbins = 1
+
+    enhancer_NIPBL_df = pd.DataFrame(
+        generate_signal_matrix(enhancer_df, chip_folder + nipbl, nbins=nbins),
+        columns=[f"enhancer_NIPBL_score_{i}" for i in range(nbins)],
+    )
+    enhancer_H3K27Ac_df = pd.DataFrame(
+        generate_signal_matrix(enhancer_df, chip_folder + H3K27Ac, nbins=nbins),
+        columns=[f"enhancer_H3K27Ac_score_{i}" for i in range(nbins)],
+    )
+    enhancer_merged_df = pd.concat(
+        [
+            enhancer_df.reset_index(drop=True),
+            enhancer_NIPBL_df.reset_index(drop=True),
+            enhancer_H3K27Ac_df.reset_index(drop=True),
+        ],
+        axis=1,
+    )
+    enhancer_merged_df.to_csv("./data/enhancer_score_sample.csv")
+
+
+    promoter_df = generate_promoter_df(tss_df, up_stream_bps=args.up_stream_bps)
+    promoter_NIPBL_df = pd.DataFrame(
+        generate_signal_matrix(promoter_df, chip_folder + nipbl, nbins=nbins),
+        columns=[f"promoter_NIPBL_score_{i}" for i in range(nbins)],
+    )
+    promoter_H3K27Ac_df = pd.DataFrame(
+        generate_signal_matrix(promoter_df, chip_folder + H3K27Ac, nbins=nbins),
+        columns=[f"promoter_H3K27Ac_score_{i}" for i in range(nbins)],
+    )
+    promoter_merged_df = pd.concat(
+        [
+            promoter_df.reset_index(drop=True),
+            promoter_NIPBL_df.reset_index(drop=True),
+            promoter_H3K27Ac_df.reset_index(drop=True),
+        ],
+        axis=1,
+    )
+    promoter_merged_df.to_csv("./data/promoter_score_sample.csv")
+
+    
+    
+# -------------------------------------------------------------------------------------------------
+# used functions below    
 
 def generate_signal_matrix(
     interval_df,
@@ -144,174 +302,8 @@ def generate_promoter_df(feature_dataframe, up_stream_bps=10000):
             feature_dataframe["end"].at[row.Index] = row.end + up_stream_bps
     return feature_dataframe
 
-
-# -------------------------------not used yet --------------------------------
-chip_dir = (
-    "/project/fudenber_735/collaborations/karissa_2022/"
-    + "2022_09_features_for_RNAseq/ChIP-seq_in_WT-parental-E14/"
-)
-bed_dict = {
-    "H3K27Ac": chip_dir + "H3K27ac_EA92-97_peaks.xls.bed",
-    "CTCF": chip_dir + "CTCF_peaks_called_on_4reps_foundInatLeast2reps_noBlacklist.bed",
-    "Nipbl": chip_dir + "Nipbl_112.175.197.114.177.196_peaks.xls.bed",
-    "Rad21": chip_dir
-    + "RAD21_peaks_called_on_6reps_foundInatLeast3reps_noBlacklist.bed",
-}
-
-# Load Chip-Seq files
-chip_folder = "/project/fudenber_735/collaborations/karissa_2022/2022_09_features_for_RNAseq/ChIP-seq_in_WT-parental-E14/"
-
-ctcf_new = "CTCF_E14_RSC13new-22-37-60_average.bw"
-rad21 = "RAD21_E14_RSC12new-21-36-59-74_average.bw"
-nipbl = "NIPBL_E14_EA112-EA175_average.bw"
-ring1b = "RING1B_E14_RSC24-39-62_average.bw"
-promoter = "H3K27Ac_mESCs_EA92-EA94_average.bw"
-
-# -------------------------------not used yet --------------------------------
-dataset_folder = "/project/fudenber_735/collaborations/karissa_2022/2022_09_features_for_RNAseq/Published_datasets/"
-chen_s1 = "Enhancers_Chen2012_S1_remapped_mm10.bed"
-whythe_super = "Super-enhancers_mESCs_(OSN-MED1)_Wythe-Cell-2023_mm10-lifetover.bed"
-
-enhancer_dict = {
-    "enh_chen_s1": dataset_folder + chen_s1,
-    "enh_wythe_super": dataset_folder + whythe_super,
-}
-
-bed_dict = {**bed_dict, **enhancer_dict}  # dict with all required data
-
-
-proj = (
-    "/project/fudenber_735/collaborations/karissa_2022/"
-    + "20220812_EA18-1_RNAseq-Analysis_forGeoff/"
-)
-
-# Importing day 1 depletion in ESCs DEGS
-day1_sigRes = (
-    "EA18.1_ESC_1d-depletion_DESeq2/20220817_EA18-1_resSig_ESC_1d-depletion.csv"
-)
-
-# Sample count data for the non-significant results
-normalized_counts = (
-    "EA18.1_ESC_1d-depletion_DESeq2/20220817_EA18-1_ESC-1d_sf-normalized.csv"
-)
-vst_normalized_counts = "EA18.1_ESC_1d-depletion_DESeq2/20220817_EA18-1_ESC-1d_sf-normalized_vst-transformed.csv"
-feature_counts = "20220816_featureCounts.csv"
-
-WT_samples = ["KHRNA1", "KHRNA7", "KHRNA13", "KHRNA22", "KHRNA23", "KHRNA50"]
-day1_res_df = pd.read_csv(proj + day1_sigRes)
-
-
-# import table of raw feature counts and calculate average
-feat_counts_df = pd.read_csv(proj + feature_counts).rename(
-    columns={"Unnamed: 0": "Geneid"}
-)
-feat_counts_df["avg"] = feat_counts_df[WT_samples].mean(axis="columns")
-# print('raw feature counts shape: ', str(feat_counts_df.shape))
-
-# import table of normalized feature counts and calculate average
-vst_counts_df = pd.read_csv(proj + vst_normalized_counts).rename(
-    columns={"Unnamed: 0": "Geneid"}
-)
-vst_counts_df["avg"] = vst_counts_df[WT_samples].mean(axis="columns")
-# print('vst normalized feature counts shape: ', str(vst_counts_df.shape))
-
-feat_counts_df = feat_counts_df.merge(
-    vst_counts_df, on="Geneid", how="left", suffixes=("_counts", "_vst_counts")
-)
-feat_counts_df["avg_vst_counts"].fillna(feat_counts_df["avg_counts"], inplace=True)
-
-# print(feat_counts_df.shape)
-# print(feat_counts_df['avg_vst_counts'].isna().sum())
-
-# add average normalized counts value to results df
-day1_res_df = day1_res_df.merge(
-    feat_counts_df[["Geneid", "avg_vst_counts", "avg_counts"]], on="Geneid", how="outer"
-)
-df = day1_res_df.copy()
-
-tss_df = read_gtf(
-    "/project/fudenber_735/collaborations/karissa_2022/"
-    + "old/RNAseq/STAR_Gencode_alignment/tss_annotions_gencode.vM23.primary_assembly.gtf"
-)
-tss_intervals = get_tss_gene_intervals(tss_df)
-tss_intervals["tss"] = tss_intervals["start"].copy()
-
-### create df with intervals & expression data
-tss_df = tss_intervals.merge(
-    df.copy(), how="left", left_on="gene_id", right_on="Geneid"
-)
-tss_df = label_DE_status(tss_df)
-tss_df = tss_df.query("avg_counts> 5").copy()
-tss_df.to_csv(f"./data/tss_dataframe.tsv", sep="\t", index=False)
-
-
-# experiental stuff down ****************************************************
-enhancer_df = bioframe.read_table(enhancer_dict["enh_chen_s1"], schema="bed3", header=1)
-enhancer_df = bioframe_clean_autosomes(enhancer_df)
-nbins = 1
-
-enhancer_NIPBL_df = pd.DataFrame(
-    generate_signal_matrix(enhancer_df, chip_folder + nipbl, nbins=nbins),
-    columns=[f"enhancer_NIPBL_score_{i}" for i in range(nbins)],
-)
-enhancer_H3K27Ac_df = pd.DataFrame(
-    generate_signal_matrix(enhancer_df, chip_folder + promoter, nbins=nbins),
-    columns=[f"enhancer_H3K27Ac_score_{i}" for i in range(nbins)],
-)
-enhancer_merged_df = pd.concat(
-    [
-        enhancer_df.reset_index(drop=True),
-        enhancer_NIPBL_df.reset_index(drop=True),
-        enhancer_H3K27Ac_df.reset_index(drop=True),
-    ],
-    axis=1,
-)  #
-enhancer_merged_df.to_csv("./data/enhancer_score_sample.csv")
-
-
-promoter_df = generate_promoter_df(tss_df, up_stream_bps=20000)
-promoter_NIPBL_df = pd.DataFrame(
-    generate_signal_matrix(promoter_df, chip_folder + nipbl, nbins=nbins),
-    columns=[f"promoter_NIPBL_score_{i}" for i in range(nbins)],
-)
-promoter_H3K27Ac_df = pd.DataFrame(
-    generate_signal_matrix(promoter_df, chip_folder + promoter, nbins=nbins),
-    columns=[f"promoter_H3K27Ac_score_{i}" for i in range(nbins)],
-)
-promoter_merged_df = pd.concat(
-    [
-        promoter_df.reset_index(drop=True),
-        promoter_NIPBL_df.reset_index(drop=True),
-        promoter_H3K27Ac_df.reset_index(drop=True),
-    ],
-    axis=1,
-)
-promoter_merged_df.to_csv("./data/promoter_score_sample.csv")
-
-
-# print(merged_df)
-# merged_df['NIPBL_signal'] = 'non_significant'
-# merged_df.loc[merged_df["NIPBL_score_0"] >= 4, 'NIPBL_signal'] = 'significant'
-# merged_df = merged_df.loc[merged_df['NIPBL_signal'] == 'significant' ].reset_index(drop=True)
-
-# merged_df['H3K27Ac_signal'] = 'non_significant'
-# merged_df.loc[merged_df["H3K27Ac_score_0"] >= 20, 'H3K27Ac_signal'] = 'significant'
-# merged_df = merged_df.loc[merged_df['H3K27Ac_signal'] == 'significant' ].reset_index(drop=True)
-
-
-# experiental stuff down ****************************************************
-# nipbl_df = bioframe.read_table(bed_dict['Nipbl'], schema='bed3', header=1)
-# nipbl_df = bioframe_clean_autosomes(nipbl_df)
-# nipbl_df.to_csv(f"./data/NIPBL_data.csv")
-
-# nipl_enhancer_df = bioframe.overlap(enhancer_df, nipbl_df, how='inner', suffixes=('_1','_2'))
-# nipl_enhancer_df.to_csv(f"./data/NIPBL_enhancer.csv")
-
-
-# # experiental stuff down ****************************************************
-# H3K27Ac_df = bioframe.read_table(bed_dict['H3K27Ac'], schema='bed3', header=1)
-# H3K27Ac_df = bioframe_clean_autosomes(H3K27Ac_df)
-# H3K27Ac_df.to_csv(f"./data/H3K27Ac_data.csv")
-
-# H3K27Ac_enhancer_df = bioframe.overlap(enhancer_df, H3K27Ac_df, how='inner', suffixes=('_1','_2'))
-# H3K27Ac_enhancer_df.to_csv(f"./data/H3K27Ac_enhancer.csv")
+######################################################################
+# main
+######################################################################    
+if __name__ == "__main__":
+    main()
