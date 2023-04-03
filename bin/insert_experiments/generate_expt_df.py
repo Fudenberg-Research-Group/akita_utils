@@ -1,4 +1,3 @@
-# import general libraries
 """
 This script takes numerous parameters i.e
 
@@ -35,6 +34,7 @@ By changing offsets of CTCFs, on can experiment with;
     TADs:  ['ctcf_offset_1' = -490000,'ctcf_offset_2' = 490000]
 
 """
+# import general libraries
 import itertools
 import os
 import pysam
@@ -439,7 +439,6 @@ def generate_promoter_list_v2(
 
 
 def parameter_dataframe_reorganisation(parameters_combo_dataframe):
-    # log.info(f"columns {parameters_combo_dataframe.columns}  \n ********* {parameters_combo_dataframe['ctcf_locus_specification_1']} \n ******** {parameters_combo_dataframe['ctcf_locus_specification_1'].at[0]}")
 
     # adapting dataframe to desired look
     if parameters_combo_dataframe["ctcf_locus_specification_1"].at[0]:
