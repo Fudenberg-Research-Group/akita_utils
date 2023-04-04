@@ -58,7 +58,35 @@ def _multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_
             output_seq[offset : offset + insert_bp] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[i])
     return output_seq
 
+def _multi_insert_offsets_casette(seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string):
+    """insert multiple inserts in the seq at once
+
+    Args:
+        seq_1hot : seq to be modified
+        seq_1hot_insertions (list): inserts to be inserted in the string
+        spacer_bp (int): seperating basepairs between the inserts
+        orientation_string (string): string with orientations of the inserts
+
+    Returns:
+        modified seq with all the insertions
+    """
+    
+    assert len(seq_1hot_insertions)==len(orientation_string)==len(offsets_bp), "insertions, orientations and/or offsets dont match, please check"
+    seq_length = seq_1hot.shape[0]
+    output_seq = seq_1hot.copy()
+    insertion_start_bp = seq_length // 2
+    for insertion_index, insertion in enumerate(seq_1hot_insertions):
+        insert_bp = len(seq_1hot_insertions[insertion_index])
+        insertion_orientation_arrow = orientation_string[insertion_index]
+        insertion_offset = offsets_bp[insertion_index]
         
+        if insertion_orientation_arrow == ">":
+            output_seq[insertion_start_bp+insertion_offset : insertion_start_bp+insertion_offset+insert_bp] = seq_1hot_insertions[insertion_index]
+        else:
+            output_seq[insertion_start_bp+insertion_offset : insertion_start_bp+insertion_offset+insert_bp] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[insertion_index])
+    return output_seq
+
+
 def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
     """sequence generator for making insertions from tsvs
     construct an iterator that yields a one-hot encoded sequence
@@ -88,29 +116,52 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
         yield seq_1hot
         
 
-def modular_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
+
+        
+def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):# delimiter specification
     """ sequence generator for making modular insertions from tsvs
-        construct an iterator that yields a one-hot encoded sequence
+        yields a one-hot encoded sequence
         that can be used as input to akita via PredStreamGen
+
+    Args:
+        seq_coords_df (dataframe): important colums spacer_bp,locus_orientation,background_seqs,insert_strand,insert_flank_bp,insert_loci 
+        background_seqs (fasta): file containing background sequences
+        genome_open (opened_fasta): fasta with chrom data
+
+    Yields:
+        one-hot encoded sequence: sequence containing specified insertions
     """
     
     for s in seq_coords_df.itertuples():
         seq_1hot_insertions = []
-        spacer_bp = s.spacer_bp
-        orientation_string = s.locus_orientation
+        offsets_bp = []
+        orientation_string = [] # s.locus_orientation
         seq_1hot = background_seqs[s.background_seqs].copy()        
 
-        for module_number in range(len(s.insert_strand.split("$"))):
-            locus = s.insert_loci.split("$")[module_number]
-            flank_bp = int(s.insert_flank_bp.split("$")[module_number])
-            chrom,start,end = locus.split(",")
-            seq_1hot_insertion = akita_utils.dna_utils.dna_1hot(genome_open.fetch(chrom, int(start) - flank_bp, int(end) + flank_bp).upper())
-            if s.insert_strand.split("$")[module_number] == "-":
-                seq_1hot_insertion = akita_utils.dna_utils.hot1_rc(seq_1hot_insertion)
-            seq_1hot_insertions.append(seq_1hot_insertion)
+        for module_number in range(len(s.insert_loci.split("$"))):
+            locus_specification = s.insert_loci.split("$")[module_number]
+            if locus_specification != "None":
+                chrom,start,end,strand = locus_specification.split(",")
+                insert_offset_bp = int(s.insert_offsets.split("$")[module_number])
+                insert_orientation = s.insert_orientations.split("$")[module_number]
+                 
+                flank_bp = int(s.insert_flank_bp.split("$")[module_number])
+                seq_1hot_insertion = akita_utils.dna_utils.dna_1hot(genome_open.fetch(chrom, int(start) - flank_bp, int(end) + flank_bp).upper())
+                if strand == "-":
+                    seq_1hot_insertion = akita_utils.dna_utils.hot1_rc(seq_1hot_insertion)
+                
+#                 if s.gene_locus_specification is not np.nan:
+#                     if s.num_of_motifs > 5:
+#                         motif = akita_utils.format_io.read_jaspar_to_numpy()
+#                         motif_window = len(motif)-3 #for compartibility ie (19-3=16 which is a multiple of 2,4,8 the shuffle parameters)
+#                         spans = generate_spans_start_positions(seq_1hot_insertion, motif, 8)
+#                         seq_1hot_insertion = mask_spans(seq_1hot_insertion, spans, motif_window)
+                
+                seq_1hot_insertions.append(seq_1hot_insertion)
+                offsets_bp.append(insert_offset_bp)
+                orientation_string.append(insert_orientation)
 
-        seq_1hot = _multi_insert_casette(seq_1hot, seq_1hot_insertions, spacer_bp, orientation_string)
-
+        seq_1hot = _multi_insert_offsets_casette(seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string)
         yield seq_1hot
         
         

@@ -575,3 +575,410 @@ def add_background(seq_coords_df, background_indices_list):
     seq_coords_df["background_index"] = background_ls
 
     return seq_coords_df
+
+# -------------------------------------------------------------------------------------------------
+# functions below under review
+
+def generate_ctcf_positons(
+    h5_dirs,
+    rmsk_file,
+    jaspar_file,
+    score_key,
+    mode,
+    num_sites,
+    weak_thresh_pct=1,
+    strong_thresh_pct=99,
+):
+    sites = akita_utils.tsv_gen_utils.filter_boundary_ctcfs_from_h5(
+        h5_dirs=h5_dirs,
+        score_key=score_key,
+        threshold_all_ctcf=5,
+    )
+
+    sites = akita_utils.tsv_gen_utils.filter_by_rmsk(
+        sites, rmsk_file=rmsk_file, verbose=True
+    )
+
+    sites = akita_utils.tsv_gen_utils.filter_by_ctcf_v2(
+        sites, ctcf_file=jaspar_file, verbose=True
+    )
+
+    site_df = akita_utils.tsv_gen_utils.filter_sites_by_score(
+        sites,
+        score_key=score_key,
+        lower_threshold=weak_thresh_pct,
+        upper_threshold=strong_thresh_pct,
+        mode=mode,
+        num_sites=num_sites,
+    )
+
+    seq_coords_df = (
+        site_df[["chrom", "start_2", "end_2", "strand_2", score_key]]
+        .copy()
+        .rename(
+            columns={
+                "start_2": "start",
+                "end_2": "end",
+                "strand_2": "strand",
+                score_key: "genomic_" + score_key,
+            }
+        )
+    )
+
+    seq_coords_df.reset_index(drop=True, inplace=True)
+    seq_coords_df.reset_index(inplace=True)
+
+    seq_coords_df = (
+        seq_coords_df["chrom"].map(str)
+        + ","
+        + seq_coords_df["start"].map(str)
+        + ","
+        + seq_coords_df["end"].map(str)
+        + ","
+        + seq_coords_df["strand"].map(str)
+        + "#"
+        + seq_coords_df["genomic_" + score_key].map(str)
+    )
+
+    return seq_coords_df.values.tolist()
+
+
+# def generate_promoter_list(
+#     feature_dataframe, genome_open, up_stream_bps=10000, motif_threshold=0
+# ):
+#     # ---------------(this method is going to be discontinued)-----------------
+#     for row in feature_dataframe.itertuples():
+#         if row.strand == "+":
+#             feature_dataframe["start"].at[row.Index] = row.start - up_stream_bps
+#         else:
+#             feature_dataframe["end"].at[row.Index] = row.end + up_stream_bps
+#     # -----------different method of scanning for motifs-------------------
+#     # feature_dataframe["promoter_num_of_motifs"] = None # initialisation
+#     # for row in feature_dataframe.itertuples():
+#     #     seq_1hot = akita_utils.dna_utils.dna_1hot(genome_open.fetch(row.chrom,row.start,row.end))
+#     #     motif = akita_utils.format_io.read_jaspar_to_numpy()
+#     #     num_of_motifs = len(akita_utils.seq_gens.generate_spans_start_positions(seq_1hot, motif, 8))
+#     #     feature_dataframe["promoter_num_of_motifs"].at[row.Index] = num_of_motifs
+
+#     feature_dataframe = filter_by_ctcf(feature_dataframe)
+#     feature_dataframe = feature_dataframe.rename(
+#         columns={"count": "promoter_num_of_motifs"}
+#     )
+#     feature_dataframe = feature_dataframe[
+#         True == (feature_dataframe["promoter_num_of_motifs"] <= motif_threshold)
+#     ]
+#     feature_dataframe.reset_index(drop=True, inplace=True)
+#     feature_dataframe["locus_specification"] = (
+#         feature_dataframe["chrom"].map(str)
+#         + ","
+#         + feature_dataframe["start"].map(str)
+#         + ","
+#         + feature_dataframe["end"].map(str)
+#         + ","
+#         + feature_dataframe["strand"].map(str)
+#         + "#"
+#         + feature_dataframe["Geneid"].map(str)
+#         + "#"
+#         + feature_dataframe["promoter_num_of_motifs"].map(str)
+#         + "#"
+#         + feature_dataframe["promoter_NIPBL_score_0"].map(str)
+#         + "#"
+#         + feature_dataframe["promoter_H3K27Ac_score_0"].map(str)
+#     )
+#     return feature_dataframe["locus_specification"].values.tolist()
+
+
+def generate_enhancer_list(
+    feature_dataframe, genome_open, motif_threshold=0, specification_list=None
+):
+    feature_dataframe["strand"] = "+"
+    feature_dataframe = feature_dataframe.assign(
+        enhancer_symbol=[
+            f"enh_{i}" for i, row in enumerate(feature_dataframe.itertuples())
+        ]
+    )
+    # -----------different method of scanning for motifs-------------------
+    # feature_dataframe["enhancer_num_of_motifs"] = None # initialisation
+    # for row in feature_dataframe.itertuples():
+    #     seq_1hot = akita_utils.dna_utils.dna_1hot(genome_open.fetch(row.chrom,row.start,row.end))
+    #     motif = akita_utils.format_io.read_jaspar_to_numpy()
+    #     num_of_motifs = len(akita_utils.seq_gens.generate_spans_start_positions(seq_1hot, motif, 8))
+    #     feature_dataframe["enhancer_num_of_motifs"].at[row.Index] = num_of_motifs
+
+    # -----------different method of scanning for motifs-------------------
+    feature_dataframe = filter_by_ctcf_v2(feature_dataframe)
+    feature_dataframe = feature_dataframe.rename(
+        columns={"count": "enhancer_num_of_motifs"}
+    )
+
+    # -----------same futher analysis (irrespective of method used)-------------------
+    feature_dataframe = feature_dataframe[
+        True == (feature_dataframe["enhancer_num_of_motifs"] <= motif_threshold)
+    ]
+    feature_dataframe.reset_index(drop=True, inplace=True)
+    feature_dataframe["locus_specification"] = (
+        feature_dataframe["chrom"].map(str)
+        + ","
+        + feature_dataframe["start"].map(str)
+        + ","
+        + feature_dataframe["end"].map(str)
+        + ","
+        + feature_dataframe["strand"].map(str)
+        + "#"
+        + feature_dataframe["enhancer_symbol"].map(str)
+        + "#"
+        + feature_dataframe["enhancer_num_of_motifs"].map(str)
+        + "#"
+        + feature_dataframe["enhancer_NIPBL_score_0"].map(str)
+        + "#"
+        + feature_dataframe["enhancer_H3K27Ac_score_0"].map(str)
+    )
+
+    if specification_list:
+        enhancer_locus_specification_list = []
+        for ind in specification_list:
+            enhancer_locus_specification_list += [
+                feature_dataframe["locus_specification"].values.tolist()[ind]
+            ]
+    else:
+        enhancer_locus_specification_list = feature_dataframe[
+            "locus_specification"
+        ].values.tolist()
+
+    return enhancer_locus_specification_list
+
+
+def generate_promoter_list(
+    feature_dataframe, genome_open, motif_threshold=1, specification_list=None
+):
+    # -----------different method of scanning for motifs-------------------
+    # feature_dataframe["promoter_num_of_motifs"] = None # initialisation
+    # for row in feature_dataframe.itertuples():
+    #     seq_1hot = akita_utils.dna_utils.dna_1hot(genome_open.fetch(row.chrom,row.start,row.end))
+    #     motif = akita_utils.format_io.read_jaspar_to_numpy()
+    #     num_of_motifs = len(akita_utils.seq_gens.generate_spans_start_positions(seq_1hot, motif, 8))
+    #     feature_dataframe["promoter_num_of_motifs"].at[row.Index] = num_of_motifs
+
+    # -----------different method of scanning for motifs-------------------
+    feature_dataframe = filter_by_ctcf_v2(feature_dataframe)
+    feature_dataframe = feature_dataframe.rename(
+        columns={"count": "promoter_num_of_motifs"}
+    )
+
+    # -----------same futher analysis (irrespective of method used)-------------------
+    feature_dataframe = feature_dataframe[
+        True == (feature_dataframe["promoter_num_of_motifs"] <= motif_threshold)
+    ]
+    feature_dataframe.reset_index(drop=True, inplace=True)
+    feature_dataframe["locus_specification"] = (
+        feature_dataframe["chrom"].map(str)
+        + ","
+        + feature_dataframe["start"].map(str)
+        + ","
+        + feature_dataframe["end"].map(str)
+        + ","
+        + feature_dataframe["strand"].map(str)
+        + "#"
+        + feature_dataframe["Geneid"].map(str)
+        + "#"
+        + feature_dataframe["promoter_num_of_motifs"].map(str)
+        + "#"
+        + feature_dataframe["promoter_NIPBL_score_0"].map(str)
+        + "#"
+        + feature_dataframe["promoter_H3K27Ac_score_0"].map(str)
+    )
+
+    if specification_list:
+        enhancer_locus_specification_list = []
+        for ind in specification_list:
+            enhancer_locus_specification_list += [
+                feature_dataframe["locus_specification"].values.tolist()[ind]
+            ]
+    else:
+        enhancer_locus_specification_list = feature_dataframe[
+            "locus_specification"
+        ].values.tolist()
+
+    return enhancer_locus_specification_list
+
+
+def parameter_dataframe_reorganisation(parameters_combo_dataframe):
+
+    # adapting dataframe to desired look
+    if parameters_combo_dataframe["ctcf_locus_specification_1"].at[0]:
+        parameters_combo_dataframe["ctcf_genomic_score_1"] = parameters_combo_dataframe[
+            "ctcf_locus_specification_1"
+        ].str.split("#", expand=True)[1]
+        parameters_combo_dataframe[
+            "ctcf_locus_specification_1"
+        ] = parameters_combo_dataframe["ctcf_locus_specification_1"].str.split(
+            "#", expand=True
+        )[
+            0
+        ]
+    if parameters_combo_dataframe["ctcf_locus_specification_2"].at[0]:
+        parameters_combo_dataframe["ctcf_genomic_score_2"] = parameters_combo_dataframe[
+            "ctcf_locus_specification_2"
+        ].str.split("#", expand=True)[1]
+        parameters_combo_dataframe[
+            "ctcf_locus_specification_2"
+        ] = parameters_combo_dataframe["ctcf_locus_specification_2"].str.split(
+            "#", expand=True
+        )[
+            0
+        ]
+    if parameters_combo_dataframe["gene_locus_specification"].at[0]:
+        parameters_combo_dataframe["gene_symbol"] = parameters_combo_dataframe[
+            "gene_locus_specification"
+        ].str.split("#", expand=True)[1]
+        parameters_combo_dataframe[
+            "promoter_num_of_motifs"
+        ] = parameters_combo_dataframe["gene_locus_specification"].str.split(
+            "#", expand=True
+        )[
+            2
+        ]
+        parameters_combo_dataframe[
+            "promoter_NIPBL_signal"
+        ] = parameters_combo_dataframe["gene_locus_specification"].str.split(
+            "#", expand=True
+        )[
+            3
+        ]
+        parameters_combo_dataframe[
+            "promoter_H3K27Ac_signal"
+        ] = parameters_combo_dataframe["gene_locus_specification"].str.split(
+            "#", expand=True
+        )[
+            4
+        ]
+        parameters_combo_dataframe[
+            "gene_locus_specification"
+        ] = parameters_combo_dataframe["gene_locus_specification"].str.split(
+            "#", expand=True
+        )[
+            0
+        ]
+    if parameters_combo_dataframe["enhancer_locus_specification"].at[0]:
+        parameters_combo_dataframe["enhancer_symbol"] = parameters_combo_dataframe[
+            "enhancer_locus_specification"
+        ].str.split("#", expand=True)[1]
+        parameters_combo_dataframe[
+            "enhancer_num_of_motifs"
+        ] = parameters_combo_dataframe["enhancer_locus_specification"].str.split(
+            "#", expand=True
+        )[
+            2
+        ]
+        parameters_combo_dataframe[
+            "enhancer_NIPBL_signal"
+        ] = parameters_combo_dataframe["enhancer_locus_specification"].str.split(
+            "#", expand=True
+        )[
+            3
+        ]
+        parameters_combo_dataframe[
+            "enhancer_H3K27Ac_signal"
+        ] = parameters_combo_dataframe["enhancer_locus_specification"].str.split(
+            "#", expand=True
+        )[
+            4
+        ]
+        parameters_combo_dataframe[
+            "enhancer_locus_specification"
+        ] = parameters_combo_dataframe["enhancer_locus_specification"].str.split(
+            "#", expand=True
+        )[
+            0
+        ]
+
+    parameters_combo_dataframe["insert_loci"] = (
+        parameters_combo_dataframe["ctcf_locus_specification_1"].map(str)
+        + "$"
+        + parameters_combo_dataframe["ctcf_locus_specification_2"].map(str)
+        + "$"
+        + parameters_combo_dataframe["gene_locus_specification"].map(str)
+        + "$"
+        + parameters_combo_dataframe["enhancer_locus_specification"].map(str)
+    )
+
+    parameters_combo_dataframe["insert_flank_bp"] = (
+        parameters_combo_dataframe["ctcf_flank_bp_1"].map(str)
+        + "$"
+        + parameters_combo_dataframe["ctcf_flank_bp_2"].map(str)
+        + "$"
+        + parameters_combo_dataframe["gene_flank_bp"].map(str)
+        + "$"
+        + parameters_combo_dataframe["enhancer_flank_bp"].map(str)
+    )
+
+    parameters_combo_dataframe["insert_offsets"] = (
+        parameters_combo_dataframe["ctcf_offset_1"].map(str)
+        + "$"
+        + parameters_combo_dataframe["ctcf_offset_2"].map(str)
+        + "$"
+        + parameters_combo_dataframe["gene_offset"].map(str)
+        + "$"
+        + parameters_combo_dataframe["enhancer_offset"].map(str)
+    )
+    
+    parameters_combo_dataframe["insert_orientations"] = (
+        parameters_combo_dataframe["ctcf_orientation_1"].map(str)
+        + "$"
+        + parameters_combo_dataframe["ctcf_orientation_2"].map(str)
+        + "$"
+        + parameters_combo_dataframe["gene_orientation"].map(str)
+        + "$"
+        + parameters_combo_dataframe["enhancer_orientation"].map(str)
+    )
+    
+    return parameters_combo_dataframe
+
+
+def filter_by_ctcf_v2(
+    sites,
+    ctcf_file="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
+    exclude_window=60,
+    site_cols=["chrom", "start", "end"],
+    verbose=True,
+):
+    """
+    Filter out sites that overlap any entry in ctcf within a window of 60bp up- and downstream.
+
+    Parameters
+    -----------
+    sites : dataFrame
+        Set of genomic intervals, currently with columns "chrom","start_2","end_2"
+    ctcf_file : str
+        File in tsv format used for filtering ctcf binding sites.
+
+    Returns
+    --------
+    sites : dataFrame
+        Subset of sites that do not have overlaps with ctcf binding sites in the ctcf_file.
+    """
+
+    if verbose:
+        print("filtering sites by overlap with ctcfs")
+
+    ctcf_cols = list(
+        pd.read_csv(
+            StringIO("""chrom start end name score pval strand"""),
+            sep=" ",
+        )
+    )
+
+    ctcf_motifs = pd.read_table(
+        ctcf_file,
+        names=ctcf_cols,
+    )
+
+    ctcf_motifs = bioframe.expand(ctcf_motifs, pad=exclude_window)
+
+    sites = bioframe.count_overlaps(
+        sites, ctcf_motifs[site_cols]
+    )  # , cols1=["chrom", "start_2", "end_2"]
+    sites = sites.iloc[sites["count"].values == 0]
+    sites.reset_index(inplace=True, drop=True)
+
+    return sites
