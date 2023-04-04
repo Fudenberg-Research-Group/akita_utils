@@ -39,9 +39,6 @@ import numpy as np
 import akita_utils.slurm_gf as slurm
 
 
-################################################################################
-# main
-################################################################################
 def main():
     usage = "usage: %prog [options] <models_dir> <tsv_file>"
     parser = OptionParser(usage)
@@ -212,11 +209,7 @@ def main():
         model_dir = models_dir + "/f" + str(options.model_index) + "c0/train/"
         model_file = model_dir + "model" + str(options.head_index) + "_best.h5"
         params_file = model_dir + "params.json"
-
         new_args = [params_file, model_file, tsv_file]
-
-    #######################################################
-    # prep work
 
     # output directory
     if not options.restart:
@@ -231,7 +224,6 @@ def main():
     pickle.dump(options, options_pkl)
     options_pkl.close()
 
-    #######################################################
     # launch worker threads
     jobs = []
     for pi in range(options.processes):
@@ -284,8 +276,5 @@ def job_completed(options, pi):
     return os.path.isfile(out_file) or os.path.isdir(out_file)
 
 
-################################################################################
-# __main__
-################################################################################
 if __name__ == "__main__":
     main()

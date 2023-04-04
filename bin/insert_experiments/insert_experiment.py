@@ -51,10 +51,6 @@ Options:
 
 """
 
-################################################################################
-# imports
-################################################################################
-
 from __future__ import print_function
 
 from optparse import OptionParser
@@ -68,9 +64,6 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 import os
-
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-
 import pdb
 import pickle
 import random
@@ -107,9 +100,6 @@ from akita_utils.seq_gens import (
 )
 
 
-################################################################################
-# main
-################################################################################
 def main():
     usage = "usage: %prog [options] <params_file> <model_file> <motifs_file>"
     parser = OptionParser(usage)
@@ -256,7 +246,7 @@ def main():
 
     random.seed(44)
 
-    #################################################################
+
     # read model parameters
     with open(params_file) as params_open:
         params = json.load(params_open)
@@ -273,7 +263,7 @@ def main():
         target_ids = targets_df.identifier
         target_labels = targets_df.description
 
-    #################################################################
+
     # setup model
     head_index = options.head_index
     model_index = options.model_index
@@ -292,10 +282,7 @@ def main():
         ]  # checkpoint? to be sure that the langth of given targets_file is compatibile with the requested head?
         target_labels = [""] * len(target_ids)
 
-    #################################################################
     # load motifs
-
-    # filter for worker motifs
     if options.processes is not None:  # multi-GPU option
         # determine boundaries from motif file
         seq_coords_full = pd.read_csv(motif_file, sep="\t")
@@ -334,9 +321,7 @@ def main():
             + f"\nThe provided background file has {len(background_seqs)} sequences."
         )
 
-    #################################################################
     # setup output
-
     scd_out = initialize_output_h5(
         options.out_dir,
         options.scd_stats,
@@ -349,9 +334,7 @@ def main():
 
     log.info("initialized")
 
-    #################################################################
     # predict SNP scores, write output
-
     preds_stream = stream.PredStreamGen(
         seqnn_model,
         modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open),
@@ -489,11 +472,6 @@ def write_snp(
         plt.tight_layout()
         plt.savefig("%s/s%d.pdf" % (plot_dir, si))
         plt.close()
-
-
-################################################################################
-# __main__
-################################################################################
 
 
 if __name__ == "__main__":

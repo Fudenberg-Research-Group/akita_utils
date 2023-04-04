@@ -6,7 +6,11 @@ like NIPBL and H3K27 Acetylation and creates three dataframes,
     - Prmoters with coreesponding markers
     - Enhancers with corresponding markers
     
-These dataframes are used in different experimental settings later on in the experiments
+These dataframes are used to generate different layouts for virtual insertions.
+
+Arguments
+-u(int): this represents the number of upstream basepairs that could be considered as promoter sequence
+
 '''
 
 import pandas as pd
@@ -19,9 +23,6 @@ from akita_utils.dna_utils import scan_motif
 from akita_utils.seq_gens import generate_spans_start_positions
 
 
-######################################################################
-# main
-######################################################################
 def main():
     
     parser = argparse.ArgumentParser()
@@ -302,8 +303,6 @@ def generate_promoter_df(feature_dataframe, up_stream_bps=10000):
             feature_dataframe["end"].at[row.Index] = row.end + up_stream_bps
     return feature_dataframe
 
-######################################################################
-# main
-######################################################################    
+  
 if __name__ == "__main__":
     main()

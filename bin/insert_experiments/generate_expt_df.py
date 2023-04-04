@@ -23,21 +23,33 @@ This script takes numerous parameters i.e
 and creats a dataframe with different permutation of these parameters which can be used to generate scores for different scenarios in experimental setting i.e
 
 Background with; 
-
     CTCFs alone
     Enhancers alone
     Promoters alone
     Ehancer-Promoter
+    Ehancer-CTCF
+    Promoter-CTCF
     CTCF-Ehancer-Promoter
+    ..etc
     
     
-By changing offsets of CTCFs, on can experiment with creating;
+By changing offsets and orientation of CTCFs, on can experiment with creating different layouts e.g;
 
-    Boundary(close CTCFs): ['ctcf_offset_1' = 0,'ctcf_offset_2' = 120]
-    TADs:  ['ctcf_offset_1' = -490000,'ctcf_offset_2' = 490000]
+    Boundary(close CTCFs):
+        'ctcf_offset_1' = 0
+        'ctcf_offset_2' = 120
+        'ctcf_orientation_1' = ">"
+        'ctcf_orientation_2' = ">"
+    TADs:  
+        'ctcf_offset_1' = -490000  
+        'ctcf_offset_2' = 490000
+        'ctcf_orientation_1' = ">"
+        'ctcf_orientation_2' = "<"
+        
+NOTE: maximum offset on either positive or negative is around 500000(remember for positive offest you need to leave some basepairs to accomodate your insert)
 
 
-sample paths to respective files are:
+sample input paths to respective files are:
 
     -ctcf_h5_dirs: /project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model1/scd.h5
     -promoters_df: ~/akita_utils/bin/insert_experiments/data/promoter_score_sample.csv
@@ -67,9 +79,6 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-######################################################################
-# __main__
-######################################################################
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
