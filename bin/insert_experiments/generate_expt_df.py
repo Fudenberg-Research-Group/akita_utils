@@ -1,5 +1,5 @@
 """
-This script takes numerous parameters i.e
+This script takes numerous parameters as input i.e
 
 (1) 'ctcf_locus_specification_1' 
 (2) 'ctcf_locus_specification_2',
