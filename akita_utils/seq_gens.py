@@ -196,8 +196,3 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open, use_span=True):
             yield akita_utils.dna_utils.permute_seq_k(wt_1hot, k=s.shuffle_parameter)
         elif mutation_method == "randomise_whole_seq":
             yield random_seq_permutation(wt_1hot)
-
-
-########################################
-#           deletion utils             #
-########################################
