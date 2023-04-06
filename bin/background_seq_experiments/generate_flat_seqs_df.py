@@ -9,11 +9,6 @@ import argparse
 import akita_utils.tsv_gen_utils
 
 
-################################################################################
-# __main__
-################################################################################
-
-
 def main():
     """
     This script generates a dataframe for seqs to be used to generate flat seqs with
@@ -35,7 +30,12 @@ def main():
     To generate multiple maps, provide multiple value of same parameter in CLI, i.e  e.g. --shuffle_parameter 2 4 8
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", dest="genome_fasta", help="fasta file", required=True)
+    parser.add_argument(
+        "-f", 
+        dest="genome_fasta", 
+        help="fasta file", 
+        required=True,
+    )
     parser.add_argument(
         "-seq_bed_file",
         dest="seq_bed_file",
@@ -49,31 +49,41 @@ def main():
         help="output_filename",
     )
     parser.add_argument(
-        "--shuffle_parameter", nargs="+", default=[8], type=int, help="List of integers"
+        "--shuffle_parameter", 
+        nargs="+", default=[8], 
+        type=int, 
+        help="List of integers",
     )
     parser.add_argument(
-        "--ctcf_selection_threshold",
+        "--ctcf_detection_threshold",
         default=[8],
         nargs="+",
         type=int,
-        help="List of integers",
+        help="threshold of (CTCF PWM) * DNA OHE window value",
     )
     parser.add_argument(
         "--mutation_method",
         nargs="+",
         default=["permute_whole_seq"],
-        help="List of strings",
+        help="List of strings from ['permute_whole_seq','randomise_whole_seq','randomise_motif','permute_motif','mask_motif']",
     )
     parser.add_argument(
-        "--num_sites", type=int, default=5, help="number of loci to select"
+        "--num_backgrounds",
+        type=int,
+        default=5,
+        help="number of loci to select for background creation",
     )
-    parser.add_argument("--mode", default="uniform", help="loci selection criteria")
+    parser.add_argument(
+        "--mode", 
+        default="uniform", 
+        help="loci selection criteria",
+    )
     parser.add_argument(
         "--map_score_threshold",
         type=int,
         nargs="+",
         default=[60],
-        help="maximum allowable map score",
+        help="maximum allowable map score, SCD",
     )
     parser.add_argument(
         "--scores_pixelwise_thresh",
@@ -97,7 +107,7 @@ def main():
 
     grid_search_params = {
         "shuffle_parameter": args.shuffle_parameter,
-        "ctcf_selection_threshold": args.ctcf_selection_threshold,
+        "ctcf_detection_threshold": args.ctcf_detection_threshold,
         "mutation_method": args.mutation_method,
         "map_score_threshold": args.map_score_threshold,  # this is SCD score
         "scores_pixelwise_thresh": args.scores_pixelwise_thresh,
@@ -110,7 +120,7 @@ def main():
         upper_threshold=99,
         lower_threshold=1,
         mode=args.mode,
-        num_sites=args.num_sites,
+        num_sites=args.num_backgrounds,
     )
 
     # fixing locus specific variables together before grid_search
@@ -138,10 +148,6 @@ def main():
     ] = parameters_combo_dataframe["locus_specification"].str.split("-", expand=True)
     parameters_combo_dataframe.to_csv(f"{args.output_filename}", sep="\t", index=False)
 
-
-################################################################################
-# __main__
-################################################################################
 
 if __name__ == "__main__":
     main()

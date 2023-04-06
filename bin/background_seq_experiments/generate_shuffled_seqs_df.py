@@ -8,11 +8,6 @@ import argparse
 import akita_utils.tsv_gen_utils
 
 
-################################################################################
-# __main__
-################################################################################
-
-
 def main():
     """
     This script generates and saves a dataframe specifying sequence chrom, start, end, along with how they should be shuffled. The saved dataframe can then be used as (i) input to scripts that save shuffled fasta files, or (ii) as an input to shuffle sequences on the fly to generate respective scores.
@@ -24,10 +19,10 @@ def main():
     Other parameters include:
 
     'shuffle_parameter', which specifies the kmer size to shuffle by
-    'ctcf_selection_threshold', which specifies the accuracy in idenfying motifs from a seq
+    'ctcf_detection_threshold', which specifies the accuracy in idenfying motifs from a seq
     'mutation_method', which can be any of ['permute_whole_seq','randomise_whole_seq','mask_motif','permute_motif','randomise_motif']
     'output_filename', which is the name of the output tsv file
-    'num_sites', which is sample size
+    'num_seqs', which is sample size
     'mode', locus GC content selection criteria which maybe 'flat', 'tail', 'head', 'random'
     -------------------------------------------------------------------------------------------------
 
@@ -59,23 +54,30 @@ def main():
         help="output_filename",
     )
     parser.add_argument(
-        "--shuffle_parameter", nargs="+", default=[8], type=int, help="List of integers"
+        "--shuffle_parameter",
+        nargs="+",
+        default=[8],
+        type=int,
+        help="List of integers sepaerated by spaces eg 2 4",
     )
     parser.add_argument(
-        "--ctcf_selection_threshold",
+        "--ctcf_detection_threshold",
         default=[8],
         nargs="+",
         type=int,
-        help="List of integers",
+        help="threshold of (CTCF PWM) * DNA OHE window value",
     )
     parser.add_argument(
         "--mutation_method",
         nargs="+",
         default=["permute_whole_seq"],
-        help="List of strings",
+        help="List of strings from ['permute_whole_seq','randomise_whole_seq','randomise_motif','permute_motif','mask_motif']",
     )
     parser.add_argument(
-        "--num_sites", type=int, default=20, help="number of loci to select"
+        "--num_seqs",
+        type=int,
+        default=20,
+        help="number of seqs to select from dataframe",
     )
     parser.add_argument("--mode", default="uniform", help="loci selection criteria")
     args = parser.parse_args()
@@ -93,7 +95,7 @@ def main():
 
     grid_search_params = {
         "shuffle_parameter": args.shuffle_parameter,
-        "ctcf_selection_threshold": args.ctcf_selection_threshold,
+        "ctcf_detection_threshold": args.ctcf_detection_threshold,
         "mutation_method": args.mutation_method,
     }
 
@@ -104,7 +106,7 @@ def main():
         upper_threshold=99,
         lower_threshold=1,
         mode=args.mode,
-        num_sites=args.num_sites,
+        num_sites=args.num_seqs,
     )
 
     # fixing locus specific chacteristics together before grid_search
@@ -133,10 +135,6 @@ def main():
 
     parameters_combo_dataframe.to_csv(f"{args.output_filename}", sep="\t", index=False)
 
-
-################################################################################
-# __main__
-################################################################################
 
 if __name__ == "__main__":
     main()

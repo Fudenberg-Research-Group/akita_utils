@@ -14,7 +14,6 @@ from optparse import OptionParser
 import json
 import os
 
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import pickle
 import random
 import h5py
@@ -32,8 +31,6 @@ import tensorflow as tf
 if tf.__version__[0] == "1":
     tf.compat.v1.enable_eager_execution()
 gpus = tf.config.experimental.list_physical_devices("GPU")
-# for gpu in gpus:
-#  tf.config.experimental.set_memory_growth(gpu, True)
 log.info(gpus)
 
 from basenji import seqnn, stream, dna_io
@@ -42,12 +39,11 @@ from akita_utils.utils import ut_dense, split_df_equally
 from akita_utils.seq_gens import background_exploration_seqs_gen
 
 
-################################################################################
-# main
-################################################################################
 def main():
     """
     This scripts takes a tsv (oftenly shuffled seqs) and specified model to be used to generate the scores for each shuffled seq
+
+    it outputs H5 files of scores from the experiments from tsv file in your specified directory
     """
     usage = "usage: %prog [options] <params_file> <model_file> <shuffled_seqs_tsv>"
     parser = OptionParser(usage)
@@ -59,8 +55,8 @@ def main():
     )
     parser.add_option(
         "-l",
-        dest="plot_lim_min",
-        default=0.1,
+        dest="plot_lim",
+        default=0.2,
         type="float",
         help="Heatmap plot limit [Default: %default]",
     )
@@ -90,20 +86,6 @@ def main():
         default=None,
         type="int",
         help="Number of processes, passed by multi script",
-    )
-    parser.add_option(  # reverse complement
-        "--rc",
-        dest="rc",
-        default=False,
-        action="store_true",
-        help="Average forward and reverse complement predictions [Default: %default]",
-    )
-    parser.add_option(  # shifts
-        "--shifts",
-        dest="shifts",
-        default="0",
-        type="str",
-        help="Ensemble prediction shifts [Default: %default]",
     )
     parser.add_option(
         "--stats",
@@ -189,12 +171,10 @@ def main():
     else:
         plot_dir = None
 
-    options.shifts = [int(shift) for shift in options.shifts.split(",")]
     options.scd_stats = options.scd_stats.split(",")
 
     random.seed(44)
 
-    #################################################################
     # read model parameters
     with open(params_file) as params_open:
         params = json.load(params_open)
@@ -211,7 +191,6 @@ def main():
         target_ids = targets_df.identifier
         target_labels = targets_df.description
 
-    #################################################################
     # setup model
     head_index = options.head_index
     model_index = options.model_index
@@ -219,7 +198,6 @@ def main():
     # load model
     seqnn_model = seqnn.SeqNN(params_model)
     seqnn_model.restore(model_file, head_i=options.head_index)
-    seqnn_model.build_ensemble(options.rc, options.shifts)
     seq_length = int(params_model["seq_length"])
 
     # dummy target info
@@ -228,10 +206,7 @@ def main():
         target_ids = ["t%d" % ti for ti in range(num_targets)]
         target_labels = [""] * len(target_ids)
 
-    #################################################################
     # load sequences
-
-    # filter for worker motifs
     if options.processes is not None:  # multi-GPU option
         # determine boundaries from motif file
         seq_coords_full = pd.read_csv(shuffled_seqs_tsv, sep="\t")
@@ -294,7 +269,7 @@ def main():
             seqnn_model.diagonal_offset,
             options.scd_stats,
             plot_dir,
-            options.plot_lim_min,
+            options.plot_lim,
             options.plot_freq,
         )
 
@@ -351,7 +326,7 @@ def write_snp(
     diagonal_offset,
     scd_stats=["SCD"],
     plot_dir=None,
-    plot_lim_min=0.1,
+    plot_lim=0.2,
     plot_freq=100,
 ):
     """Write SNP predictions to HDF."""
@@ -414,10 +389,7 @@ def write_snp(
             ref_map_ti = ref_map[..., ti]
             # TEMP: reduce resolution
             ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
-            vmin = min(ref_map_ti.min(), ref_map_ti.min())
-            vmax = max(ref_map_ti.max(), ref_map_ti.max())
-            vmin = min(-plot_lim_min, vmin)
-            vmax = max(plot_lim_min, vmax)
+            vmin, vmax = -plot_lim, plot_lim
             sns.heatmap(
                 ref_map_ti,
                 ax=axs[ti],
@@ -432,11 +404,7 @@ def write_snp(
         plt.tight_layout()
         plt.savefig("%s/s%d.pdf" % (plot_dir, si))
         plt.close()
-
-################################################################################
-# __main__
-################################################################################
-
+        
 
 if __name__ == "__main__":
     main()

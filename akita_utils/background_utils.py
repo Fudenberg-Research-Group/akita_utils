@@ -30,7 +30,7 @@ def create_flat_seqs_gen(
     num_seqs = dataframe.shape[0]
     genome_open = pysam.Fastafile(genome_fasta) 
     for ind in range(num_seqs):
-        locus_specification, shuffle_k, ctcf_thresh, scores_thresh = dataframe.iloc[ind][["locus_specification","shuffle_parameter","ctcf_selection_threshold","map_score_threshold"]]
+        locus_specification, shuffle_k, ctcf_thresh, scores_thresh = dataframe.iloc[ind][["locus_specification","shuffle_parameter","ctcf_detection_threshold","map_score_threshold"]]
         chrom, start, end = locus_specification.split(",")
         seq = genome_open.fetch(chrom, int(start), int(end)).upper()
         seq_1hot = dna_1hot(seq)

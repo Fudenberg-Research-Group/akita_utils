@@ -21,11 +21,12 @@ multiGPU_generate_shuffled_seqs_scores_from_fasta.py
 Compute scores for seqs in a given fasta file, using multiple processes.
 Relies on slurm_gf.py to auto-generate slurm jobs.
 
+outputs: h5 files of scores of respective experiments from different jobs
+
 """
 
 from optparse import OptionParser
 import os
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
 import pickle
 import subprocess
@@ -35,31 +36,21 @@ import h5py
 import numpy as np
 import akita_utils.slurm_gf as slurm
 
-################################################################################
-# main
-################################################################################
+
 def main():
-    usage = "usage: %prog [options] <models_dir> <fasta_file>" #<params_file> <model_file> <tsv_file>"
+    usage = "usage: %prog [options] <models_dir> <fasta_file>"
     parser = OptionParser(usage)
 
-    # scd
     parser.add_option(
         "-f",
         dest="genome_fasta",
-        default="%s/data/hg19.fa" % os.environ["BASENJIDIR"],
+        default=None,
         help="Genome FASTA for sequences [Default: %default]",
     )
     parser.add_option(
-        "-m",
-        dest="plot_map",
-        default=False,
-        action="store_true",
-        help="Plot contact map for each allele [Default: %default]",
-    )
-    parser.add_option(
         "-l",
-        dest="plot_lim_min",
-        default=0.1,
+        dest="plot_lim",
+        default=0.2,
         type="float",
         help="Heatmap plot limit [Default: %default]",
     )
@@ -71,29 +62,29 @@ def main():
         help="Heatmap plot freq [Default: %default]",
     )
     parser.add_option(
+        "-m",
+        dest="plot_map",
+        default=False,
+        action="store_true",
+        help="Plot contact map for each allele [Default: %default]",
+    )
+    parser.add_option(
         "-o",
-        dest="out_dir",
+        dest="out_dir",  # to be changed?
         default="./",
         help="Output directory for tables and plots [Default: %default]",
     )
     parser.add_option(
-        "--rc",
-        dest="rc",
-        default=False,
-        action="store_true",
-        help="Average forward and reverse complement predictions [Default: %default]",
-    )
-    parser.add_option(
-        "--shifts",
-        dest="shifts",
-        default="0",
-        type="str",
-        help="Ensemble prediction shifts [Default: %default]",
+        "-p",
+        dest="processes",
+        default=None,
+        type="int",
+        help="Number of processes, passed by multi script",
     )
     parser.add_option(
         "--stats",
         dest="scd_stats",
-        default="SCD,SSD",
+        default="SCD,MPS,CS",
         help="Comma-separated list of stats to save. [Default: %default]",
     )
     parser.add_option(
@@ -106,16 +97,16 @@ def main():
     parser.add_option(
         "--batch-size",
         dest="batch_size",
-        default=None,
+        default=4,
         type="int",
         help="Specify batch size",
     )
     parser.add_option(
         "--head-index",
         dest="head_index",
-        default=None,
+        default=1,
         type="int",
-        help="Specify head index (0=human 1=mus) ",
+        help="Specify head index (0=human 1=mus)",
     )
     parser.add_option(
         "--model-index",
@@ -190,27 +181,26 @@ def main():
     )
 
     (options, args) = parser.parse_args()
-        
-        
+
     if len(args) != 2:
         print(args)
         parser.error("Must provide models directory and fasta file")
     else:
         models_dir = args[0]
         fasta_file = args[1]
-        
-        model_dir = models_dir+"/f"+str(options.model_index)+"c0/train/"
-        model_file = model_dir+'model'+str(options.head_index)+'_best.h5'
-        params_file = model_dir+"params.json" 
-        
-        new_args = [params_file,model_file,fasta_file]
+
+        model_dir = models_dir + "/f" + str(options.model_index) + "c0/train/"
+        model_file = model_dir + "model" + str(options.head_index) + "_best.h5"
+        params_file = model_dir + "params.json"
+
+        new_args = [params_file, model_file, fasta_file]
         options.name = f"{options.name}_m{options.model_index}"
-        
+
     #######################################################
     # prep work
-    
+
     options.out_dir = f"{options.out_dir}/shuffled_seqs_scores_model{options.model_index}_head{options.head_index}"
-    
+
     # output directory
     if not options.restart:
         if os.path.isdir(options.out_dir):
@@ -223,7 +213,7 @@ def main():
     options_pkl = open(options_pkl_file, "wb")
     pickle.dump(options, options_pkl)
     options_pkl.close()
-    
+
     #######################################################
     # launch worker threads
     jobs = []
@@ -235,14 +225,17 @@ def main():
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
             else:
                 cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += "conda activate basenji-gpu;"      #changed
+                cmd += "conda activate basenji-gpu;"  # changed
                 # cmd += "conda activate basenji;"      #changed
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
 
-            cmd += " ${SLURM_SUBMIT_DIR}/generate_shuffled_seqs_scores_from_fasta.py %s %s %d" % (
-                options_pkl_file,
-                " ".join(new_args),
-                pi,
+            cmd += (
+                " ${SLURM_SUBMIT_DIR}/generate_shuffled_seqs_scores_from_fasta.py %s %s %d"
+                % (
+                    options_pkl_file,
+                    " ".join(new_args),
+                    pi,
+                )
             )
 
             name = "%s_p%d" % (options.name, pi)
@@ -265,11 +258,11 @@ def main():
                 constraint=options.constraint,
             )
             jobs.append(j)
-    
+
     slurm.multi_run(
         jobs, max_proc=options.max_proc, verbose=False, launch_sleep=10, update_sleep=60
     )
-    
+
 
 def job_completed(options, pi):
     """Check whether a specific job has generated its
@@ -278,9 +271,5 @@ def job_completed(options, pi):
     return os.path.isfile(out_file) or os.path.isdir(out_file)
 
 
-################################################################################
-# __main__
-################################################################################
 if __name__ == "__main__":
     main()
-    
