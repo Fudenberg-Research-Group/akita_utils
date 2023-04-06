@@ -78,7 +78,7 @@ def main():
     parser.add_option(
         "-l",
         dest="plot_lim",
-        default=0.1,
+        default=0.2,
         type="float",
         help="Heatmap plot limit [Default: %default]",
     )
@@ -284,7 +284,7 @@ def main():
                 # TEMP: reduce resolution
                 ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
 
-                vmin, vmax = -plot_lim, plot_lim
+                vmin, vmax = -args.plot_lim, args.plot_lim
                 sns.heatmap(
                     ref_map_ti,
                     ax=axs[ti],
