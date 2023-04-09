@@ -982,3 +982,71 @@ def filter_by_ctcf_v2(
     sites.reset_index(inplace=True, drop=True)
 
     return sites
+
+
+# ---------------------------new implementation-------------------
+
+def generate_locus_specification_list(dataframe, genome_open, motif_threshold=1, specification_list=None):
+    # Filter by CTCF and count number of motifs in region
+    dataframe = dataframe.loc[dataframe["strand"].isin(["+", "-"])]
+    dataframe["num_of_motifs"] = 0
+    for idx, row in dataframe.iterrows():
+        seq_1hot = akita_utils.dna_utils.dna_1hot(genome_open.fetch(row["chrom"], row["start"], row["end"]))
+        motif = akita_utils.format_io.read_jaspar_to_numpy()
+        num_of_motifs = len(akita_utils.seq_gens.generate_spans_start_positions(seq_1hot, motif, 8))
+        dataframe.at[idx, "num_of_motifs"] = num_of_motifs
+
+    # Filter based on motif count threshold
+    dataframe = dataframe[dataframe["num_of_motifs"] <= motif_threshold]
+    
+    # Generate locus specification column
+    dataframe["locus_specification"] = dataframe["chrom"].astype(str) + "," + dataframe["start"].astype(str) + "," + dataframe["end"].astype(str) + "," + dataframe["strand"].astype(str)
+
+    # Add any other arbitrary columns
+    extra_cols = set(dataframe.columns) - set(["chrom", "start", "end", "strand", "num_of_motifs", "locus_specification"])
+    for col in extra_cols:
+        dataframe["locus_specification"] += "#" + col + "=" + dataframe[col].astype(str)
+
+    # Generate list of locus specifications
+    if specification_list is not None:
+        locus_specifications = dataframe.loc[specification_list, "locus_specification"].tolist()
+    else:
+        locus_specifications = dataframe["locus_specification"].tolist()
+
+    return locus_specifications
+
+
+
+def parameter_dataframe_reorganisation_v2(parameters_combo_dataframe, insert_names_list):
+
+    # Loop through all columns in the dataframe 
+    for col_name in parameters_combo_dataframe.columns:
+        # Check if the column is a locus specification column
+        if "locus_specification" in col_name:
+            # Split the locus specification column using the "#" delimiter
+            locus_specification_df = parameters_combo_dataframe[col_name].str.split("#", expand=True)
+            # Rename the newly created columns to match the names of the original dataframe columns
+            locus_specification_df.columns = [f"{col_name}_{sub_col_name}" for sub_col_name in locus_specification_df.columns]
+            # Add the newly created columns to the original dataframe
+            parameters_combo_dataframe = pd.concat([parameters_combo_dataframe, locus_specification_df], axis=1)
+            # Drop the original locus specification column from the dataframe
+            parameters_combo_dataframe = parameters_combo_dataframe.drop(columns=[col_name])
+
+    for insert_name in insert_names_list:
+        # Check if all necessary columns are present for the insert
+        assert f"{insert_name}_flank_bp" in parameters_combo_dataframe.columns, f"{insert_name}_flank_bp not found in dataframe columns."
+        assert f"{insert_name}_offset" in parameters_combo_dataframe.columns, f"{insert_name}_offset not found in dataframe columns."
+        assert f"{insert_name}_orientation" in parameters_combo_dataframe.columns, f"{insert_name}_orientation not found in dataframe columns."
+        
+        # Combine all columns into one column separated by "$"
+        insert_cols = [
+            f"{insert_name}_flank_bp",
+            f"{insert_name}_offset",
+            f"{insert_name}_orientation"
+        ]
+        parameters_combo_dataframe[f"{insert_name}_insert"] = parameters_combo_dataframe[insert_cols].apply(lambda x: '$'.join(x.astype(str)), axis=1)
+
+        # Drop the original columns from the dataframe
+        parameters_combo_dataframe = parameters_combo_dataframe.drop(columns=insert_cols)
+
+    return parameters_combo_dataframe
