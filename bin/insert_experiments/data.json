@@ -1,0 +1,11 @@
+[    {  "data": "/home1/kamulege/akita_utils/bin/insert_experiments/data/promoter_score_sample.csv",
+        "offset": [10],        
+        "flank_bp": [5],        
+        "orientation": [">"] },
+        
+    {   "data": "/home1/kamulege/akita_utils/bin/insert_experiments/data/enhancer_score_sample.csv",        
+        "offset": [5],        
+        "flank_bp": [10],        
+        "orientation": [">"] }
+        
+]

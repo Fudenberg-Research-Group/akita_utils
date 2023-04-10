@@ -1,13 +1,15 @@
 ### Commands
 
-   - generating tss tsv
+   - generating tss and other insertion tsv(s)
    
          python generate_tss_with_markers.py
        
        
    - generating tsv table
    
-         python generate_expt_df.py -promoters_df /home1/kamulege/akita_utils/bin/insert_experiments/data/promoter_score_sample.csv -enhancers_df /home1/kamulege/akita_utils/bin/insert_experiments/data/enhancer_score_sample.csv -ctcf_h5_dirs /project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model1/scd.h5
+        - the json has a structure as in `data.json` file, for multiple values of a parameter put in a list
+   
+         python generate_expt_df_copy.py --json-file /home1/kamulege/akita_utils/bin/insert_experiments/data.json -ctcf_h5_dirs /project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model1/scd.h5
                 
         
    - Akita experiment predictions 

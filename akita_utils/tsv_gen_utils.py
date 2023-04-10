@@ -8,6 +8,7 @@ from io import StringIO
 from akita_utils.format_io import h5_to_df
 import akita_utils.format_io
 
+
 def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
     """Helper function to split a span 'start-end' into two integer series, and either
     return as a dataFrame or concatenate to the input dataFrame"""
@@ -103,9 +104,7 @@ def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
     chromend_zones["start"] = chromend_zones["end"] - buffer_bp
     chromstart_zones = view_df.copy()
     chromstart_zones["end"] = chromstart_zones["start"] + buffer_bp
-    filter_zones = pd.concat([chromend_zones, chromstart_zones]).reset_index(
-        drop=True
-    )
+    filter_zones = pd.concat([chromend_zones, chromstart_zones]).reset_index(drop=True)
     df_filtered = bioframe.setdiff(df, filter_zones)
     return df_filtered
 
@@ -118,7 +117,6 @@ def filter_sites_by_score(
     mode="head",
     num_sites=None,
 ):
-
     """
     Given a dataframe of CTCF-binding sites returns a subset of them.
 
@@ -144,20 +142,19 @@ def filter_sites_by_score(
 
     """
 
-    if mode not in ("head", "tail", "uniform","random"):
+    if mode not in ("head", "tail", "uniform", "random"):
         raise ValueError("a mode has to be one from: head, tail, uniform, random")
 
     upper_thresh = np.percentile(sites[score_key].values, upper_threshold)
     lower_thresh = np.percentile(sites[score_key].values, lower_threshold)
 
     filtered_sites = (
-        sites[
-            (sites[score_key] >= lower_thresh)
-            & (sites[score_key] <= upper_thresh)
-        ]
-        .copy().drop_duplicates(subset=[score_key]).sort_values(score_key, ascending=False))
-    
-    
+        sites[(sites[score_key] >= lower_thresh) & (sites[score_key] <= upper_thresh)]
+        .copy()
+        .drop_duplicates(subset=[score_key])
+        .sort_values(score_key, ascending=False)
+    )
+
     if num_sites != None:
         assert num_sites <= len(
             filtered_sites
@@ -168,16 +165,15 @@ def filter_sites_by_score(
         elif mode == "tail":
             filtered_sites = filtered_sites[-num_sites:]
         elif mode == "uniform":
-            filtered_sites['binned'] = pd.cut(filtered_sites[score_key], bins=num_sites)
-            filtered_sites = filtered_sites.groupby('binned').apply(lambda x: x.head(1))
+            filtered_sites["binned"] = pd.cut(filtered_sites[score_key], bins=num_sites)
+            filtered_sites = filtered_sites.groupby("binned").apply(lambda x: x.head(1))
         else:
             filtered_sites = filtered_sites.sample(n=num_sites)
-            
+
     return filtered_sites
 
 
 def unpack_range(int_range):
-
     """
     Given start and end of a range of integer numbers as a string converts it to a tuple of integers (int type).
 
@@ -204,7 +200,6 @@ def filter_by_rmsk(
     site_cols=["chrom", "start", "end"],
     verbose=True,
 ):
-
     """
     Filter out sites that overlap any entry in rmsk.
     This is important for sineB2 in mice, and perhaps for other repetitive elements as well.
@@ -261,10 +256,10 @@ def filter_by_ctcf(
     sites,
     ctcf_file="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
     exclude_window=60,
-    site_cols=["chrom", "start", "end"],
+    cols1=["chrom", "start_2", "end_2"],
+    cols2=["chrom", "start", "end"],
     verbose=True,
 ):
-
     """
     Filter out sites that overlap any entry in ctcf within a window of 60bp up- and downstream.
 
@@ -298,9 +293,7 @@ def filter_by_ctcf(
 
     ctcf_motifs = bioframe.expand(ctcf_motifs, pad=exclude_window)
 
-    sites = bioframe.count_overlaps(
-        sites, ctcf_motifs[site_cols], cols1=["chrom", "start_2", "end_2"]
-    )
+    sites = bioframe.count_overlaps(sites, ctcf_motifs, cols1=cols1, cols2=cols2)
     sites = sites.iloc[sites["count"].values == 0]
     sites.reset_index(inplace=True, drop=True)
 
@@ -315,7 +308,6 @@ def validate_df_lenght(
     number_of_flanks_or_spacers,
     df,
 ):
-
     """
     validates if a created dataframe has an expected length (if number of experiments, so number of rows agrees)
     sizes.
@@ -355,7 +347,6 @@ def validate_df_lenght(
 
 
 def generate_all_orientation_strings(N):
-
     """
     Function generates all possible orientations of N-long string consisting of binary characters (> and <) only.
     Example: for N=2 the result is ['>>', '><', '<>', '<<'].
@@ -372,7 +363,6 @@ def generate_all_orientation_strings(N):
     """
 
     def _binary_to_orientation_string_map(binary_list):
-
         binary_to_orientation_dict = {0: ">", 1: "<"}
         orientation_list = [
             binary_to_orientation_dict[number] for number in binary_list
@@ -389,7 +379,6 @@ def generate_all_orientation_strings(N):
 
 
 def add_orientation(seq_coords_df, orientation_strings, all_permutations):
-
     """
     Function adds an additional column named 'orientation', to the given dataframe where each row corresponds to a set of CTCF-binding sites.
 
@@ -411,7 +400,6 @@ def add_orientation(seq_coords_df, orientation_strings, all_permutations):
     df_len = len(seq_coords_df)
 
     if len(orientation_strings) > 1:
-
         orientation_ls = []
         rep_unit = seq_coords_df
 
@@ -419,15 +407,12 @@ def add_orientation(seq_coords_df, orientation_strings, all_permutations):
             orientation = orientation_strings[ind]
             orientation_ls = orientation_ls + [orientation] * df_len
             if len(seq_coords_df) != len(orientation_ls):
-                seq_coords_df = pd.concat(
-                    [seq_coords_df, rep_unit], ignore_index=True
-                )
+                seq_coords_df = pd.concat([seq_coords_df, rep_unit], ignore_index=True)
 
         seq_coords_df["orientation"] = orientation_ls
 
     else:
         if all_permutations:
-
             N = len(orientation_strings[0])
 
             orientation_strings = generate_all_orientation_strings(N)
@@ -457,7 +442,6 @@ def add_orientation(seq_coords_df, orientation_strings, all_permutations):
 def add_diff_flanks_and_const_spacer(
     seq_coords_df, flank_start, flank_end, flank_spacer_sum
 ):
-
     """
     Function adds two additional columns named "flank_bp" and "spacer_bp" to the given dataframe where each row corresponds to a set of CTCF-binding sites. Here, spacing stays constant while flank changes.
 
@@ -502,7 +486,6 @@ def add_diff_flanks_and_const_spacer(
 
 
 def add_const_flank_and_diff_spacer(seq_coords_df, flank, spacing_list):
-
     """
     Function adds two additional columns named "flank_bp" and "spacer_bp" to the given dataframe where each row corresponds to a set of CTCF-binding sites. Here flank is constant, while spacing is changing.
 
@@ -542,7 +525,6 @@ def add_const_flank_and_diff_spacer(seq_coords_df, flank, spacing_list):
 
 
 def add_background(seq_coords_df, background_indices_list):
-
     """
     Function adds an additional column named 'orientation', to the given dataframe where each row corresponds to a set of CTCF-binding sites.
 
@@ -568,16 +550,16 @@ def add_background(seq_coords_df, background_indices_list):
         background_ls = background_ls + [background_ind] * df_len
 
         if len(seq_coords_df) != len(background_ls):
-            seq_coords_df = pd.concat(
-                [seq_coords_df, rep_unit], ignore_index=True
-            )
+            seq_coords_df = pd.concat([seq_coords_df, rep_unit], ignore_index=True)
 
     seq_coords_df["background_index"] = background_ls
 
     return seq_coords_df
 
+
 # -------------------------------------------------------------------------------------------------
 # functions below under review
+
 
 def generate_ctcf_positons(
     h5_dirs,
@@ -599,7 +581,9 @@ def generate_ctcf_positons(
         sites, rmsk_file=rmsk_file, verbose=True
     )
 
-    sites = akita_utils.tsv_gen_utils.filter_by_ctcf_v2(
+    print(sites.columns)
+
+    sites = akita_utils.tsv_gen_utils.filter_by_ctcf(
         sites, ctcf_file=jaspar_file, verbose=True
     )
 
@@ -626,77 +610,37 @@ def generate_ctcf_positons(
     )
 
     seq_coords_df.reset_index(drop=True, inplace=True)
-    seq_coords_df.reset_index(inplace=True)
-
-    seq_coords_df = (
-        seq_coords_df["chrom"].map(str)
+    seq_coords_df["locus_specification"] = (
+        seq_coords_df["chrom"].astype(str)
         + ","
-        + seq_coords_df["start"].map(str)
+        + seq_coords_df["start"].astype(str)
         + ","
-        + seq_coords_df["end"].map(str)
+        + seq_coords_df["end"].astype(str)
         + ","
-        + seq_coords_df["strand"].map(str)
-        + "#"
-        + seq_coords_df["genomic_" + score_key].map(str)
+        + seq_coords_df["strand"].astype(str)
     )
 
-    return seq_coords_df.values.tolist()
+    extra_cols = set(seq_coords_df.columns) - set(
+        ["chrom", "start", "end", "strand", "locus_specification"]
+    )  
+    for col in extra_cols:
+        seq_coords_df["locus_specification"] += (
+            "#" + col + "=" + seq_coords_df[col].astype(str)
+        )
+
+    return seq_coords_df["locus_specification"].tolist()
 
 
-# def generate_promoter_list(
-#     feature_dataframe, genome_open, up_stream_bps=10000, motif_threshold=0
-# ):
-#     # ---------------(this method is going to be discontinued)-----------------
-#     for row in feature_dataframe.itertuples():
-#         if row.strand == "+":
-#             feature_dataframe["start"].at[row.Index] = row.start - up_stream_bps
-#         else:
-#             feature_dataframe["end"].at[row.Index] = row.end + up_stream_bps
-#     # -----------different method of scanning for motifs-------------------
-#     # feature_dataframe["promoter_num_of_motifs"] = None # initialisation
-#     # for row in feature_dataframe.itertuples():
-#     #     seq_1hot = akita_utils.dna_utils.dna_1hot(genome_open.fetch(row.chrom,row.start,row.end))
-#     #     motif = akita_utils.format_io.read_jaspar_to_numpy()
-#     #     num_of_motifs = len(akita_utils.seq_gens.generate_spans_start_positions(seq_1hot, motif, 8))
-#     #     feature_dataframe["promoter_num_of_motifs"].at[row.Index] = num_of_motifs
-
-#     feature_dataframe = filter_by_ctcf(feature_dataframe)
-#     feature_dataframe = feature_dataframe.rename(
-#         columns={"count": "promoter_num_of_motifs"}
-#     )
-#     feature_dataframe = feature_dataframe[
-#         True == (feature_dataframe["promoter_num_of_motifs"] <= motif_threshold)
-#     ]
-#     feature_dataframe.reset_index(drop=True, inplace=True)
-#     feature_dataframe["locus_specification"] = (
-#         feature_dataframe["chrom"].map(str)
-#         + ","
-#         + feature_dataframe["start"].map(str)
-#         + ","
-#         + feature_dataframe["end"].map(str)
-#         + ","
-#         + feature_dataframe["strand"].map(str)
-#         + "#"
-#         + feature_dataframe["Geneid"].map(str)
-#         + "#"
-#         + feature_dataframe["promoter_num_of_motifs"].map(str)
-#         + "#"
-#         + feature_dataframe["promoter_NIPBL_score_0"].map(str)
-#         + "#"
-#         + feature_dataframe["promoter_H3K27Ac_score_0"].map(str)
-#     )
-#     return feature_dataframe["locus_specification"].values.tolist()
+# ---------------------------new implementation-------------------
 
 
-def generate_enhancer_list(
-    feature_dataframe, genome_open, motif_threshold=0, specification_list=None
+def generate_locus_specification_list(
+    dataframe,
+    genome_open,
+    motif_threshold=1,
+    specification_list=None,
+    unique_identifier="dummy",
 ):
-    feature_dataframe["strand"] = "+"
-    feature_dataframe = feature_dataframe.assign(
-        enhancer_symbol=[
-            f"enh_{i}" for i, row in enumerate(feature_dataframe.itertuples())
-        ]
-    )
     # -----------different method of scanning for motifs-------------------
     # feature_dataframe["enhancer_num_of_motifs"] = None # initialisation
     # for row in feature_dataframe.itertuples():
@@ -706,347 +650,90 @@ def generate_enhancer_list(
     #     feature_dataframe["enhancer_num_of_motifs"].at[row.Index] = num_of_motifs
 
     # -----------different method of scanning for motifs-------------------
-    feature_dataframe = filter_by_ctcf_v2(feature_dataframe)
-    feature_dataframe = feature_dataframe.rename(
-        columns={"count": "enhancer_num_of_motifs"}
-    )
+    dataframe = filter_by_ctcf(dataframe, cols1=None)
+    dataframe = dataframe.rename(columns={"count": "num_of_motifs"})
+    # -----------------end-------------------
 
-    # -----------same futher analysis (irrespective of method used)-------------------
-    feature_dataframe = feature_dataframe[
-        True == (feature_dataframe["enhancer_num_of_motifs"] <= motif_threshold)
-    ]
-    feature_dataframe.reset_index(drop=True, inplace=True)
-    feature_dataframe["locus_specification"] = (
-        feature_dataframe["chrom"].map(str)
-        + ","
-        + feature_dataframe["start"].map(str)
-        + ","
-        + feature_dataframe["end"].map(str)
-        + ","
-        + feature_dataframe["strand"].map(str)
-        + "#"
-        + feature_dataframe["enhancer_symbol"].map(str)
-        + "#"
-        + feature_dataframe["enhancer_num_of_motifs"].map(str)
-        + "#"
-        + feature_dataframe["enhancer_NIPBL_score_0"].map(str)
-        + "#"
-        + feature_dataframe["enhancer_H3K27Ac_score_0"].map(str)
-    )
-
-    if specification_list:
-        enhancer_locus_specification_list = []
-        for ind in specification_list:
-            enhancer_locus_specification_list += [
-                feature_dataframe["locus_specification"].values.tolist()[ind]
-            ]
-    else:
-        enhancer_locus_specification_list = feature_dataframe[
-            "locus_specification"
-        ].values.tolist()
-
-    return enhancer_locus_specification_list
-
-
-def generate_promoter_list(
-    feature_dataframe, genome_open, motif_threshold=1, specification_list=None
-):
-    # -----------different method of scanning for motifs-------------------
-    # feature_dataframe["promoter_num_of_motifs"] = None # initialisation
-    # for row in feature_dataframe.itertuples():
-    #     seq_1hot = akita_utils.dna_utils.dna_1hot(genome_open.fetch(row.chrom,row.start,row.end))
-    #     motif = akita_utils.format_io.read_jaspar_to_numpy()
-    #     num_of_motifs = len(akita_utils.seq_gens.generate_spans_start_positions(seq_1hot, motif, 8))
-    #     feature_dataframe["promoter_num_of_motifs"].at[row.Index] = num_of_motifs
-
-    # -----------different method of scanning for motifs-------------------
-    feature_dataframe = filter_by_ctcf_v2(feature_dataframe)
-    feature_dataframe = feature_dataframe.rename(
-        columns={"count": "promoter_num_of_motifs"}
-    )
-
-    # -----------same futher analysis (irrespective of method used)-------------------
-    feature_dataframe = feature_dataframe[
-        True == (feature_dataframe["promoter_num_of_motifs"] <= motif_threshold)
-    ]
-    feature_dataframe.reset_index(drop=True, inplace=True)
-    feature_dataframe["locus_specification"] = (
-        feature_dataframe["chrom"].map(str)
-        + ","
-        + feature_dataframe["start"].map(str)
-        + ","
-        + feature_dataframe["end"].map(str)
-        + ","
-        + feature_dataframe["strand"].map(str)
-        + "#"
-        + feature_dataframe["Geneid"].map(str)
-        + "#"
-        + feature_dataframe["promoter_num_of_motifs"].map(str)
-        + "#"
-        + feature_dataframe["promoter_NIPBL_score_0"].map(str)
-        + "#"
-        + feature_dataframe["promoter_H3K27Ac_score_0"].map(str)
-    )
-
-    if specification_list:
-        enhancer_locus_specification_list = []
-        for ind in specification_list:
-            enhancer_locus_specification_list += [
-                feature_dataframe["locus_specification"].values.tolist()[ind]
-            ]
-    else:
-        enhancer_locus_specification_list = feature_dataframe[
-            "locus_specification"
-        ].values.tolist()
-
-    return enhancer_locus_specification_list
-
-
-def parameter_dataframe_reorganisation(parameters_combo_dataframe):
-
-    # adapting dataframe to desired look
-    if parameters_combo_dataframe["ctcf_locus_specification_1"].at[0]:
-        parameters_combo_dataframe["ctcf_genomic_score_1"] = parameters_combo_dataframe[
-            "ctcf_locus_specification_1"
-        ].str.split("#", expand=True)[1]
-        parameters_combo_dataframe[
-            "ctcf_locus_specification_1"
-        ] = parameters_combo_dataframe["ctcf_locus_specification_1"].str.split(
-            "#", expand=True
-        )[
-            0
-        ]
-    if parameters_combo_dataframe["ctcf_locus_specification_2"].at[0]:
-        parameters_combo_dataframe["ctcf_genomic_score_2"] = parameters_combo_dataframe[
-            "ctcf_locus_specification_2"
-        ].str.split("#", expand=True)[1]
-        parameters_combo_dataframe[
-            "ctcf_locus_specification_2"
-        ] = parameters_combo_dataframe["ctcf_locus_specification_2"].str.split(
-            "#", expand=True
-        )[
-            0
-        ]
-    if parameters_combo_dataframe["gene_locus_specification"].at[0]:
-        parameters_combo_dataframe["gene_symbol"] = parameters_combo_dataframe[
-            "gene_locus_specification"
-        ].str.split("#", expand=True)[1]
-        parameters_combo_dataframe[
-            "promoter_num_of_motifs"
-        ] = parameters_combo_dataframe["gene_locus_specification"].str.split(
-            "#", expand=True
-        )[
-            2
-        ]
-        parameters_combo_dataframe[
-            "promoter_NIPBL_signal"
-        ] = parameters_combo_dataframe["gene_locus_specification"].str.split(
-            "#", expand=True
-        )[
-            3
-        ]
-        parameters_combo_dataframe[
-            "promoter_H3K27Ac_signal"
-        ] = parameters_combo_dataframe["gene_locus_specification"].str.split(
-            "#", expand=True
-        )[
-            4
-        ]
-        parameters_combo_dataframe[
-            "gene_locus_specification"
-        ] = parameters_combo_dataframe["gene_locus_specification"].str.split(
-            "#", expand=True
-        )[
-            0
-        ]
-    if parameters_combo_dataframe["enhancer_locus_specification"].at[0]:
-        parameters_combo_dataframe["enhancer_symbol"] = parameters_combo_dataframe[
-            "enhancer_locus_specification"
-        ].str.split("#", expand=True)[1]
-        parameters_combo_dataframe[
-            "enhancer_num_of_motifs"
-        ] = parameters_combo_dataframe["enhancer_locus_specification"].str.split(
-            "#", expand=True
-        )[
-            2
-        ]
-        parameters_combo_dataframe[
-            "enhancer_NIPBL_signal"
-        ] = parameters_combo_dataframe["enhancer_locus_specification"].str.split(
-            "#", expand=True
-        )[
-            3
-        ]
-        parameters_combo_dataframe[
-            "enhancer_H3K27Ac_signal"
-        ] = parameters_combo_dataframe["enhancer_locus_specification"].str.split(
-            "#", expand=True
-        )[
-            4
-        ]
-        parameters_combo_dataframe[
-            "enhancer_locus_specification"
-        ] = parameters_combo_dataframe["enhancer_locus_specification"].str.split(
-            "#", expand=True
-        )[
-            0
-        ]
-
-    parameters_combo_dataframe["insert_loci"] = (
-        parameters_combo_dataframe["ctcf_locus_specification_1"].map(str)
-        + "$"
-        + parameters_combo_dataframe["ctcf_locus_specification_2"].map(str)
-        + "$"
-        + parameters_combo_dataframe["gene_locus_specification"].map(str)
-        + "$"
-        + parameters_combo_dataframe["enhancer_locus_specification"].map(str)
-    )
-
-    parameters_combo_dataframe["insert_flank_bp"] = (
-        parameters_combo_dataframe["ctcf_flank_bp_1"].map(str)
-        + "$"
-        + parameters_combo_dataframe["ctcf_flank_bp_2"].map(str)
-        + "$"
-        + parameters_combo_dataframe["gene_flank_bp"].map(str)
-        + "$"
-        + parameters_combo_dataframe["enhancer_flank_bp"].map(str)
-    )
-
-    parameters_combo_dataframe["insert_offsets"] = (
-        parameters_combo_dataframe["ctcf_offset_1"].map(str)
-        + "$"
-        + parameters_combo_dataframe["ctcf_offset_2"].map(str)
-        + "$"
-        + parameters_combo_dataframe["gene_offset"].map(str)
-        + "$"
-        + parameters_combo_dataframe["enhancer_offset"].map(str)
-    )
-    
-    parameters_combo_dataframe["insert_orientations"] = (
-        parameters_combo_dataframe["ctcf_orientation_1"].map(str)
-        + "$"
-        + parameters_combo_dataframe["ctcf_orientation_2"].map(str)
-        + "$"
-        + parameters_combo_dataframe["gene_orientation"].map(str)
-        + "$"
-        + parameters_combo_dataframe["enhancer_orientation"].map(str)
-    )
-    
-    return parameters_combo_dataframe
-
-
-def filter_by_ctcf_v2(
-    sites,
-    ctcf_file="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
-    exclude_window=60,
-    site_cols=["chrom", "start", "end"],
-    verbose=True,
-):
-    """
-    Filter out sites that overlap any entry in ctcf within a window of 60bp up- and downstream.
-
-    Parameters
-    -----------
-    sites : dataFrame
-        Set of genomic intervals, currently with columns "chrom","start_2","end_2"
-    ctcf_file : str
-        File in tsv format used for filtering ctcf binding sites.
-
-    Returns
-    --------
-    sites : dataFrame
-        Subset of sites that do not have overlaps with ctcf binding sites in the ctcf_file.
-    """
-
-    if verbose:
-        print("filtering sites by overlap with ctcfs")
-
-    ctcf_cols = list(
-        pd.read_csv(
-            StringIO("""chrom start end name score pval strand"""),
-            sep=" ",
-        )
-    )
-
-    ctcf_motifs = pd.read_table(
-        ctcf_file,
-        names=ctcf_cols,
-    )
-
-    ctcf_motifs = bioframe.expand(ctcf_motifs, pad=exclude_window)
-
-    sites = bioframe.count_overlaps(
-        sites, ctcf_motifs[site_cols]
-    )  # , cols1=["chrom", "start_2", "end_2"]
-    sites = sites.iloc[sites["count"].values == 0]
-    sites.reset_index(inplace=True, drop=True)
-
-    return sites
-
-
-# ---------------------------new implementation-------------------
-
-def generate_locus_specification_list(dataframe, genome_open, motif_threshold=1, specification_list=None):
-    # Filter by CTCF and count number of motifs in region
-    dataframe = dataframe.loc[dataframe["strand"].isin(["+", "-"])]
-    dataframe["num_of_motifs"] = 0
-    for idx, row in dataframe.iterrows():
-        seq_1hot = akita_utils.dna_utils.dna_1hot(genome_open.fetch(row["chrom"], row["start"], row["end"]))
-        motif = akita_utils.format_io.read_jaspar_to_numpy()
-        num_of_motifs = len(akita_utils.seq_gens.generate_spans_start_positions(seq_1hot, motif, 8))
-        dataframe.at[idx, "num_of_motifs"] = num_of_motifs
-
-    # Filter based on motif count threshold
     dataframe = dataframe[dataframe["num_of_motifs"] <= motif_threshold]
-    
-    # Generate locus specification column
-    dataframe["locus_specification"] = dataframe["chrom"].astype(str) + "," + dataframe["start"].astype(str) + "," + dataframe["end"].astype(str) + "," + dataframe["strand"].astype(str)
 
-    # Add any other arbitrary columns
-    extra_cols = set(dataframe.columns) - set(["chrom", "start", "end", "strand", "num_of_motifs", "locus_specification"])
+    if "strand" not in dataframe.columns:  # some inserts dont have this column
+        dataframe["strand"] = "+"
+
+    # Generate locus specification column
+    dataframe["locus_specification"] = (
+        dataframe["chrom"].astype(str)
+        + ","
+        + dataframe["start"].astype(str)
+        + ","
+        + dataframe["end"].astype(str)
+        + ","
+        + dataframe["strand"].astype(str)
+    )
+
+    # Add any other arbitrary columns from insert dataframe
+    extra_cols = set(dataframe.columns) - set(
+        ["chrom", "start", "end", "strand", "locus_specification"]
+    )
     for col in extra_cols:
-        dataframe["locus_specification"] += "#" + col + "=" + dataframe[col].astype(str)
+        dataframe["locus_specification"] += (
+            "#" + f"{unique_identifier}_" + col + "=" + dataframe[col].astype(str)
+        )
 
     # Generate list of locus specifications
     if specification_list is not None:
-        locus_specifications = dataframe.loc[specification_list, "locus_specification"].tolist()
+        locus_specifications = dataframe.loc[
+            specification_list, "locus_specification"
+        ].tolist()
     else:
         locus_specifications = dataframe["locus_specification"].tolist()
 
     return locus_specifications
 
 
-
-def parameter_dataframe_reorganisation_v2(parameters_combo_dataframe, insert_names_list):
-
-    # Loop through all columns in the dataframe 
+def parameter_dataframe_reorganisation(parameters_combo_dataframe, insert_names_list):
     for col_name in parameters_combo_dataframe.columns:
-        # Check if the column is a locus specification column
         if "locus_specification" in col_name:
-            # Split the locus specification column using the "#" delimiter
-            locus_specification_df = parameters_combo_dataframe[col_name].str.split("#", expand=True)
-            # Rename the newly created columns to match the names of the original dataframe columns
-            locus_specification_df.columns = [f"{col_name}_{sub_col_name}" for sub_col_name in locus_specification_df.columns]
-            # Add the newly created columns to the original dataframe
-            parameters_combo_dataframe = pd.concat([parameters_combo_dataframe, locus_specification_df], axis=1)
-            # Drop the original locus specification column from the dataframe
-            parameters_combo_dataframe = parameters_combo_dataframe.drop(columns=[col_name])
+            split_df = parameters_combo_dataframe[col_name].str.split("#", expand=True)
+            parameters_combo_dataframe = parameters_combo_dataframe.drop(
+                columns=[col_name]
+            )
+            column_names = [col_name] + [x.split("=")[0] for x in split_df.iloc[0, 1:]]
+            split_df.columns = column_names
+
+            # Update the values in each cell of the split dataframe
+            for column in column_names[1:]:
+                split_df[column] = split_df[column].apply(lambda x: x.split("=")[1])
+
+            new_df = pd.concat([parameters_combo_dataframe, split_df], axis=1)
+            parameters_combo_dataframe = new_df
 
     for insert_name in insert_names_list:
-        # Check if all necessary columns are present for the insert
-        assert f"{insert_name}_flank_bp" in parameters_combo_dataframe.columns, f"{insert_name}_flank_bp not found in dataframe columns."
-        assert f"{insert_name}_offset" in parameters_combo_dataframe.columns, f"{insert_name}_offset not found in dataframe columns."
-        assert f"{insert_name}_orientation" in parameters_combo_dataframe.columns, f"{insert_name}_orientation not found in dataframe columns."
-        
-        # Combine all columns into one column separated by "$"
+        assert (
+            f"{insert_name}_locus_specification" in parameters_combo_dataframe.columns
+        ), f"{insert_name}_locus_specification not found in dataframe columns."
+        assert (
+            f"{insert_name}_flank_bp" in parameters_combo_dataframe.columns
+        ), f"{insert_name}_flank_bp not found in dataframe columns."
+        assert (
+            f"{insert_name}_offset" in parameters_combo_dataframe.columns
+        ), f"{insert_name}_offset not found in dataframe columns."
+        assert (
+            f"{insert_name}_orientation" in parameters_combo_dataframe.columns
+        ), f"{insert_name}_orientation not found in dataframe columns."
+
         insert_cols = [
+            f"{insert_name}_locus_specification",
             f"{insert_name}_flank_bp",
             f"{insert_name}_offset",
-            f"{insert_name}_orientation"
+            f"{insert_name}_orientation",
         ]
-        parameters_combo_dataframe[f"{insert_name}_insert"] = parameters_combo_dataframe[insert_cols].apply(lambda x: '$'.join(x.astype(str)), axis=1)
-
-        # Drop the original columns from the dataframe
-        parameters_combo_dataframe = parameters_combo_dataframe.drop(columns=insert_cols)
+        parameters_combo_dataframe[
+            f"{insert_name}_insert"
+        ] = parameters_combo_dataframe[insert_cols].apply(
+            lambda x: "$".join(x.astype(str)), axis=1
+        )
+        parameters_combo_dataframe = parameters_combo_dataframe.drop(
+            columns=insert_cols
+        )
 
     return parameters_combo_dataframe

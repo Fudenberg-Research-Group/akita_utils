@@ -46,8 +46,6 @@ Options:
 - flag -m to plot contact map for some of the performed experiments
 - (optional, specific for plotting) heatmap plot limit
 - (optional, specific for plotting) heatmap plot frequency
-- (optional) add option --rc to average forward and reverse complement predictions
-- (optional) adding --shifts k ensembles prediction shifts by k
 
 """
 
@@ -246,7 +244,6 @@ def main():
 
     random.seed(44)
 
-
     # read model parameters
     with open(params_file) as params_open:
         params = json.load(params_open)
@@ -262,7 +259,6 @@ def main():
         targets_df = pd.read_csv(options.targets_file, sep="\t", index_col=0)
         target_ids = targets_df.identifier
         target_labels = targets_df.description
-
 
     # setup model
     head_index = options.head_index
