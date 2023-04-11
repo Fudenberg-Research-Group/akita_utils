@@ -1,7 +1,6 @@
 #!/bin/bash
 # A sample Bash script for generating flat seqs for different models
 
-
 models_dir="/project/fudenber_735/tensorflow_models/akita/v2/models"
 tsv_file="data/flat_seqs_mouse.tsv"
 genome_fasta="/project/fudenber_735/genomes/mm10/mm10.fa"

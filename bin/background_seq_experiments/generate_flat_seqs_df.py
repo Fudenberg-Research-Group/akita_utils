@@ -1,3 +1,23 @@
+"""
+This script generates a dataframe for seqs to be used to generate flat seqs with
+specified parameters (same as generate_shuffled_seqs_df.py) with two additional parameters.
+it does a grid over all given parameters
+
+(1) map_score_threshold
+(2) scores_pixelwise_thresh
+
+---------------- typical arguments for choice of bed (mouse or human) ------------------------
+these are bed files with intervals the models were trained on.
+
+seq_bed_file = '/project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed' #mouse
+genome_fasta = '/project/fudenber_735/genomes/mm10/mm10.fa' #mouse
+seq_bed_file = '/project/fudenber_735/tensorflow_models/akita/v2/data/hg38/sequences.bed' #human
+genome_fasta = '/project/fudenber_735/genomes/hg38/hg38.fa'#human
+-------------------------------------------------------------------------------------------------
+
+To generate multiple maps, provide multiple value of same parameter in CLI, i.e  e.g. --shuffle_parameter 2 4 8
+"""
+
 # import general libraries
 
 import os
@@ -10,25 +30,7 @@ import akita_utils.tsv_gen_utils
 
 
 def main():
-    """
-    This script generates a dataframe for seqs to be used to generate flat seqs with
-    specified parameters (same as generate_shuffled_seqs_df.py) with two additional parameters.
-    it does a grid over all given parameters
 
-    (1) map_score_threshold
-    (2) scores_pixelwise_thresh
-
-    ---------------- typical arguments for choice of bed (mouse or human) ------------------------
-    these are bed files with intervals the models were trained on.
-
-    seq_bed_file = '/project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed' #mouse
-    genome_fasta = '/project/fudenber_735/genomes/mm10/mm10.fa' #mouse
-    seq_bed_file = '/project/fudenber_735/tensorflow_models/akita/v2/data/hg38/sequences.bed' #human
-    genome_fasta = '/project/fudenber_735/genomes/hg38/hg38.fa'#human
-    -------------------------------------------------------------------------------------------------
-
-    To generate multiple maps, provide multiple value of same parameter in CLI, i.e  e.g. --shuffle_parameter 2 4 8
-    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-f", 
@@ -52,7 +54,7 @@ def main():
         "--shuffle_parameter", 
         nargs="+", default=[8], 
         type=int, 
-        help="List of integers",
+        help="integers separated by spaces",
     )
     parser.add_argument(
         "--ctcf_detection_threshold",

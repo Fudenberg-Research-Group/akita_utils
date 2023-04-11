@@ -54,10 +54,7 @@ log.info(gpus)
 from basenji import seqnn
 from basenji import stream
 from basenji import dna_io
-
 import akita_utils
-from akita_utils import ut_dense, split_df_equally
-
 
 def main():
     """
@@ -228,7 +225,7 @@ def main():
     # filter for worker motifs
     if options.processes is not None:  # multi-GPU option
         seq_coords_full = pd.read_csv(flat_seq_tsv_file, sep="\t")
-        seq_coords_df = split_df_equally(
+        seq_coords_df = akita_utils.utils.split_df_equally(
             seq_coords_full, options.processes, worker_index
         )
     else:
@@ -273,7 +270,7 @@ def main():
         hic_diags = params_model["diagonal_offset"]
         for no, pred in enumerate(preds):
             ref_preds = pred
-            ref_map = ut_dense(ref_preds, hic_diags)  # convert back to dense
+            ref_map = akita_utils.utils.ut_dense(ref_preds, hic_diags)  # convert back to dense
             _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4), sharey=True)
 
             sd2_preds = np.sqrt((ref_preds**2).sum(axis=0))

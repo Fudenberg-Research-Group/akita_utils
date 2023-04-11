@@ -27,11 +27,9 @@ outputs: h5 files of scores of respective experiments from different jobs
 
 from optparse import OptionParser
 import os
-
 import pickle
 import subprocess
 import sys
-
 import h5py
 import numpy as np
 import akita_utils.slurm_gf as slurm

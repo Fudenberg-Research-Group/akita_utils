@@ -13,7 +13,6 @@ log = logging.getLogger(__name__)
 from optparse import OptionParser
 import json
 import os
-
 import pickle
 import random
 import h5py
@@ -33,10 +32,8 @@ if tf.__version__[0] == "1":
 gpus = tf.config.experimental.list_physical_devices("GPU")
 log.info(gpus)
 
-from basenji import seqnn, stream, dna_io
+from basenji import seqnn, stream
 import akita_utils
-from akita_utils.utils import ut_dense, split_df_equally
-from akita_utils.seq_gens import background_exploration_seqs_gen
 
 
 def main():
@@ -210,7 +207,7 @@ def main():
     if options.processes is not None:  # multi-GPU option
         # determine boundaries from motif file
         seq_coords_full = pd.read_csv(shuffled_seqs_tsv, sep="\t")
-        seq_coords_df = split_df_equally(
+        seq_coords_df = akita_utils.utils.split_df_equally(
             seq_coords_full, options.processes, worker_index
         )
 
@@ -252,7 +249,7 @@ def main():
     # initialize predictions stream
     preds_stream = stream.PredStreamGen(
         seqnn_model,
-        background_exploration_seqs_gen(seq_coords_df, genome_open),
+        akita_utils.seq_gens.background_exploration_seqs_gen(seq_coords_df, genome_open),
         batch_size,
     )
 
@@ -364,7 +361,7 @@ def write_snp(
             ].astype("float16")
 
     if np.any((["INS" in i for i in scd_stats])):
-        ref_map = ut_dense(ref_preds, diagonal_offset)
+        ref_map = akita_utils.utils.ut_dense(ref_preds, diagonal_offset)
         for stat in scd_stats:
             if "INS" in stat:
                 insul_window = int(stat.split("-")[1])
@@ -383,7 +380,7 @@ def write_snp(
     if (plot_dir is not None) and (np.mod(si, plot_freq) == 0):
         log.info(f"plotting {si}")
         # convert back to dense
-        ref_map = ut_dense(ref_preds, diagonal_offset)
+        ref_map = akita_utils.utils.ut_dense(ref_preds, diagonal_offset)
         _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4))
         for ti in range(ref_preds.shape[-1]):
             ref_map_ti = ref_map[..., ti]

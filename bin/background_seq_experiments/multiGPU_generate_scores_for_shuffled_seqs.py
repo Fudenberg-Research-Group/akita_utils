@@ -15,18 +15,6 @@
 # limitations under the License.
 # =========================================================================
 
-from optparse import OptionParser
-import os
-
-import pickle
-import subprocess
-import sys
-
-import h5py
-import numpy as np
-import akita_utils.slurm_gf as slurm
-
-
 """
 multiGPU_generate_scores_for_shuffled_seqs.py
 
@@ -36,6 +24,15 @@ Relies on slurm_gf.py to auto-generate slurm jobs.
 outputs: h5 files of scores of respective experiments from different jobs
 
 """
+
+from optparse import OptionParser
+import os
+import pickle
+import subprocess
+import sys
+import h5py
+import numpy as np
+import akita_utils.slurm_gf as slurm
 
 
 def main():
