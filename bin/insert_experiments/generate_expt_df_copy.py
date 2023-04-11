@@ -1,60 +1,9 @@
 """
-This script takes numerous parameters as input i.e
+This script takes various parameters as input, including background sequences and directories for CTCF data in h5 format. These directories can be provided using the 'ctcf_h5_dirs' argument. A JSON file, which includes file paths for various insert data tsv files, can also be provided using the 'json-file' argument.
 
-(1) 'ctcf_locus_specification_1' 
-(2) 'ctcf_locus_specification_2',
-(3) 'gene_locus_specification',
-(4) 'enhancer_locus_specification',
-(5) 'ctcf_flank_bp_1',
-(6) 'ctcf_flank_bp_2',
-(7) 'gene_flank_bp',
-(8) 'enhancer_flank_bp',
-(9) 'background_seqs',
-(10) 'ctcf_offset_1',
-(11) 'ctcf_offset_2',
-(12) 'gene_offset',
-(13) 'enhancer_offset',
-(14) 'ctcf_orientation_1',
-(15) 'ctcf_orientation_2',
-(16) 'gene_orientation',
-(17) 'enhancer_orientation',
+This script allows for the creation of different virtual insertions by changing the offsets and orientation of CTCFs. For example, to create a boundary with close CTCFs, the 'ctcf_offset_1' parameter would be set to 0, the 'ctcf_offset_2' parameter would be set to 120, and the 'ctcf_orientation_1' and 'ctcf_orientation_2' parameters would be set to ">".
 
-
-and creats a dataframe with different permutation of these parameters which can be used to generate scores for different scenarios in experimental setting i.e
-
-Background with; 
-    CTCFs alone
-    Enhancers alone
-    Promoters alone
-    Ehancer-Promoter
-    Ehancer-CTCF
-    Promoter-CTCF
-    CTCF-Ehancer-Promoter
-    ..etc
-    
-    
-By changing offsets and orientation of CTCFs, on can experiment with creating different layouts e.g;
-
-    Boundary(close CTCFs):
-        'ctcf_offset_1' = 0
-        'ctcf_offset_2' = 120
-        'ctcf_orientation_1' = ">"
-        'ctcf_orientation_2' = ">"
-    TADs:  
-        'ctcf_offset_1' = -490000  
-        'ctcf_offset_2' = 490000
-        'ctcf_orientation_1' = ">"
-        'ctcf_orientation_2' = "<"
-        
-NOTE: maximum offset on either positive or negative is around 500000(remember for positive offest you need to leave some basepairs to accomodate your insert)
-
-
-sample input paths to respective files are:
-
-    -ctcf_h5_dirs: /project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model1/scd.h5
-    -promoters_df: ~/akita_utils/bin/insert_experiments/data/promoter_score_sample.csv
-    -enhancers_df: ~/akita_utils/bin/insert_experiments/data/enhancer_score_sample.csv
-    
+The script outputs a dataframe with different permutations of inserts, which can be used to generate scores for different virtual insertions. These inserts include background with CTCFs alone, enhancers alone, promoters alone, enhancer-promoter, enhancer-CTCF, promoter-CTCF, CTCF-enhancer-promoter, and others. Note that the maximum offset on either positive or negative is around 500,000 base pairs.
 """
 # import general libraries
 import itertools
@@ -70,7 +19,6 @@ import gtfparse
 import argparse
 from pathlib import Path
 from io import StringIO
-
 import sys
 import json
 
@@ -102,21 +50,44 @@ def main():
         help="fasta file",
         default="/project/fudenber_735/genomes/mm10/mm10.fa",
     )
-    parser.add_argument("-score_key", dest="score_key", default="SCD")
-    parser.add_argument("-ctcf_h5_dirs", dest="h5_dirs", help="h5_dirs", default=None)
-    parser.add_argument("-mode", dest="mode", default="uniform")
-    parser.add_argument("-num_sites", dest="num_sites", default=2, type=int)
     parser.add_argument(
-        "-background_seqs", nargs="+", dest="background_seqs", default=[0], type=int
+        "-score_key", 
+        dest="score_key", 
+        default="SCD"
     )
     parser.add_argument(
-        "-o", dest="out_dir", default="default_exp_data", help="where to store output"
+        "-ctcf_h5_dirs", 
+        dest="h5_dirs", 
+        help="h5_dirs", 
+        default=None
     )
     parser.add_argument(
-        "-ctcfs_df", dest="ctcfs_dataframe", help="ctcfs_dataframe path"
+        "-mode", 
+        dest="mode", 
+        default="uniform"
     )
     parser.add_argument(
-        "--json-file", help="Path to JSON file with insert(s) dataframe(s)"
+        "-num_sites", 
+        dest="num_sites", 
+        default=2, 
+        type=int
+    )
+    parser.add_argument(
+        "-background_seqs", 
+        nargs="+", 
+        dest="background_seqs", 
+        default=[0], 
+        type=int
+    )
+    parser.add_argument(
+        "-o", 
+        dest="out_dir", 
+        default="default_exp_data", 
+        help="where to store output"
+    )
+    parser.add_argument(
+        "--json-file", 
+        help="Path to JSON file with insert(s) dataframe(s)"
     )
     parser.add_argument(
         "-ctcf_offset_1",
@@ -209,7 +180,7 @@ def main():
 
         # Loop through each dataframe in the JSON data
         for i, df_data in enumerate(data):
-            # Create a subparser for the dataframe
+            
             parser_df = subparsers.add_parser(f"df{i+1}")
             parser_df.add_argument(
                 f"--data", default=None, help=f"Path to dataframe {i+1} CSV file"
@@ -248,15 +219,11 @@ def main():
             flank_bp = secondary_args.flank_bp or df_data["flank_bp"]
             orientation = secondary_args.orientation or df_data["orientation"]
 
-            # Read the CSV file into a dataframe
             df = pd.read_csv(df_path)
             insert_names_list += [f"{i+1}"]
-
             dfs.append((df, offset, flank_bp, orientation, i + 1))
 
-            print(f"finished dataset {i}")
-
-        print(f"Number of datasets is {len(dfs)}")
+            print(f"finished processing dataset {i}")
 
         for df, offset, flank_bp, orientation, dataframe_number in dfs:
             locus_specification_list = (

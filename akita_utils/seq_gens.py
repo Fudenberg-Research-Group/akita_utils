@@ -212,7 +212,7 @@ def modular_offsets_insertion_seqs_gen(
         seq_coords_df (pandas DataFrame): A DataFrame with one row per desired sequence modification, and columns specifying the location and orientation of each insertion.
             Each row should contain the following columns:
             - 'background_seqs': the index of the background sequence to modify (must match the index of a row in the background_seqs DataFrame).
-            - One or more columns with names in the format 'insert_{i}_${chrom},{start},{end},{strand}', where 'i' is an integer (starting from 1) and the remaining values specify the location and orientation of the DNA segment to insert.
+            - One or more columns with names in the format 'insert_{i}', where 'i' is an integer (starting from 1) and the remaining values specify the location and orientation of the DNA segment to insert.
               The values in each 'insert' column should be separated by the '$' delimiter, and should have the following format:
               - chrom: chromosome name (string)
               - start: 1-based start position of the DNA segment to insert (integer)
@@ -236,9 +236,8 @@ def modular_offsets_insertion_seqs_gen(
         orientation_string = []
         seq_1hot = background_seqs[s.background_seqs].copy()
 
-        # Loop through all columns in the dataframe
         for col_name in seq_coords_df.columns:
-            # Check if the column is an insert column
+            
             if "insert" in col_name:
                 (
                     insert_specification,

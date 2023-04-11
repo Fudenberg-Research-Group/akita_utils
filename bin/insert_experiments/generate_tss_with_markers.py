@@ -1,16 +1,9 @@
 '''
-This scripts explores /project/fudenber_735/collaborations/karissa_2022 which contains data about different markers 
-like NIPBL and H3K27 Acetylation and creates three dataframes,
+This script explores experimental data containing information about different markers, such as NIPBL and H3K27 Acetylation. It creates three dataframes: transcription start sites, promoters with corresponding markers, and enhancers with corresponding markers. These dataframes are used to generate different layouts for virtual insertions.
 
-    - Transcription start sites
-    - Prmoters with coreesponding markers
-    - Enhancers with corresponding markers
-    
-These dataframes are used to generate different layouts for virtual insertions.
+Arguments:
 
-Arguments
--u(int): this represents the number of upstream basepairs that could be considered as promoter sequence
-
+up_stream_bps (int): the number of upstream basepairs that should be considered as promoter sequence.
 '''
 
 import pandas as pd
@@ -22,101 +15,25 @@ import bioframe
 from akita_utils.dna_utils import scan_motif
 from akita_utils.seq_gens import generate_spans_start_positions
 
+import json
+import pandas as pd
+
+# Load JSON file
+with open("file_paths.json", "r") as f:
+    file_paths = json.load(f)
+
 
 def main():
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("-u", dest="up_stream_bps", help="number of basepairs upstream to consider as promoter", default=20000, type=int)
+    parser.add_argument("-up_stream_bps", dest="up_stream_bps", help="number of basepairs upstream to consider as promoter", default=20000, type=int)
 
     args = parser.parse_args()
-    
-    
-    chip_dir = (
-        "/project/fudenber_735/collaborations/karissa_2022/"
-        + "2022_09_features_for_RNAseq/ChIP-seq_in_WT-parental-E14/"
-    )
-    bed_dict = {
-        "H3K27Ac": chip_dir + "H3K27ac_EA92-97_peaks.xls.bed",
-        "CTCF": chip_dir + "CTCF_peaks_called_on_4reps_foundInatLeast2reps_noBlacklist.bed",
-        "Nipbl": chip_dir + "Nipbl_112.175.197.114.177.196_peaks.xls.bed",
-        "Rad21": chip_dir
-        + "RAD21_peaks_called_on_6reps_foundInatLeast3reps_noBlacklist.bed",
-    }
 
-    # Load Chip-Seq files
-    chip_folder = "/project/fudenber_735/collaborations/karissa_2022/2022_09_features_for_RNAseq/ChIP-seq_in_WT-parental-E14/"
+    df = generate_expt_feature_df(file_paths)
 
-    ctcf_new = "CTCF_E14_RSC13new-22-37-60_average.bw"
-    rad21 = "RAD21_E14_RSC12new-21-36-59-74_average.bw"
-    nipbl = "NIPBL_E14_EA112-EA175_average.bw"
-    ring1b = "RING1B_E14_RSC24-39-62_average.bw"
-    H3K27Ac = "H3K27Ac_mESCs_EA92-EA94_average.bw"
-
-    dataset_folder = "/project/fudenber_735/collaborations/karissa_2022/2022_09_features_for_RNAseq/Published_datasets/"
-    chen_s1 = "Enhancers_Chen2012_S1_remapped_mm10.bed"
-    whythe_super = "Super-enhancers_mESCs_(OSN-MED1)_Wythe-Cell-2023_mm10-lifetover.bed"
-
-    enhancer_dict = {
-        "enh_chen_s1": dataset_folder + chen_s1,
-        "enh_wythe_super": dataset_folder + whythe_super,
-    }
-
-    bed_dict = {**bed_dict, **enhancer_dict}  # dict with all required data
-
-
-    proj = (
-        "/project/fudenber_735/collaborations/karissa_2022/"
-        + "20220812_EA18-1_RNAseq-Analysis_forGeoff/"
-    )
-
-    # Importing day 1 depletion in ESCs DEGS
-    day1_sigRes = (
-        "EA18.1_ESC_1d-depletion_DESeq2/20220817_EA18-1_resSig_ESC_1d-depletion.csv"
-    )
-
-    # Sample count data for the non-significant results
-    normalized_counts = (
-        "EA18.1_ESC_1d-depletion_DESeq2/20220817_EA18-1_ESC-1d_sf-normalized.csv"
-    )
-    vst_normalized_counts = "EA18.1_ESC_1d-depletion_DESeq2/20220817_EA18-1_ESC-1d_sf-normalized_vst-transformed.csv"
-    feature_counts = "20220816_featureCounts.csv"
-
-    WT_samples = ["KHRNA1", "KHRNA7", "KHRNA13", "KHRNA22", "KHRNA23", "KHRNA50"]
-    day1_res_df = pd.read_csv(proj + day1_sigRes)
-
-
-    # import table of raw feature counts and calculate average
-    feat_counts_df = pd.read_csv(proj + feature_counts).rename(
-        columns={"Unnamed: 0": "Geneid"}
-    )
-    feat_counts_df["avg"] = feat_counts_df[WT_samples].mean(axis="columns")
-    # print('raw feature counts shape: ', str(feat_counts_df.shape))
-
-    # import table of normalized feature counts and calculate average
-    vst_counts_df = pd.read_csv(proj + vst_normalized_counts).rename(
-        columns={"Unnamed: 0": "Geneid"}
-    )
-    vst_counts_df["avg"] = vst_counts_df[WT_samples].mean(axis="columns")
-    # print('vst normalized feature counts shape: ', str(vst_counts_df.shape))
-
-    feat_counts_df = feat_counts_df.merge(
-        vst_counts_df, on="Geneid", how="left", suffixes=("_counts", "_vst_counts")
-    )
-    feat_counts_df["avg_vst_counts"].fillna(feat_counts_df["avg_counts"], inplace=True)
-
-    # print(feat_counts_df.shape)
-    # print(feat_counts_df['avg_vst_counts'].isna().sum())
-
-    # add average normalized counts value to results df
-    day1_res_df = day1_res_df.merge(
-        feat_counts_df[["Geneid", "avg_vst_counts", "avg_counts"]], on="Geneid", how="outer"
-    )
-    df = day1_res_df.copy()
-
-    tss_df = read_gtf(
-        "/project/fudenber_735/collaborations/karissa_2022/"
-        + "old/RNAseq/STAR_Gencode_alignment/tss_annotions_gencode.vM23.primary_assembly.gtf"
-    )
+    tss_annotations = file_paths["proj_files"]["tss_annotations"]
+    tss_df = read_gtf(tss_annotations)
     tss_intervals = get_tss_gene_intervals(tss_df)
     tss_intervals["tss"] = tss_intervals["start"].copy()
 
@@ -128,39 +45,23 @@ def main():
     tss_df = tss_df.query("avg_counts> 5").copy()
     tss_df.to_csv(f"./data/tss_dataframe.tsv", sep="\t", index=False)
 
-
-    enhancer_df = bioframe.read_table(enhancer_dict["enh_chen_s1"], schema="bed3", header=1)
-    enhancer_df = bioframe_clean_autosomes(enhancer_df)
     nbins = 1
-
-    enhancer_NIPBL_df = pd.DataFrame(
-        generate_signal_matrix(enhancer_df, chip_folder + nipbl, nbins=nbins),
-        columns=[f"enhancer_NIPBL_score_{i}" for i in range(nbins)],
-    )
-    enhancer_H3K27Ac_df = pd.DataFrame(
-        generate_signal_matrix(enhancer_df, chip_folder + H3K27Ac, nbins=nbins),
-        columns=[f"enhancer_H3K27Ac_score_{i}" for i in range(nbins)],
-    )
+    
+    enhancer_path = file_paths["enhancer_files"]["enh_chen_s1"]
+    enhancer_df = bioframe.read_table(enhancer_path, schema="bed3", header=1)
+    enhancer_df = bioframe_clean_autosomes(enhancer_df)
+    enhancer_NIPBL_df = generate_score_df("Nipbl", "enhancer_NIPBL_score", enhancer_df, nbins=nbins)
+    enhancer_H3K27Ac_df = generate_score_df("H3K27Ac", "enhancer_H3K27Ac_score", enhancer_df, nbins=nbins)    
     enhancer_merged_df = pd.concat(
-        [
-            enhancer_df.reset_index(drop=True),
-            enhancer_NIPBL_df.reset_index(drop=True),
-            enhancer_H3K27Ac_df.reset_index(drop=True),
-        ],
+        [        enhancer_df.reset_index(drop=True),        enhancer_NIPBL_df.reset_index(drop=True),        enhancer_H3K27Ac_df.reset_index(drop=True),    ],
         axis=1,
     )
     enhancer_merged_df.to_csv("./data/enhancer_score_sample.csv")
 
 
     promoter_df = generate_promoter_df(tss_df, up_stream_bps=args.up_stream_bps)
-    promoter_NIPBL_df = pd.DataFrame(
-        generate_signal_matrix(promoter_df, chip_folder + nipbl, nbins=nbins),
-        columns=[f"promoter_NIPBL_score_{i}" for i in range(nbins)],
-    )
-    promoter_H3K27Ac_df = pd.DataFrame(
-        generate_signal_matrix(promoter_df, chip_folder + H3K27Ac, nbins=nbins),
-        columns=[f"promoter_H3K27Ac_score_{i}" for i in range(nbins)],
-    )
+    promoter_NIPBL_df = generate_score_df("Nipbl", "promoter_NIPBL_score", enhancer_df, nbins=nbins)
+    promoter_H3K27Ac_df = generate_score_df("H3K27Ac", "promoter_H3K27Ac_score", enhancer_df, nbins=nbins)
     promoter_merged_df = pd.concat(
         [
             promoter_df.reset_index(drop=True),
@@ -175,6 +76,77 @@ def main():
     
 # -------------------------------------------------------------------------------------------------
 # used functions below    
+
+def generate_expt_feature_df(file_paths):
+    """
+    Generates a feature DataFrame for the experiment using the provided file paths.
+
+    Args:
+        file_paths (dict): A dictionary containing file paths for the following files:
+            - proj_files.day1_sigRes: a CSV file containing day 1 significant results.
+            - proj_files.feature_counts: a CSV file containing raw feature counts.
+            - proj_files.vst_normalized_counts: a CSV file containing normalized feature counts.
+
+    Returns:
+        A pandas DataFrame containing the experiment feature data, with the following columns:
+            - Geneid: the gene ID.
+            - Chr: the chromosome.
+            - Start: the start position of the feature.
+            - End: the end position of the feature.
+            - Strand: the strand of the feature.
+            - Length: the length of the feature.
+            - TreatmentMean: the mean value of the treatment.
+            - Log2FoldChange: the log2 fold change of the feature.
+            - pvalue: the p-value of the feature.
+            - avg_counts: the average of raw feature counts across WT samples.
+            - avg_vst_counts: the average of normalized feature counts across WT samples.
+
+    Raises:
+        FileNotFoundError: If any of the required files are not found.
+        ValueError: If any of the required files are empty or contain invalid data.
+    """
+        
+    WT_samples = ["KHRNA1", "KHRNA7", "KHRNA13", "KHRNA22", "KHRNA23", "KHRNA50"]
+    
+    day1_sigRes = file_paths["proj_files"]["day1_sigRes"]
+    day1_res_df = pd.read_csv(day1_sigRes)
+
+    # import table of raw feature counts and calculate average
+    feature_counts = file_paths["proj_files"]["feature_counts"]
+    feat_counts_df = pd.read_csv(feature_counts).rename(
+        columns={"Unnamed: 0": "Geneid"}
+    )
+    feat_counts_df["avg"] = feat_counts_df[WT_samples].mean(axis="columns")
+
+    # import table of normalized feature counts and calculate average
+    vst_normalized_counts = file_paths["proj_files"]["vst_normalized_counts"]
+    vst_counts_df = pd.read_csv(vst_normalized_counts).rename(
+        columns={"Unnamed: 0": "Geneid"}
+    )
+    vst_counts_df["avg"] = vst_counts_df[WT_samples].mean(axis="columns")
+    
+    feat_counts_df = feat_counts_df.merge(
+        vst_counts_df, on="Geneid", how="left", suffixes=("_counts", "_vst_counts")
+    )
+    feat_counts_df["avg_vst_counts"].fillna(feat_counts_df["avg_counts"], inplace=True)
+
+    # add average normalized counts value to results df
+    day1_res_df = day1_res_df.merge(
+        feat_counts_df[["Geneid", "avg_vst_counts", "avg_counts"]], on="Geneid", how="outer"
+    )
+    expt_feature_df = day1_res_df.copy()
+    
+    return expt_feature_df
+
+
+
+def generate_score_df(filename, column_name, enhancer_df, nbins=1):
+    bw_path = file_paths["bw_files"][filename]
+    score_matrix = generate_signal_matrix(enhancer_df, bw_path, nbins=nbins)
+    score_columns = [f"{column_name}_{i}" for i in range(nbins)]
+    return pd.DataFrame(score_matrix, columns=score_columns)
+
+
 
 def generate_signal_matrix(
     interval_df,
@@ -296,12 +268,29 @@ def label_DE_status(
 
 
 def generate_promoter_df(feature_dataframe, up_stream_bps=10000):
+    """
+    Given a feature dataframe, generate a promoter dataframe by extending the
+    start position upstream by up_stream_bps if the strand is positive, or extending
+    the end position downstream by up_stream_bps if the strand is negative.
+
+    Args:
+    - feature_dataframe: Pandas dataframe containing the genomic coordinates of
+      the features
+    - up_stream_bps: Number of base pairs to extend upstream for positive strand
+      features or downstream for negative strand features. Default is 10000.
+
+    Returns:
+    - A new Pandas dataframe with the updated genomic coordinates.
+    """
+
     for row in feature_dataframe.itertuples():
         if row.strand == "+":
             feature_dataframe["start"].at[row.Index] = row.start - up_stream_bps
         else:
             feature_dataframe["end"].at[row.Index] = row.end + up_stream_bps
+
     return feature_dataframe
+
 
   
 if __name__ == "__main__":

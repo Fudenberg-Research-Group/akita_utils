@@ -571,6 +571,23 @@ def generate_ctcf_positons(
     weak_thresh_pct=1,
     strong_thresh_pct=99,
 ):
+    '''
+    This function generates a list of genomic coordinates for potential CTCF binding sites in DNA sequences.
+
+    Arguments:
+
+    h5_dirs: a list of directories containing input .h5 files
+    rmsk_file: path to a .bed file containing repeat-masker annotations
+    jaspar_file: path to a JASPAR-formatted CTCF motif database
+    score_key: key to extract score values of putative binding sites from input .h5 files
+    mode: one of "head", "tail", "uniform", "random"; specifies which percentiles of CTCF sites ranked by score should be selected
+    num_sites: number of sites to select per mode
+    weak_thresh_pct: percentile below which putative binding sites are considered weak (default 1)
+    strong_thresh_pct: percentile above which putative binding sites are considered strong (default 99)
+    Returns:
+
+    A list of strings representing genomic coordinates of putative CTCF binding sites in format "chrom,start,end,strand#score_key=score_value".
+    '''
     sites = akita_utils.tsv_gen_utils.filter_boundary_ctcfs_from_h5(
         h5_dirs=h5_dirs,
         score_key=score_key,
@@ -641,6 +658,23 @@ def generate_locus_specification_list(
     specification_list=None,
     unique_identifier="dummy",
 ):
+    """
+    Generate a list of locus specifications from a dataframe of genomic features.
+
+    Args:
+        dataframe (pandas.DataFrame): A pandas dataframe containing genomic features with columns 
+            'chrom', 'start', 'end', 'strand' and additional columns to be included in the output.
+        genome_open (pysam.Fasta): An opened reference genome file in the pysam.Fasta format.
+        motif_threshold (int, optional): The maximum number of motifs allowed in a feature. Defaults to 1.
+        specification_list (list, optional): A list of indices to include in the output. Defaults to None.
+        unique_identifier (str, optional): A string to identify the unique identifier of additional columns. Defaults to "dummy".
+
+    Returns:
+        list: A list of locus specifications generated from the dataframe, where each specification is 
+            of the format "chrom,start,end,strand#unique_identifier_col_name=value#unique_identifier_col_name=value..."
+
+    """
+    
     # -----------different method of scanning for motifs-------------------
     # feature_dataframe["enhancer_num_of_motifs"] = None # initialisation
     # for row in feature_dataframe.itertuples():
@@ -691,6 +725,30 @@ def generate_locus_specification_list(
 
 
 def parameter_dataframe_reorganisation(parameters_combo_dataframe, insert_names_list):
+    """
+    Reorganizes a parameter combination dataframe to have separate columns for each insert and its
+    associated parameters.
+
+    Args:
+        parameters_combo_dataframe (pandas.DataFrame): A dataframe with the parameter combinations
+            to test, where each row represents a unique combination of parameters and each column
+            represents a different parameter. The dataframe must have columns with the locus
+            specification for each insert, as well as columns with the flank size, offset, and
+            orientation for each insert.
+        insert_names_list (list): A list of the names of the inserts to be included in the final
+            output dataframe.
+
+    Returns:
+        pandas.DataFrame: A reorganized version of the input dataframe, with separate columns for
+        each insert and its associated parameters. Each row corresponds to a unique combination of
+        parameters, and each column contains the locus specification, flank size, offset, and
+        orientation for one insert.
+
+    Raises:
+        AssertionError: If any of the insert-specific column names are not found in the input
+            dataframe columns.
+
+    """
     for col_name in parameters_combo_dataframe.columns:
         if "locus_specification" in col_name:
             split_df = parameters_combo_dataframe[col_name].str.split("#", expand=True)
