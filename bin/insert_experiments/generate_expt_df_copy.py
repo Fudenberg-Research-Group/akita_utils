@@ -50,44 +50,18 @@ def main():
         help="fasta file",
         default="/project/fudenber_735/genomes/mm10/mm10.fa",
     )
+    parser.add_argument("-score_key", dest="score_key", default="SCD")
+    parser.add_argument("-ctcf_h5_dirs", dest="h5_dirs", help="h5_dirs", default=None)
+    parser.add_argument("-mode", dest="mode", default="uniform")
+    parser.add_argument("-num_sites", dest="num_sites", default=2, type=int)
     parser.add_argument(
-        "-score_key", 
-        dest="score_key", 
-        default="SCD"
+        "-background_seqs", nargs="+", dest="background_seqs", default=[0], type=int
     )
     parser.add_argument(
-        "-ctcf_h5_dirs", 
-        dest="h5_dirs", 
-        help="h5_dirs", 
-        default=None
+        "-o", dest="out_dir", default="default_exp_data", help="where to store output"
     )
     parser.add_argument(
-        "-mode", 
-        dest="mode", 
-        default="uniform"
-    )
-    parser.add_argument(
-        "-num_sites", 
-        dest="num_sites", 
-        default=2, 
-        type=int
-    )
-    parser.add_argument(
-        "-background_seqs", 
-        nargs="+", 
-        dest="background_seqs", 
-        default=[0], 
-        type=int
-    )
-    parser.add_argument(
-        "-o", 
-        dest="out_dir", 
-        default="default_exp_data", 
-        help="where to store output"
-    )
-    parser.add_argument(
-        "--json-file", 
-        help="Path to JSON file with insert(s) dataframe(s)"
+        "--json-file", help="Path to JSON file with insert(s) dataframe(s)"
     )
     parser.add_argument(
         "-ctcf_offset_1",
@@ -180,7 +154,6 @@ def main():
 
         # Loop through each dataframe in the JSON data
         for i, df_data in enumerate(data):
-            
             parser_df = subparsers.add_parser(f"df{i+1}")
             parser_df.add_argument(
                 f"--data", default=None, help=f"Path to dataframe {i+1} CSV file"
@@ -239,9 +212,7 @@ def main():
                 f"{dataframe_number}_locus_specification"
             ] = locus_specification_list
             grid_search_params[f"{dataframe_number}_flank_bp"] = flank_bp
-            grid_search_params[
-                f"{dataframe_number}_offset"
-            ] = offset  
+            grid_search_params[f"{dataframe_number}_offset"] = offset
             grid_search_params[f"{dataframe_number}_orientation"] = orientation
 
     print("Done preprocessing")

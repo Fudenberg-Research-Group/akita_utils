@@ -202,9 +202,7 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open, use_span=True):
 # -----------------------------modifying this function-----------------------------
 
 
-def modular_offsets_insertion_seqs_gen(
-    seq_coords_df, background_seqs, genome_open
-):  
+def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
     """
     Generate modified DNA sequences by inserting variable-length DNA segments into specified locations in a background sequence.
 
@@ -237,7 +235,6 @@ def modular_offsets_insertion_seqs_gen(
         seq_1hot = background_seqs[s.background_seqs].copy()
 
         for col_name in seq_coords_df.columns:
-            
             if "insert" in col_name:
                 (
                     insert_specification,

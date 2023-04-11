@@ -571,7 +571,7 @@ def generate_ctcf_positons(
     weak_thresh_pct=1,
     strong_thresh_pct=99,
 ):
-    '''
+    """
     This function generates a list of genomic coordinates for potential CTCF binding sites in DNA sequences.
 
     Arguments:
@@ -587,7 +587,7 @@ def generate_ctcf_positons(
     Returns:
 
     A list of strings representing genomic coordinates of putative CTCF binding sites in format "chrom,start,end,strand#score_key=score_value".
-    '''
+    """
     sites = akita_utils.tsv_gen_utils.filter_boundary_ctcfs_from_h5(
         h5_dirs=h5_dirs,
         score_key=score_key,
@@ -639,7 +639,7 @@ def generate_ctcf_positons(
 
     extra_cols = set(seq_coords_df.columns) - set(
         ["chrom", "start", "end", "strand", "locus_specification"]
-    )  
+    )
     for col in extra_cols:
         seq_coords_df["locus_specification"] += (
             "#" + col + "=" + seq_coords_df[col].astype(str)
@@ -662,7 +662,7 @@ def generate_locus_specification_list(
     Generate a list of locus specifications from a dataframe of genomic features.
 
     Args:
-        dataframe (pandas.DataFrame): A pandas dataframe containing genomic features with columns 
+        dataframe (pandas.DataFrame): A pandas dataframe containing genomic features with columns
             'chrom', 'start', 'end', 'strand' and additional columns to be included in the output.
         genome_open (pysam.Fasta): An opened reference genome file in the pysam.Fasta format.
         motif_threshold (int, optional): The maximum number of motifs allowed in a feature. Defaults to 1.
@@ -670,11 +670,11 @@ def generate_locus_specification_list(
         unique_identifier (str, optional): A string to identify the unique identifier of additional columns. Defaults to "dummy".
 
     Returns:
-        list: A list of locus specifications generated from the dataframe, where each specification is 
+        list: A list of locus specifications generated from the dataframe, where each specification is
             of the format "chrom,start,end,strand#unique_identifier_col_name=value#unique_identifier_col_name=value..."
 
     """
-    
+
     # -----------different method of scanning for motifs-------------------
     # feature_dataframe["enhancer_num_of_motifs"] = None # initialisation
     # for row in feature_dataframe.itertuples():
