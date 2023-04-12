@@ -8,9 +8,9 @@
    
             python generate_scores_for_shuffled_seqs.py /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5 /home1/kamulege/akita_utils/bin/background_seq_experiments/data/shuffled_seqs_test.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /home1/kamulege/akita_utils/bin/background_seq_experiments/data/pure_shuffled_seqs_scores --batch-size 4 --stats SCD &
         
-   - (3) generating scores for shuffled seqs tsv in bulk using multiple processes (considering improvements here)
+   - (3) generating scores for shuffled seqs tsv in bulk using multiple processes 
 
-            python multiGPU_generate_scores_for_shuffled_seqs.py /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5 /home1/kamulege/akita_utils/bin/background_seq_experiments/data/shuffled_seqs.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /home1/kamulege/akita_utils/bin/background_seq_experiments/data/shuffled_seqs_scores_1 --head-index 1 --model-index 1 --batch-size 4 --stats SCD,MPS,CS -p 7 --max_proc 7 --time 01:00:00 &    
+            python multiGPU_generate_scores_for_shuffled_seqs.py /project/fudenber_735/tensorflow_models/akita/v2/models /home1/kamulege/akita_utils/bin/background_seq_experiments/data/shuffled_seqs.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /home1/kamulege/akita_utils/bin/background_seq_experiments/data/shuffled_seqs_scores_1 --head-index 1 --model-index 1 --batch-size 4 --stats SCD -p 1 --max_proc 7 --time 00:01:00 &    
         
 <!-- -------------------------------------------------------------------------------------------- -->
 

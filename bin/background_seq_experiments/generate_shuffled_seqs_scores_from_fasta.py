@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-# =========================================================================
 """
 This script generates scores for the shuffled seqs in the input fasta file while using the specified model and paramters
 """
@@ -171,7 +170,6 @@ def main():
 
     random.seed(44)
 
-    #################################################################
     # read model parameters
     with open(params_file) as params_open:
         params = json.load(params_open)
@@ -188,7 +186,6 @@ def main():
         target_ids = targets_df.identifier
         target_labels = targets_df.description
 
-    #################################################################
     # setup model
     head_index = options.head_index
     model_index = options.model_index
@@ -204,7 +201,6 @@ def main():
         target_ids = ["t%d" % ti for ti in range(num_targets)]
         target_labels = [""] * len(target_ids)
 
-    #################################################################
     # setup output
 
     scd_out = initialize_output_h5(
@@ -221,10 +217,8 @@ def main():
 
     seq_IDs = [line for line in open(shuffled_seqs_fasta_file) if line.startswith(">")]
     num_experiments = num = len(seq_IDs)
-    #################################################################
-    # predict SNP scores, write output
 
-    # initialize predictions stream
+    # predict SNP scores, write output
     preds_stream = stream.PredStreamGen(
         seqnn_model,
         akita_utils.seq_gens.fasta_shuffled_seq_gen(shuffled_seqs_fasta_file),

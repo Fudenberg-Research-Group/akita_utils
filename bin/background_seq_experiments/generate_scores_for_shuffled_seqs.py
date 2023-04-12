@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
-# =========================================================================
+"""
+This scripts takes a tsv (oftenly shuffled seqs) and specified model to be used to generate the scores for each shuffled seq
+
+it outputs H5 files of scores from the experiments from tsv file in your specified directory
+"""
 from __future__ import print_function
 
 import logging
@@ -37,11 +41,7 @@ import akita_utils
 
 
 def main():
-    """
-    This scripts takes a tsv (oftenly shuffled seqs) and specified model to be used to generate the scores for each shuffled seq
 
-    it outputs H5 files of scores from the experiments from tsv file in your specified directory
-    """
     usage = "usage: %prog [options] <params_file> <model_file> <shuffled_seqs_tsv>"
     parser = OptionParser(usage)
     parser.add_option(
@@ -228,9 +228,7 @@ def main():
         options.genome_fasta
     )  # needs to be closed at some point
 
-    #################################################################
     # setup output
-
     scd_out = initialize_output_h5(
         options.out_dir,
         options.scd_stats,

@@ -194,9 +194,7 @@ def main():
         new_args = [params_file, model_file, fasta_file]
         options.name = f"{options.name}_m{options.model_index}"
 
-    #######################################################
     # prep work
-
     options.out_dir = f"{options.out_dir}/shuffled_seqs_scores_model{options.model_index}_head{options.head_index}"
 
     # output directory
@@ -212,7 +210,6 @@ def main():
     pickle.dump(options, options_pkl)
     options_pkl.close()
 
-    #######################################################
     # launch worker threads
     jobs = []
     for pi in range(options.processes):
