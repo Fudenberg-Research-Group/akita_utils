@@ -2,11 +2,11 @@
 
    - (1) generating tsv table for bulk simulations of shuffled seqs (mouse/human)
         
-            python generate_shuffled_seqs_df.py -f /project/fudenber_735/genomes/mm10/mm10.fa -seq_bed_file /project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed
+            python generate_shuffled_seqs_df.py -f /project/fudenber_735/genomes/mm10/mm10.fa -seq_bed_file /project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed --output_filename data/shuffled_seqs_test.tsv
                 
    - (2) generating scores for shuffled seqs tsv
    
-            python generate_scores_for_shuffled_seqs.py /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5 /home1/kamulege/akita_utils/bin/background_seq_experiments/data/shuffled_seqs.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /home1/kamulege/akita_utils/bin/background_seq_experiments/data/pure_shuffled_seqs_scores --batch-size 4 --stats SCD,MPS,CS &
+            python generate_scores_for_shuffled_seqs.py /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5 /home1/kamulege/akita_utils/bin/background_seq_experiments/data/shuffled_seqs_test.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /home1/kamulege/akita_utils/bin/background_seq_experiments/data/pure_shuffled_seqs_scores --batch-size 4 --stats SCD &
         
    - (3) generating scores for shuffled seqs tsv in bulk using multiple processes (considering improvements here)
 
