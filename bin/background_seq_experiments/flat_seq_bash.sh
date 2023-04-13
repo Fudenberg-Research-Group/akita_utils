@@ -5,7 +5,7 @@ models_dir="/project/fudenber_735/tensorflow_models/akita/v2/models"
 tsv_file="data/flat_seqs_mouse.tsv"
 genome_fasta="/project/fudenber_735/genomes/mm10/mm10.fa"
 
-models='1'
+models='1 2 3 4 5 6'
 
 for model in $models
 do
