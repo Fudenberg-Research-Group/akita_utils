@@ -30,10 +30,8 @@ genome_fasta = '/project/fudenber_735/genomes/hg38/hg38.fa'#human
 """
 
 # import general libraries
-import os
 import itertools
 import pandas as pd
-import numpy as np
 import bioframe
 import argparse
 import akita_utils.tsv_gen_utils

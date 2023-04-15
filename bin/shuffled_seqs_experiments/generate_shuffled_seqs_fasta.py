@@ -2,7 +2,6 @@
 This scripts takes the seqs tsv with respective parameters to generate specified shuffled seqs fasta in specified output dir
 """
 
-import numpy as np
 import pandas as pd
 import pysam
 import argparse

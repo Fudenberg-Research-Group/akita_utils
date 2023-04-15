@@ -20,10 +20,8 @@ To generate multiple maps, provide multiple value of same parameter in CLI, i.e 
 
 # import general libraries
 
-import os
 import itertools
 import pandas as pd
-import numpy as np
 import bioframe
 import argparse
 import akita_utils.tsv_gen_utils

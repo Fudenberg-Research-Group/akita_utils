@@ -28,10 +28,6 @@ output: fasta file with the created flat seqs
 from optparse import OptionParser
 import os
 import pickle
-import subprocess
-import sys
-import h5py
-import numpy as np
 import akita_utils.slurm_gf as slurm
 import logging
 

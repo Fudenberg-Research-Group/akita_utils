@@ -26,17 +26,11 @@ log = logging.getLogger(__name__)
 from optparse import OptionParser
 import json
 import os
-import pdb
 import pickle
 import random
-import sys
-import time
-import bioframe
-import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import pysam
 from skimage.measure import block_reduce
 import seaborn as sns
 
@@ -50,8 +44,6 @@ gpus = tf.config.experimental.list_physical_devices("GPU")
 log.info(gpus)
 
 from basenji import seqnn
-from basenji import stream
-from basenji import dna_io
 import akita_utils
 
 

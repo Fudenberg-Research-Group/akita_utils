@@ -23,7 +23,6 @@ import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import pysam
 from skimage.measure import block_reduce
 import seaborn as sns
 
@@ -211,7 +210,7 @@ def main():
     log.info("initialized")
 
     seq_IDs = [line for line in open(shuffled_seqs_fasta_file) if line.startswith(">")]
-    num_experiments = num = len(seq_IDs)
+    num_experiments = len(seq_IDs)
 
     # predict SNP scores, write output
     preds_stream = stream.PredStreamGen(
