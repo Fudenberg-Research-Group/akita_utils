@@ -81,7 +81,7 @@ jobs:
         run: |
           pip install -e .[test]
           pip install -r requirements-test.txt
-          pip freeze
+          pip list
           make test
 
   tests_win:
@@ -102,5 +102,5 @@ jobs:
         run: |
           pip install -e .[test]
           pip install -r requirements-test.txt
-          pip freeze
+          pip list
           pytest -s -vvvv -l --tb=long tests
