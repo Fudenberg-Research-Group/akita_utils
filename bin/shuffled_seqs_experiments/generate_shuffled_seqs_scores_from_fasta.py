@@ -44,7 +44,6 @@ import akita_utils
 
 
 def main():
-
     usage = (
         "usage: %prog [options] <params_file> <model_file> <shuffled_seqs_fasta_file>"
     )

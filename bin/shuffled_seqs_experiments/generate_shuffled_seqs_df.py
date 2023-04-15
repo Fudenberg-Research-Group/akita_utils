@@ -40,14 +40,8 @@ import akita_utils.tsv_gen_utils
 
 
 def main():
-
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-f", 
-        dest="genome_fasta", 
-        help="fasta file", 
-        required=True
-    )
+    parser.add_argument("-f", dest="genome_fasta", help="fasta file", required=True)
     parser.add_argument(
         "-seq_bed_file",
         dest="seq_bed_file",
@@ -63,7 +57,7 @@ def main():
     parser.add_argument(
         "--shuffle_parameter",
         nargs="+",
-        default=[2,4,8],
+        default=[2, 4, 8],
         type=int,
         help="List of integers sepaerated by spaces eg 2 4",
     )
@@ -77,7 +71,13 @@ def main():
     parser.add_argument(
         "--mutation_method",
         nargs="+",
-        default=['permute_whole_seq','randomise_whole_seq','randomise_motif','permute_motif','mask_motif'],#["permute_whole_seq"],
+        default=[
+            "permute_whole_seq",
+            "randomise_whole_seq",
+            "randomise_motif",
+            "permute_motif",
+            "mask_motif",
+        ],  # ["permute_whole_seq"],
         help="List of strings from ['permute_whole_seq','randomise_whole_seq','randomise_motif','permute_motif','mask_motif']",
     )
     parser.add_argument(
@@ -86,11 +86,7 @@ def main():
         default=20,
         help="number of seqs to select from dataframe",
     )
-    parser.add_argument(
-        "--mode", 
-        default="uniform", 
-        help="loci selection criteria"
-    )
+    parser.add_argument("--mode", default="uniform", help="loci selection criteria")
     args = parser.parse_args()
 
     # prepare dataframe with chromosomes and calculate GC content(using bioframe)

@@ -41,7 +41,6 @@ import akita_utils
 
 
 def main():
-
     usage = "usage: %prog [options] <params_file> <model_file> <shuffled_seqs_tsv>"
     parser = OptionParser(usage)
     parser.add_option(
@@ -247,7 +246,9 @@ def main():
     # initialize predictions stream
     preds_stream = stream.PredStreamGen(
         seqnn_model,
-        akita_utils.seq_gens.background_exploration_seqs_gen(seq_coords_df, genome_open),
+        akita_utils.seq_gens.background_exploration_seqs_gen(
+            seq_coords_df, genome_open
+        ),
         batch_size,
     )
 
@@ -399,7 +400,7 @@ def write_snp(
         plt.tight_layout()
         plt.savefig("%s/s%d.pdf" % (plot_dir, si))
         plt.close()
-        
+
 
 if __name__ == "__main__":
     main()

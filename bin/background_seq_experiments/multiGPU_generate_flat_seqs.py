@@ -123,16 +123,16 @@ def main():
     )
 
     parser.add_option(
-        "-s", 
-        dest="save_seqs", 
-        default=True, 
+        "-s",
+        dest="save_seqs",
+        default=True,
         help="Save the final seqs in fasta format",
     )
 
     parser.add_option(
-        "--max_iters", 
-        dest="max_iters", 
-        default=10, 
+        "--max_iters",
+        dest="max_iters",
+        default=10,
         help="maximum iterations",
     )
 
@@ -191,10 +191,7 @@ def main():
         help="time to run job. [Default: %default]",
     )
     parser.add_option(
-        "--gres", 
-        dest="gres", 
-        default="gpu", 
-        help="gpu resources. [Default: %default]"
+        "--gres", dest="gres", default="gpu", help="gpu resources. [Default: %default]"
     )
     parser.add_option(
         "--constraint",

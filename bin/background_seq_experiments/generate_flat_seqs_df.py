@@ -30,12 +30,11 @@ import akita_utils.tsv_gen_utils
 
 
 def main():
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-f", 
-        dest="genome_fasta", 
-        help="fasta file", 
+        "-f",
+        dest="genome_fasta",
+        help="fasta file",
         required=True,
     )
     parser.add_argument(
@@ -51,9 +50,10 @@ def main():
         help="output_filename",
     )
     parser.add_argument(
-        "--shuffle_parameter", 
-        nargs="+", default=[8], 
-        type=int, 
+        "--shuffle_parameter",
+        nargs="+",
+        default=[8],
+        type=int,
         help="integers separated by spaces",
     )
     parser.add_argument(
@@ -76,8 +76,8 @@ def main():
         help="number of loci to select for background creation",
     )
     parser.add_argument(
-        "--mode", 
-        default="uniform", 
+        "--mode",
+        default="uniform",
         help="loci selection criteria",
     )
     parser.add_argument(

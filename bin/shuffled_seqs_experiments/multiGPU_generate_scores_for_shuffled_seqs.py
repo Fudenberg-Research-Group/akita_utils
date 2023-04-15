@@ -193,7 +193,6 @@ def main():
         new_args = [params_file, model_file, tsv_file]
         options.name = f"{options.name}_m{options.model_index}"
 
-
     # output directory
     if not options.restart:
         if os.path.isdir(options.out_dir):

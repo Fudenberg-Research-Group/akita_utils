@@ -56,6 +56,7 @@ from basenji import stream
 from basenji import dna_io
 import akita_utils
 
+
 def main():
     """
     This script generates flat seqs following the provided flat_seq_tsv file, specified model, and its parameters.
@@ -143,17 +144,11 @@ def main():
     )
 
     parser.add_option(
-        "-s", 
-        dest="save_seqs", 
-        default=True, 
-        help="Save the final seqs in fasta format"
+        "-s", dest="save_seqs", default=True, help="Save the final seqs in fasta format"
     )
 
     parser.add_option(
-        "--max_iters", 
-        dest="max_iters", 
-        default=10, 
-        help="maximum iterations"
+        "--max_iters", dest="max_iters", default=10, help="maximum iterations"
     )
 
     (options, args) = parser.parse_args()
@@ -270,7 +265,9 @@ def main():
         hic_diags = params_model["diagonal_offset"]
         for no, pred in enumerate(preds):
             ref_preds = pred
-            ref_map = akita_utils.utils.ut_dense(ref_preds, hic_diags)  # convert back to dense
+            ref_map = akita_utils.utils.ut_dense(
+                ref_preds, hic_diags
+            )  # convert back to dense
             _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4), sharey=True)
 
             sd2_preds = np.sqrt((ref_preds**2).sum(axis=0))
