@@ -128,11 +128,13 @@ def randomise_spans(seq_1hot, spans, motif_window):
         seq_1hot_perm[start : end] = random_seq_permutation(seq_1hot_perm[start : end])
     return seq_1hot_perm
 
+
 def random_seq_permutation(seq_1hot):
     seq_1hot_perm = seq_1hot.copy()
     random_inds = np.random.permutation(range(len(seq_1hot)))
     seq_1hot_perm = seq_1hot[random_inds, :].copy()
     return seq_1hot_perm
+
 
 def background_exploration_seqs_gen(seq_coords_df, genome_open, use_span=True):
     """function generates new seqs after applying specified modifications to the input dataframe seqs

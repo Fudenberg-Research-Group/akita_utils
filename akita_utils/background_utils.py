@@ -1,8 +1,6 @@
-import pandas as pd
 import numpy as np
 import pysam
 from .dna_utils import dna_1hot, permute_seq_k
-from .stats_utils import insul_diamonds_scores
 
 
 def create_flat_seqs_gen(
@@ -48,7 +46,7 @@ def create_flat_seqs_gen(
                 best_pred = pred[best_ind]
                 best_score, best_score_pixelwise = (scores[best_ind],scores_pixelwise[best_ind])
                 print("success: best seq, thresh",np.min(scores),
-                    " pixelwise",np.min(scores_pixelwise))
+                        " pixelwise",np.min(scores_pixelwise))
                 flat_seqs.append([best_seq,best_pred,best_score,best_score_pixelwise])
             num_iters += 1
             
@@ -58,5 +56,5 @@ def create_flat_seqs_gen(
 def _seq_batch_generator_flat_maps(seq_1hot, shuffle_k, batch_size):
     seq_1hot_batch = []
     for i in range(batch_size):
-            seq_1hot_batch.append(permute_seq_k(seq_1hot, k=shuffle_k))
+        seq_1hot_batch.append(permute_seq_k(seq_1hot, k=shuffle_k))
     return np.array(seq_1hot_batch)

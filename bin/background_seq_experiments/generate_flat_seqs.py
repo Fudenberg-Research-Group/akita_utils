@@ -240,7 +240,7 @@ def main():
                     + str(int(flat_seqs[i][3]))
                     + "\n"
                 )
-                f.write(dna_io.hot1_dna(flat_seqs[i][0]) + "\n")
+                f.write(akita_utils.dna_utils.dna_1hot_to_seq(flat_seqs[i][0]) + "\n")
         log.info(f"finished saving! \n plotting next if requested")
 
     # plot flat sequences

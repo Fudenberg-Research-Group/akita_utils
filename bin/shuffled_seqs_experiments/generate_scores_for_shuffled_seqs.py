@@ -115,7 +115,7 @@ def main():
         type="int",
         help="Specify model index (from 0 to 7)",
     )
-    ## insertion-specific options
+    # insertion-specific options
     parser.add_option(
         "--background-file",
         dest="background_file",

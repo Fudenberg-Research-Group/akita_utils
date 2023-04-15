@@ -255,7 +255,7 @@ def initialize_output_h5(
 
     num_targets = len(target_ids)
     seq_IDs = [line for line in open(shuffled_seqs_fasta_file) if line.startswith(">")]
-    num_experiments = num = len(seq_IDs)
+    num_experiments = len(seq_IDs)
     scd_out = h5py.File(f"{out_dir}/scd.h5", "w")
 
     scd_out.create_dataset(
