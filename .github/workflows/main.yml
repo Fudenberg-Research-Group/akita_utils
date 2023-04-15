@@ -80,6 +80,7 @@ jobs:
       - name: Create virtual environment and Install project and run tests
         run: |
           pip install -e .[test]
+          pip install -r requirements-test.txt
           pip freeze
           make test
 
@@ -100,5 +101,6 @@ jobs:
       - name: Install project and run tests
         run: |
           pip install -e .[test]
+          pip install -r requirements-test.txt
           pip freeze
           pytest -s -vvvv -l --tb=long tests
