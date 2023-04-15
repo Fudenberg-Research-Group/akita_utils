@@ -225,7 +225,7 @@ def main():
                 " ${SLURM_SUBMIT_DIR}/generate_scores_for_shuffled_seqs.py %s %s %d"
                 % (
                     options_pkl_file,
-                    " ".join(args),
+                    " ".join(new_args),
                     pi,
                 )
             )

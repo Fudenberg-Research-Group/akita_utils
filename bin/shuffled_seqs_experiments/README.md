@@ -2,15 +2,15 @@
 
    - (1) generating tsv table for bulk simulations of shuffled seqs (mouse/human)
         
-            python generate_shuffled_seqs_df.py -f /project/fudenber_735/genomes/mm10/mm10.fa -seq_bed_file /project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed --output_filename data/shuffled_seqs_test.tsv
+            python generate_shuffled_seqs_df.py -f /project/fudenber_735/genomes/mm10/mm10.fa -seq_bed_file /project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed --output_filename data/shuffled_seqs_test.tsv --num_seqs 100
                 
    - (2) generating scores for shuffled seqs tsv
    
-            python generate_scores_for_shuffled_seqs.py /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5 /home1/kamulege/akita_utils/bin/shuffled_seqs_experiments/data/shuffled_seqs_test.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /home1/kamulege/akita_utils/bin/shuffled_seqs_experiments/data/pure_shuffled_seqs_scores --batch-size 4 --stats SCD &
+            python generate_scores_for_shuffled_seqs.py /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5 /home1/kamulege/akita_utils/bin/shuffled_seqs_experiments/data/shuffled_seqs_test.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /scratch1/kamulege/pure_shuffled_seqs_scores --batch-size 4 --stats SCD &
         
    - (3) generating scores for shuffled seqs tsv in bulk using multiple processes 
 
-            python multiGPU_generate_scores_for_shuffled_seqs.py /project/fudenber_735/tensorflow_models/akita/v2/models /home1/kamulege/akita_utils/bin/shuffled_seqs_experiments/data/shuffled_seqs.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /home1/kamulege/akita_utils/bin/shuffled_seqs_experiments/data/shuffled_seqs_scores_1 --head-index 1 --model-index 1 --batch-size 4 --stats SCD -p 1 --max_proc 7 --time 00:01:00 &    
+            python multiGPU_generate_scores_for_shuffled_seqs.py /project/fudenber_735/tensorflow_models/akita/v2/models /home1/kamulege/akita_utils/bin/shuffled_seqs_experiments/data/shuffled_seqs_test.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /scratch1/kamulege/shuffled_seqs_scores_3 --head-index 1 --model-index 1 --batch-size 4 --stats SCD -p 20 --max_proc 7 --time 00:15:00 &    
         
 <!-- -------------------------------------------------------------------------------------------- -->
 

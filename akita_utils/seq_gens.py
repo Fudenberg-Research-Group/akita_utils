@@ -152,7 +152,7 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open, use_span=True):
         seq_dna = genome_open.fetch(chrom, int(start), int(end))
         wt_1hot = akita_utils.dna_utils.dna_1hot(seq_dna)
         mutation_method = s.mutation_method
-        spans = generate_spans_start_positions(wt_1hot, motif, s.ctcf_selection_threshold)
+        spans = generate_spans_start_positions(wt_1hot, motif, s.ctcf_detection_threshold)
         if mutation_method == "mask_motif":
             yield mask_spans(wt_1hot, spans, motif_window)
         elif mutation_method == "permute_motif":
