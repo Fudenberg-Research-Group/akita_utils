@@ -83,7 +83,7 @@ jobs:
           source .venv/bin/activate
           make install
           pip install flake8 black mypy
-          pip install pytest pytest-cov coverage
+          pip install pytest pytest-cov
           pip install pysam
           make test
 
@@ -100,8 +100,6 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Pip
-        run: pip install --user --upgrade pip
           
       - name: Create virtual environment and Install project and run tests
         run: |
@@ -111,4 +109,4 @@ jobs:
           pip install flake8 black mypy
           pip install pytest pytest-cov coverage
           pip install pysam
-          make test
+          pytest -s -vvvv -l --tb=long tests
