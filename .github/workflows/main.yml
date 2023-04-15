@@ -53,6 +53,7 @@ jobs:
           make virtualenv
           source .venv/bin/activate
           make install
+          pip install flake8 black mypy
           pip install pytest pytest-cov coverage
           make test
 
