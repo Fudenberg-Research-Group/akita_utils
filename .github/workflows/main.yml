@@ -25,16 +25,17 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
-          
-      - name: Create virtual environment
-        run: make virtualenv
-      - name: Activate virtual environment
-        run: source .venv/bin/activate
-      - name: Install project
-        run: make install
+                python-version: ${{ matrix.python-version }}
+      - name: Create virtual environment and Install project
+        run: |
+          make virtualenv
+          source .venv/bin/activate
+          make install
+
       - name: Run linter
-        run: make lint
+        run: |
+          source .venv/bin/activate
+          make lint
 
   tests_linux:
     needs: linter
@@ -50,15 +51,17 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           
-      
-      - name: Create virtual environment
-        run: make virtualenv
-      - name: Activate virtual environment
-        run: source .venv/bin/activate
-      - name: Install project
-        run: make install
+      - name: Create virtual environment and Install project
+        run: |
+          make virtualenv
+          source .venv/bin/activate
+          make install
+
       - name: Run tests
-        run: make test
+        run: |
+          source .venv/bin/activate
+          make test
+
       - name: "Upload coverage to Codecov"
         uses: codecov/codecov-action@v1
         # with:
