@@ -31,6 +31,7 @@ jobs:
           make virtualenv
           source .venv/bin/activate
           make install
+          pip install flake8 black mypy
           make lint
 
   tests_linux:
@@ -47,15 +48,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           
-      - name: Create virtual environment and Install project
+      - name: Create virtual environment and Install project and run tests
         run: |
           make virtualenv
           source .venv/bin/activate
           make install
-
-      - name: Run tests
-        run: |
-          source .venv/bin/activate
+          pip install pytest pytest-cov coverage
           make test
 
       - name: "Upload coverage to Codecov"
