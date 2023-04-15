@@ -9,9 +9,7 @@ from __future__ import print_function
 
 import logging
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 log = logging.getLogger(__name__)
 
 from optparse import OptionParser
@@ -206,9 +204,7 @@ def main():
     if options.processes is not None:  # multi-GPU option
         # determine boundaries from motif file
         seq_coords_full = pd.read_csv(shuffled_seqs_tsv, sep="\t")
-        seq_coords_df = akita_utils.utils.split_df_equally(
-            seq_coords_full, options.processes, worker_index
-        )
+        seq_coords_df = akita_utils.utils.split_df_equally(seq_coords_full, options.processes, worker_index)
 
     else:
         # read motif positions from csv
@@ -223,9 +219,7 @@ def main():
     log.info("===================================")
 
     # open genome FASTA
-    genome_open = pysam.Fastafile(
-        options.genome_fasta
-    )  # needs to be closed at some point
+    genome_open = pysam.Fastafile(options.genome_fasta)  # needs to be closed at some point
 
     # setup output
     scd_out = initialize_output_h5(
@@ -246,9 +240,7 @@ def main():
     # initialize predictions stream
     preds_stream = stream.PredStreamGen(
         seqnn_model,
-        akita_utils.seq_gens.background_exploration_seqs_gen(
-            seq_coords_df, genome_open
-        ),
+        akita_utils.seq_gens.background_exploration_seqs_gen(seq_coords_df, genome_open),
         batch_size,
     )
 
@@ -336,9 +328,9 @@ def write_snp(
         # current standard map selection scores
         max_pixelwise_scores = np.max(np.abs(ref_preds), axis=0)
         for target_ind in range(ref_preds.shape[1]):
-            scd_out[f"MPS_h{head_index}_m{model_index}_t{target_ind}"][
-                si
-            ] = max_pixelwise_scores[target_ind].astype("float16")
+            scd_out[f"MPS_h{head_index}_m{model_index}_t{target_ind}"][si] = max_pixelwise_scores[target_ind].astype(
+                "float16"
+            )
 
     if "CS" in scd_stats:
         # customised scores for exploration
@@ -346,18 +338,14 @@ def write_snp(
         mean = np.mean(ref_preds, axis=0)
         Custom_score = 3 / mean + 2 / std
         for target_ind in range(ref_preds.shape[1]):
-            scd_out[f"CS_h{head_index}_m{model_index}_t{target_ind}"][
-                si
-            ] = Custom_score[target_ind].astype("float16")
+            scd_out[f"CS_h{head_index}_m{model_index}_t{target_ind}"][si] = Custom_score[target_ind].astype("float16")
 
     # compare reference to alternative via mean subtraction
     if "SCD" in scd_stats:
         # sum of squared diffs
         sd2_preds = np.sqrt((ref_preds**2).sum(axis=0))
         for target_ind in range(ref_preds.shape[1]):
-            scd_out[f"SCD_h{head_index}_m{model_index}_t{target_ind}"][si] = sd2_preds[
-                target_ind
-            ].astype("float16")
+            scd_out[f"SCD_h{head_index}_m{model_index}_t{target_ind}"][si] = sd2_preds[target_ind].astype("float16")
 
     if np.any((["INS" in i for i in scd_stats])):
         ref_map = akita_utils.utils.ut_dense(ref_preds, diagonal_offset)
@@ -368,11 +356,7 @@ def write_snp(
                 for target_ind in range(ref_preds.shape[1]):
                     scd_out[f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][
                         si
-                    ] = akita_utils.stats_utils.insul_diamonds_scores(
-                        ref_map, window=insul_window
-                    )[
-                        target_ind
-                    ].astype(
+                    ] = akita_utils.stats_utils.insul_diamonds_scores(ref_map, window=insul_window)[target_ind].astype(
                         "float16"
                     )
 

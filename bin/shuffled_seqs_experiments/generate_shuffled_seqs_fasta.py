@@ -11,9 +11,7 @@ import akita_utils.dna_utils
 
 import logging
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 log = logging.getLogger(__name__)
 
 
@@ -26,9 +24,7 @@ def main():
         help="tsv with locus specifications",
         required=True,
     )
-    parser.add_argument(
-        "-o", dest="output_dir", help="where to store the fasta file", required=True
-    )
+    parser.add_argument("-o", dest="output_dir", help="where to store the fasta file", required=True)
     parser.add_argument(
         "-sample_size",
         dest="sample_size",
@@ -101,13 +97,9 @@ def create_shuffled_seqs(
                 chrom, start, end = locus_specification.split(",")
                 seq = genome_open.fetch(chrom, int(start), int(end)).upper()
                 seq_1hot = akita_utils.dna_utils.dna_1hot(seq)
-                shuffled_seq_1hot = akita_utils.dna_utils.permute_seq_k(
-                    seq_1hot, k=shuffle_k
-                )
+                shuffled_seq_1hot = akita_utils.dna_utils.permute_seq_k(seq_1hot, k=shuffle_k)
                 f.write(f">shuffled:{chrom},{start},{end}#{GC_content} \n")
-                f.write(
-                    f"{akita_utils.dna_utils.dna_1hot_to_seq(shuffled_seq_1hot)} \n"
-                )
+                f.write(f"{akita_utils.dna_utils.dna_1hot_to_seq(shuffled_seq_1hot)} \n")
                 log.info(f"finished saving seq_{ind}")
 
         else:
@@ -132,13 +124,9 @@ def create_shuffled_seqs(
                 chrom, start, end = locus_specification.split(",")
                 seq = genome_open.fetch(chrom, int(start), int(end)).upper()
                 seq_1hot = akita_utils.dna_utils.dna_1hot(seq)
-                shuffled_seq_1hot = akita_utils.dna_utils.permute_seq_k(
-                    seq_1hot, k=shuffle_k
-                )
+                shuffled_seq_1hot = akita_utils.dna_utils.permute_seq_k(seq_1hot, k=shuffle_k)
                 f.write(f">shuffled:{chrom},{start},{end}#{GC_content} \n")
-                f.write(
-                    f"{akita_utils.dna_utils.dna_1hot_to_seq(shuffled_seq_1hot)} \n"
-                )
+                f.write(f"{akita_utils.dna_utils.dna_1hot_to_seq(shuffled_seq_1hot)} \n")
                 log.info(f"finished saving seq_{ind}")
 
 

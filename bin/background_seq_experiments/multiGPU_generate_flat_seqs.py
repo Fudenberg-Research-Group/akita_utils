@@ -35,9 +35,7 @@ import numpy as np
 import akita_utils.slurm_gf as slurm
 import logging
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 log = logging.getLogger(__name__)
 
 
@@ -190,9 +188,7 @@ def main():
         default="01:00:00",
         help="time to run job. [Default: %default]",
     )
-    parser.add_option(
-        "--gres", dest="gres", default="gpu", help="gpu resources. [Default: %default]"
-    )
+    parser.add_option("--gres", dest="gres", default="gpu", help="gpu resources. [Default: %default]")
     parser.add_option(
         "--constraint",
         dest="constraint",
@@ -278,9 +274,7 @@ def main():
             )
             jobs.append(j)
 
-    slurm.multi_run(
-        jobs, max_proc=options.max_proc, verbose=False, launch_sleep=10, update_sleep=60
-    )
+    slurm.multi_run(jobs, max_proc=options.max_proc, verbose=False, launch_sleep=10, update_sleep=60)
 
 
 def job_completed(options, pi):

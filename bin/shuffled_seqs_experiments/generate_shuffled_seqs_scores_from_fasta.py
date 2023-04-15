@@ -10,9 +10,7 @@ from __future__ import print_function
 
 import logging
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 log = logging.getLogger(__name__)
 
 from optparse import OptionParser
@@ -44,9 +42,7 @@ import akita_utils
 
 
 def main():
-    usage = (
-        "usage: %prog [options] <params_file> <model_file> <shuffled_seqs_fasta_file>"
-    )
+    usage = "usage: %prog [options] <params_file> <model_file> <shuffled_seqs_fasta_file>"
     parser = OptionParser(usage)
     parser.add_option(
         "-f",
@@ -307,9 +303,9 @@ def write_snp(
     if "MPS" in scd_stats:
         Max_pixelwise_scores = np.max(ref_preds, axis=0)
         for target_ind in range(ref_preds.shape[1]):
-            scd_out[f"MPS_h{head_index}_m{model_index}_t{target_ind}"][
-                si
-            ] = Max_pixelwise_scores[target_ind].astype("float16")
+            scd_out[f"MPS_h{head_index}_m{model_index}_t{target_ind}"][si] = Max_pixelwise_scores[target_ind].astype(
+                "float16"
+            )
 
     if "CS" in scd_stats:
         # customised scores for exploration
@@ -317,18 +313,14 @@ def write_snp(
         mean = np.mean(ref_preds, axis=0)
         Custom_score = 3 / mean + 2 / std
         for target_ind in range(ref_preds.shape[1]):
-            scd_out[f"CS_h{head_index}_m{model_index}_t{target_ind}"][
-                si
-            ] = Custom_score[target_ind].astype("float16")
+            scd_out[f"CS_h{head_index}_m{model_index}_t{target_ind}"][si] = Custom_score[target_ind].astype("float16")
 
     # compare reference to alternative via mean subtraction
     if "SCD" in scd_stats:
         # sum of squared diffs
         sd2_preds = np.sqrt((ref_preds**2).sum(axis=0))
         for target_ind in range(ref_preds.shape[1]):
-            scd_out[f"SCD_h{head_index}_m{model_index}_t{target_ind}"][si] = sd2_preds[
-                target_ind
-            ].astype("float16")
+            scd_out[f"SCD_h{head_index}_m{model_index}_t{target_ind}"][si] = sd2_preds[target_ind].astype("float16")
 
     if np.any((["INS" in i for i in scd_stats])):
         ref_map = akita_utils.utils.ut_dense(ref_preds, diagonal_offset)
@@ -339,11 +331,7 @@ def write_snp(
                 for target_ind in range(ref_preds.shape[1]):
                     scd_out[f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][
                         si
-                    ] = akita_utils.stats_utils.insul_diamonds_scores(
-                        ref_map, window=insul_window
-                    )[
-                        target_ind
-                    ].astype(
+                    ] = akita_utils.stats_utils.insul_diamonds_scores(ref_map, window=insul_window)[target_ind].astype(
                         "float16"
                     )
 
@@ -378,9 +366,7 @@ def write_snp(
             )
 
         plt.tight_layout()
-        plt.savefig(
-            f"{plot_dir}/seq_{si}_max-SCD_{np.max(np.sqrt((ref_preds**2).sum(axis=0)))}.pdf"
-        )
+        plt.savefig(f"{plot_dir}/seq_{si}_max-SCD_{np.max(np.sqrt((ref_preds**2).sum(axis=0)))}.pdf")
         plt.close()
 
 

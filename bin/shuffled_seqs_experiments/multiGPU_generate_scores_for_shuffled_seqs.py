@@ -167,9 +167,7 @@ def main():
         default="01:00:00",
         help="time to run job. [Default: %default]",
     )
-    parser.add_option(
-        "--gres", dest="gres", default="gpu", help="gpu resources. [Default: %default]"
-    )
+    parser.add_option("--gres", dest="gres", default="gpu", help="gpu resources. [Default: %default]")
     parser.add_option(
         "--constraint",
         dest="constraint",
@@ -220,13 +218,10 @@ def main():
                 # cmd += "conda activate basenji;"      #changed
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
 
-            cmd += (
-                " ${SLURM_SUBMIT_DIR}/generate_scores_for_shuffled_seqs.py %s %s %d"
-                % (
-                    options_pkl_file,
-                    " ".join(new_args),
-                    pi,
-                )
+            cmd += " ${SLURM_SUBMIT_DIR}/generate_scores_for_shuffled_seqs.py %s %s %d" % (
+                options_pkl_file,
+                " ".join(new_args),
+                pi,
             )
 
             name = "%s_p%d" % (options.name, pi)
@@ -250,9 +245,7 @@ def main():
             )
             jobs.append(j)
 
-    slurm.multi_run(
-        jobs, max_proc=options.max_proc, verbose=False, launch_sleep=10, update_sleep=60
-    )
+    slurm.multi_run(jobs, max_proc=options.max_proc, verbose=False, launch_sleep=10, update_sleep=60)
 
 
 def job_completed(options, pi):
