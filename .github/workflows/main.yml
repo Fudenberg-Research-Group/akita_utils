@@ -55,6 +55,7 @@ jobs:
           make install
           pip install flake8 black mypy
           pip install pytest pytest-cov coverage
+          pip install pysam
           make test
 
       - name: "Upload coverage to Codecov"
