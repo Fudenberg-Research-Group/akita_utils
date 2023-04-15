@@ -82,9 +82,7 @@ jobs:
           make virtualenv
           source .venv/bin/activate
           make install
-          pip install flake8 black mypy
-          pip install pytest pytest-cov
-          pip install pysam
+          pip install -r requirements-test.txt
           make test
 
   tests_win:
@@ -101,12 +99,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           
-      - name: Create virtual environment and Install project and run tests
+      - name: Install project and run tests
         run: |
-          make virtualenv
-          source .venv/bin/activate
-          make install
-          pip install flake8 black mypy
-          pip install pytest pytest-cov coverage
-          pip install pysam
+          pip install -e .[test]
           pytest -s -vvvv -l --tb=long tests
