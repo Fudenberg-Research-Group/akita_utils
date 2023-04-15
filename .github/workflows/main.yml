@@ -79,10 +79,8 @@ jobs:
           
       - name: Create virtual environment and Install project and run tests
         run: |
-          make virtualenv
-          source .venv/bin/activate
-          make install
-          pip install -r requirements-test.txt
+          pip install -e .[test]
+          pip freeze
           make test
 
   tests_win:
@@ -102,4 +100,5 @@ jobs:
       - name: Install project and run tests
         run: |
           pip install -e .[test]
+          pip freeze
           pytest -s -vvvv -l --tb=long tests
