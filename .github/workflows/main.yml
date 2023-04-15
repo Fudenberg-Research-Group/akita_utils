@@ -26,15 +26,11 @@ jobs:
       - uses: actions/setup-python@v2
         with:
                 python-version: ${{ matrix.python-version }}
-      - name: Create virtual environment and Install project
+      - name: Create virtual environment and Install project and run linter
         run: |
           make virtualenv
           source .venv/bin/activate
           make install
-
-      - name: Run linter
-        run: |
-          source .venv/bin/activate
           make lint
 
   tests_linux:
