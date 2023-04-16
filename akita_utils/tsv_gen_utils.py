@@ -9,7 +9,6 @@ from akita_utils.format_io import h5_to_df
 import akita_utils.format_io
 
 
-
 def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
     """Helper function to split a span 'start-end' into two integer series, and either
     return as a dataFrame or concatenate to the input dataFrame"""
@@ -22,10 +21,7 @@ def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
         .copy()
     )
     if concat:
-        return pd.concat(
-            [sites, sites_spans_split],
-            axis=1,
-        )
+        return pd.concat([sites, sites_spans_split], axis=1,)
 
     else:
         return sites_spans_split
@@ -143,7 +139,7 @@ def filter_sites_by_score(
 
     """
 
-    if mode not in ("head", "tail", "uniform",  "random"):
+    if mode not in ("head", "tail", "uniform", "random"):
         raise ValueError("a mode has to be one from: head, tail, uniform, random")
 
     upper_thresh = np.percentile(sites[score_key].values, upper_threshold)
@@ -170,7 +166,6 @@ def filter_sites_by_score(
             filtered_sites = filtered_sites.groupby("binned").apply(lambda x: x.head(1))
         else:
             filtered_sites = filtered_sites.sample(n=num_sites)
-
 
     return filtered_sites
 
@@ -233,10 +228,7 @@ def filter_by_rmsk(
         )
     )
 
-    rmsk = pd.read_table(
-        rmsk_file,
-        names=rmsk_cols,
-    )
+    rmsk = pd.read_table(rmsk_file, names=rmsk_cols,)
     rmsk.rename(
         columns={"genoName": "chrom", "genoStart": "start", "genoEnd": "end"},
         inplace=True,
@@ -282,16 +274,10 @@ def filter_by_ctcf(
         print("filtering sites by overlap with ctcfs")
 
     ctcf_cols = list(
-        pd.read_csv(
-            StringIO("""chrom start end name score pval strand"""),
-            sep=" ",
-        )
+        pd.read_csv(StringIO("""chrom start end name score pval strand"""), sep=" ",)
     )
 
-    ctcf_motifs = pd.read_table(
-        ctcf_file,
-        names=ctcf_cols,
-    )
+    ctcf_motifs = pd.read_table(ctcf_file, names=ctcf_cols,)
 
     ctcf_motifs = bioframe.expand(ctcf_motifs, pad=exclude_window)
 
@@ -472,8 +458,7 @@ def add_diff_flanks_and_const_spacer(
     spacer_ls = []
 
     seq_coords_df = pd.concat(
-        [rep_unit for i in range(flank_end - flank_start + 1)],
-        ignore_index=True,
+        [rep_unit for i in range(flank_end - flank_start + 1)], ignore_index=True,
     )
 
     for flank in range(flank_start, flank_end + 1):
@@ -591,9 +576,7 @@ def generate_ctcf_positons(
     A list of strings representing genomic coordinates of putative CTCF binding sites in format "chrom,start,end,strand#score_key=score_value".
     """
     sites = akita_utils.tsv_gen_utils.filter_boundary_ctcfs_from_h5(
-        h5_dirs=h5_dirs,
-        score_key=score_key,
-        threshold_all_ctcf=5,
+        h5_dirs=h5_dirs, score_key=score_key, threshold_all_ctcf=5,
     )
 
     sites = akita_utils.tsv_gen_utils.filter_by_rmsk(
@@ -654,10 +637,7 @@ def generate_ctcf_positons(
 
 
 def generate_locus_specification_list(
-    dataframe,
-    motif_threshold=1,
-    specification_list=None,
-    unique_identifier="dummy",
+    dataframe, motif_threshold=1, specification_list=None, unique_identifier="dummy",
 ):
     """
     Generate a list of locus specifications from a dataframe of genomic features.

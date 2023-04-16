@@ -49,10 +49,10 @@ def create_flat_seqs_gen(
                 seq_1hot, shuffle_k, batch_size
             )
             pred = seqnn_model.predict(seq_1hot_batch, batch_size=batch_size)
-            scores = np.sum(pred**2, axis=-1).sum(
+            scores = np.sum(pred ** 2, axis=-1).sum(
                 axis=-1
             )  # insul_diamonds_scores(pred)
-            scores_pixelwise = np.max(pred**2, axis=-1).max(axis=-1)
+            scores_pixelwise = np.max(pred ** 2, axis=-1).max(axis=-1)
 
             if np.all(
                 [
