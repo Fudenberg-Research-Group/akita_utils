@@ -44,12 +44,6 @@ def main():
         help="jaspar_file",
         default="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
     )
-    parser.add_argument(
-        "-f",
-        dest="genome_fasta",
-        help="fasta file",
-        default="/project/fudenber_735/genomes/mm10/mm10.fa",
-    )
     parser.add_argument("-score_key", dest="score_key", default="SCD")
     parser.add_argument("-ctcf_h5_dirs", dest="h5_dirs", help="h5_dirs", default=None)
     parser.add_argument("-mode", dest="mode", default="uniform")
@@ -107,8 +101,6 @@ def main():
     )
 
     args = parser.parse_args()
-
-    genome_open = pysam.Fastafile(args.genome_fasta)
 
     insert_names_list = []
 
@@ -202,7 +194,6 @@ def main():
             locus_specification_list = (
                 akita_utils.tsv_gen_utils.generate_locus_specification_list(
                     df,
-                    genome_open,
                     motif_threshold=0,
                     specification_list=[0, 2],
                     unique_identifier=dataframe_number,

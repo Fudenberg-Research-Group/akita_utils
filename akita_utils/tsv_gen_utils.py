@@ -9,6 +9,7 @@ from akita_utils.format_io import h5_to_df
 import akita_utils.format_io
 
 
+
 def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
     """Helper function to split a span 'start-end' into two integer series, and either
     return as a dataFrame or concatenate to the input dataFrame"""
@@ -142,7 +143,7 @@ def filter_sites_by_score(
 
     """
 
-    if mode not in ("head", "tail", "uniform", "random"):
+    if mode not in ("head", "tail", "uniform",  "random"):
         raise ValueError("a mode has to be one from: head, tail, uniform, random")
 
     upper_thresh = np.percentile(sites[score_key].values, upper_threshold)
@@ -169,6 +170,7 @@ def filter_sites_by_score(
             filtered_sites = filtered_sites.groupby("binned").apply(lambda x: x.head(1))
         else:
             filtered_sites = filtered_sites.sample(n=num_sites)
+
 
     return filtered_sites
 
@@ -653,7 +655,6 @@ def generate_ctcf_positons(
 
 def generate_locus_specification_list(
     dataframe,
-    genome_open,
     motif_threshold=1,
     specification_list=None,
     unique_identifier="dummy",
@@ -664,7 +665,6 @@ def generate_locus_specification_list(
     Args:
         dataframe (pandas.DataFrame): A pandas dataframe containing genomic features with columns
             'chrom', 'start', 'end', 'strand' and additional columns to be included in the output.
-        genome_open (pysam.Fasta): An opened reference genome file in the pysam.Fasta format.
         motif_threshold (int, optional): The maximum number of motifs allowed in a feature. Defaults to 1.
         specification_list (list, optional): A list of indices to include in the output. Defaults to None.
         unique_identifier (str, optional): A string to identify the unique identifier of additional columns. Defaults to "dummy".
@@ -689,7 +689,6 @@ def generate_locus_specification_list(
     # -----------------end-------------------
 
     dataframe = dataframe[dataframe["num_of_motifs"] <= motif_threshold]
-
     if "strand" not in dataframe.columns:  # some inserts dont have this column
         dataframe["strand"] = "+"
 
@@ -779,6 +778,7 @@ def parameter_dataframe_reorganisation(parameters_combo_dataframe, insert_names_
             f"{insert_name}_orientation" in parameters_combo_dataframe.columns
         ), f"{insert_name}_orientation not found in dataframe columns."
 
+        # Combine all columns into one column separated by "$"
         insert_cols = [
             f"{insert_name}_locus_specification",
             f"{insert_name}_flank_bp",
@@ -793,5 +793,4 @@ def parameter_dataframe_reorganisation(parameters_combo_dataframe, insert_names_
         parameters_combo_dataframe = parameters_combo_dataframe.drop(
             columns=insert_cols
         )
-
     return parameters_combo_dataframe

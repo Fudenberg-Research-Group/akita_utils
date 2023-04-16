@@ -123,9 +123,7 @@ def permute_seq_k(seq_1hot, k=2):
     """
 
     if np.mod(k, 2) != 0:
-        raise ValueError(
-            "current implementation only works for multiples of 2"
-        )
+        raise ValueError("current implementation only works for multiples of 2")
     seq_1hot_perm = np.zeros(np.shape(seq_1hot)).astype(int)
     perm_inds = k * np.random.permutation(np.arange(len(seq_1hot) // k))
     for i in range(k):
@@ -163,13 +161,9 @@ def hot1_rc(seqs_1hot):
 
 def scan_motif(seq_1hot, motif, strand=None):
     if motif.shape[-1] != 4:
-        raise ValueError(
-            "motif should be n_postions x 4 bases, A=0, C=1, G=2, T=3"
-        )
+        raise ValueError("motif should be n_postions x 4 bases, A=0, C=1, G=2, T=3")
     if seq_1hot.shape[-1] != 4:
-        raise ValueError(
-            "seq_1hot should be n_postions x 4 bases, A=0, C=1, G=2, T=3"
-        )
+        raise ValueError("seq_1hot should be n_postions x 4 bases, A=0, C=1, G=2, T=3")
     scan_forward = tf.nn.conv1d(
         np.expand_dims(seq_1hot, 0).astype(float),
         np.expand_dims(motif, -1).astype(float),
