@@ -5,7 +5,6 @@ import glob
 import bioframe
 import itertools
 from io import StringIO
-from akita_utils.format_io import h5_to_df
 import akita_utils.format_io
 
 
