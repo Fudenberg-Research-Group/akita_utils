@@ -137,6 +137,7 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
 
         yield seq_1hot
 
+        
 # define sequence generator
 def generate_spans_start_positions(seq_1hot, motif, threshold):
     index_scores_array = akita_utils.dna_utils.scan_motif(seq_1hot, motif)

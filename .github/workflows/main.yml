@@ -25,11 +25,14 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install project
-        run: make install
-      - name: Run linter
-        run: make lint
+                python-version: ${{ matrix.python-version }}
+      - name: Create virtual environment and Install project and run linter
+        run: |
+          make virtualenv
+          source .venv/bin/activate
+          make install
+          pip install flake8 black mypy
+          make lint
 
   tests_linux:
     needs: linter
@@ -44,10 +47,17 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install project
-        run: make install
-      - name: Run tests
-        run: make test
+          
+      - name: Create virtual environment and Install project and run tests
+        run: |
+          make virtualenv
+          source .venv/bin/activate
+          make install
+          pip install flake8 black mypy
+          pip install pytest pytest-cov coverage
+          pip install pysam
+          make test
+
       - name: "Upload coverage to Codecov"
         uses: codecov/codecov-action@v1
         # with:
@@ -66,10 +76,13 @@ jobs:
 #      - uses: actions/setup-python@v2
 #        with:
 #          python-version: ${{ matrix.python-version }}
-#      - name: Install project
-#        run: make install
-#      - name: Run tests
-#        run: make test
+#          
+#      - name: Create virtual environment and Install project and run tests
+#        run: |
+#          pip install -e .[test]
+#          pip install -r requirements-test.txt
+#          pip list
+#          make test
 #
 #  tests_win:
 #    needs: linter
@@ -84,9 +97,11 @@ jobs:
 #      - uses: actions/setup-python@v2
 #        with:
 #          python-version: ${{ matrix.python-version }}
-#      - name: Install Pip
-#        run: pip install --user --upgrade pip
-#      - name: Install project
-#        run: pip install -e .[test]
-#      - name: run tests
-#        run: pytest -s -vvvv -l --tb=long tests
+#          
+#      - name: Install project and run tests
+#        run: |
+#          pip install -e .[test]
+#          pip install -r requirements-test.txt
+#          pip list
+#          pytest -s -vvvv -l --tb=long tests
+#
