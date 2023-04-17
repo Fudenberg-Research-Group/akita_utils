@@ -13,7 +13,6 @@ import akita_utils
 import akita_utils.tsv_gen_utils
 import argparse
 import json
-
 import logging
 
 logging.basicConfig(
@@ -37,8 +36,6 @@ def main():
     args = parser.parse_args()
 
     insert_names_list = []
-
-    # ---------------setting up a grid search over parameters-------------------------------
     grid_search_params = {
         "background_seqs": args.background_seqs,
     }
@@ -77,7 +74,7 @@ def main():
                 grid_search_params[f"{dataframe_number}_offset"] = offset
                 grid_search_params[f"{dataframe_number}_orientation"] = orientation
 
-                print(f"finished processing dataset {dataframe_number}")
+                log.info(f"finished processing dataset {dataframe_number}")
             
             elif ext == ".h5":
                 offset=df_data["offset"]
@@ -96,6 +93,7 @@ def main():
                             score_key,
                             mode,
                             num_sites,
+                            unique_identifier=dataframe_number
                         )
                     )
                 grid_search_params[f"{dataframe_number}_flank_bp"] = flank_bp

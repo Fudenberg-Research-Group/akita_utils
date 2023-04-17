@@ -8,8 +8,9 @@
    - generating tsv table
    
         - the json has a structure as in `data.json` file, for multiple values of a parameter put in a list
+        
    
-         python generate_expt_df_copy.py --json-file /home1/kamulege/akita_utils/bin/insert_experiments/data.json -ctcf_h5_dirs /project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model1/scd.h5
+         python generate_expt_df_copy.py --json-file /home1/kamulege/akita_utils/bin/insert_experiments/data.json
                 
         
    - Akita experiment predictions 

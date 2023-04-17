@@ -1,7 +1,7 @@
 from akita_utils.dna_utils import hot1_rc, dna_1hot
 import numpy as np
 import akita_utils.format_io
-
+import pandas as pd
 
 ########################################
 #           insertion utils            #
@@ -36,30 +36,47 @@ def _insert_casette(seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string)
 def _multi_insert_offsets_casette(
     seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
 ):
-    """insert multiple inserts in the seq at once
+    """Insert multiple DNA sequences into a given DNA sequence.
 
     Args:
-        seq_1hot : seq to be modified
-        seq_1hot_insertions (list): inserts to be inserted in the string
-        spacer_bp (int): seperating basepairs between the inserts
-        orientation_string (string): string with orientations of the inserts
+        seq_1hot (numpy.ndarray): The DNA sequence to be modified, in one-hot encoding format.
+        seq_1hot_insertions (list of numpy.ndarray): A list of DNA sequences to be inserted into `seq_1hot`.
+        offsets_bp (list of int): A list of offsets (in base pairs) for each insertion site.
+        orientation_string (str): A string of ">" and "<" characters indicating the orientation of each insertion.
 
     Returns:
-        modified seq with all the insertions
-    """
+        numpy.ndarray: The modified DNA sequence, in one-hot encoding format, with all insertions included.
 
+    Raises:
+        ValueError: If any of the inserted sequences overlap with each other.
+
+    This function takes in a DNA sequence in one-hot encoding format, along with a list of other DNA sequences to be inserted into it.
+    The function inserts each of the given sequences into the given sequence at specified locations, according to the given orientation and offset.
+    The function then returns the modified DNA sequence in one-hot encoding format.
+
+    If any of the inserted sequences overlap with each other, the function raises a `ValueError` with a message indicating which pairs of sequences overlap.
+    """
     assert (
         len(seq_1hot_insertions) == len(orientation_string) == len(offsets_bp)
     ), "insertions, orientations and/or offsets dont match, please check"
     seq_length = seq_1hot.shape[0]
     output_seq = seq_1hot.copy()
     insertion_start_bp = seq_length // 2
+    insert_limits = []
     for insertion_index, insertion in enumerate(seq_1hot_insertions):
         insert_bp = len(seq_1hot_insertions[insertion_index])
         insertion_orientation_arrow = orientation_string[insertion_index]
         insertion_offset = offsets_bp[insertion_index]
 
         if insertion_orientation_arrow == ">":
+            
+            insert_limits += [(
+                insertion_start_bp
+                + insertion_offset , insertion_start_bp
+                + insertion_offset
+                + insert_bp
+            )]
+            
             output_seq[
                 insertion_start_bp
                 + insertion_offset : insertion_start_bp
@@ -67,12 +84,29 @@ def _multi_insert_offsets_casette(
                 + insert_bp
             ] = seq_1hot_insertions[insertion_index]
         else:
+            
+            insert_limits += [(
+                insertion_start_bp
+                + insertion_offset , insertion_start_bp
+                + insertion_offset
+                + insert_bp
+            )]
+            
             output_seq[
                 insertion_start_bp
                 + insertion_offset : insertion_start_bp
                 + insertion_offset
                 + insert_bp
             ] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[insertion_index])
+            
+            
+    # Check for overlaps between inserted sequences
+    insert_limits = sorted(insert_limits)
+    for i in range(len(insert_limits) - 1):
+        if insert_limits[i][1] > insert_limits[i+1][0]:
+            raise ValueError(f"Overlap found between inserted sequences: {insert_limits[i]}, {insert_limits[i+1]}")
+    
+    
     return output_seq
 
 
@@ -102,56 +136,6 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
         )
 
         yield seq_1hot
-
-
-def modular_offsets_insertion_seqs_gen(
-    seq_coords_df, background_seqs, genome_open
-):  # delimiter specification
-    """sequence generator for making modular insertions from tsvs
-        yields a one-hot encoded sequence
-        that can be used as input to akita via PredStreamGen
-
-    Args:
-        seq_coords_df (dataframe): important colums spacer_bp,locus_orientation,background_seqs,insert_strand,insert_flank_bp,insert_loci
-        background_seqs (fasta): file containing background sequences
-        genome_open (opened_fasta): fasta with chrom data
-
-    Yields:
-        one-hot encoded sequence: sequence containing specified insertions
-    """
-
-    for s in seq_coords_df.itertuples():
-        seq_1hot_insertions = []
-        offsets_bp = []
-        orientation_string = []  # s.locus_orientation
-        seq_1hot = background_seqs[s.background_seqs].copy()
-
-        for module_number in range(len(s.insert_loci.split("$"))):
-            locus_specification = s.insert_loci.split("$")[module_number]
-            if locus_specification != "None":
-                chrom, start, end, strand = locus_specification.split(",")
-                insert_offset_bp = int(s.insert_offsets.split("$")[module_number])
-                insert_orientation = s.insert_orientations.split("$")[module_number]
-
-                flank_bp = int(s.insert_flank_bp.split("$")[module_number])
-                seq_1hot_insertion = akita_utils.dna_utils.dna_1hot(
-                    genome_open.fetch(
-                        chrom, int(start) - flank_bp, int(end) + flank_bp
-                    ).upper()
-                )
-                if strand == "-":
-                    seq_1hot_insertion = akita_utils.dna_utils.hot1_rc(
-                        seq_1hot_insertion
-                    )
-                seq_1hot_insertions.append(seq_1hot_insertion)
-                offsets_bp.append(insert_offset_bp)
-                orientation_string.append(insert_orientation)
-
-        seq_1hot = _multi_insert_offsets_casette(
-            seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
-        )
-        yield seq_1hot
-
 
 # define sequence generator
 def generate_spans_start_positions(seq_1hot, motif, threshold):
@@ -277,21 +261,26 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
         ValueError: If any 'insert' column in seq_coords_df has an invalid format or refers to a region outside the boundaries of the reference genome.
 
     """
-
-    for s in seq_coords_df.itertuples():
+    
+    for s in seq_coords_df.itertuples(index=False):
+        
+        seq_1hot = background_seqs[s.background_seqs].copy()
         seq_1hot_insertions = []
         offsets_bp = []
         orientation_string = []
-        seq_1hot = background_seqs[s.background_seqs].copy()
+        
+        s_df = pd.DataFrame([s], columns=seq_coords_df.columns.to_list())
 
         for col_name in seq_coords_df.columns:
+            
             if "insert" in col_name:
+                
                 (
                     insert_specification,
                     insert_flank_bp,
                     insert_offset,
                     insert_orientation,
-                ) = getattr(s, col_name).split("$")
+                ) = s_df[col_name][0].split("$")
                 chrom, start, end, strand = insert_specification.split(",")
                 seq_1hot_insertion = akita_utils.dna_utils.dna_1hot(
                     genome_open.fetch(

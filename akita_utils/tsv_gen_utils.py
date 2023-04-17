@@ -556,6 +556,7 @@ def generate_ctcf_positons(
     num_sites,
     weak_thresh_pct=1,
     strong_thresh_pct=99,
+    unique_identifier="",
 ):
     """
     This function generates a list of genomic coordinates for potential CTCF binding sites in DNA sequences.
@@ -581,8 +582,6 @@ def generate_ctcf_positons(
     sites = akita_utils.tsv_gen_utils.filter_by_rmsk(
         sites, rmsk_file=rmsk_file, verbose=True
     )
-
-    print(sites.columns)
 
     sites = akita_utils.tsv_gen_utils.filter_by_ctcf(
         sites, ctcf_file=jaspar_file, verbose=True
@@ -626,7 +625,7 @@ def generate_ctcf_positons(
     )
     for col in extra_cols:
         seq_coords_df["locus_specification"] += (
-            "#" + col + "=" + seq_coords_df[col].astype(str)
+            "#" + f"{unique_identifier}_" + col + "=" + seq_coords_df[col].astype(str)
         )
 
     return seq_coords_df["locus_specification"].tolist()
