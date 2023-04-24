@@ -215,7 +215,7 @@ def main():
     # predict SNP scores, write output
     preds_stream = stream.PredStreamGen(
         seqnn_model,
-        akita_utils.seq_gens.fasta_shuffled_seq_gen(shuffled_seqs_fasta_file),
+        akita_utils.seq_gens.generate_seq_from_fasta(shuffled_seqs_fasta_file),
         batch_size,
         stream_seqs=32,
         verbose=True,

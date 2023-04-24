@@ -182,31 +182,34 @@ def random_seq_permutation(seq_1hot):
 
 def background_exploration_seqs_gen(seq_coords_df, genome_open, jasper_motif_file=None):
     """
-    Generate mutated sequences based on a reference genome and a set of mutation specifications.
+    Generates mutated DNA sequences from genomic coordinates following given parameters like mutation method, shuffle parameter, ctcf detection threshold etc. if a mutation method provided is about motifs then make sure corresponding parameters are provided as well i.e if mask_motif method is used, then ctcf detection threshold is needed.
 
-    Args:
-        seq_coords_df (pandas.DataFrame): A pandas DataFrame with one row per mutation specification.
-            The DataFrame should have columns `locus_specification`, `mutation_method`, `ctcf_selection_threshold`,
-            and `shuffle_parameter`. The `locus_specification` column should have values in the format
-            "chrom,start,end". The `mutation_method` column should have values among "mask_motif", "permute_motif",
-            "randomise_motif", "permute_whole_seq", and "randomise_whole_seq". The `ctcf_detection_threshold` column
-            should have a float value, and is used only when `mutation_method` is "mask_motif" or "permute_motif". The
-            `shuffle_parameter` column should have a positive integer value i.e 2 4 8, and is used only when `mutation_method`
-            is "permute_motif" or "permute_whole_seq".
-        genome_open (pysam.FastaFile): A `pysam.FastaFile` object representing the reference genome.
+    Parameters:
+    -----------
+    seq_coords_df: pandas.DataFrame
+        DataFrame containing genomic coordinates and mutation methods for generating mutated DNA sequences.
+        The DataFrame must have the following columns:
+        - locus_specification: string specifying the genomic coordinates in the format "chromosome,start,end".
+        - mutation_method: string specifying the type of mutation to apply to the DNA sequence.
+        - other parameters to help implement the mutation method
+
+    genome_open: object
+        An object with a fetch method that can retrieve DNA sequences from genomic coordinates.
+
+    jasper_motif_file: str, optional
+        Path to a JASPAR motif file for the transcription factor motif to mask or permute.
+        If None, the default CTCF motif is used.
 
     Yields:
-        numpy.ndarray: A mutated sequence in one-hot encoding format, as a numpy array with shape (n_positions, 4).
-
-    Raises:
-        ValueError: If any of the values in `seq_coords_df` is invalid or if any of the mutation methods is not
-            recognized.
+    -------
+    numpy.ndarray
+        Mutated DNA sequence in one-hot encoded format, generated according to the specified mutation method.
     """
-    
+
     if jasper_motif_file is not None:
         motif = read_jaspar_to_numpy(jasper_motif_file)
-    else
-        log.info("CTCF motif jasper file was not provided")
+    else:
+        log.info("CTCF motif jasper file was not provided, using default if available")
         motif = akita_utils.format_io.read_jaspar_to_numpy()
     
     for s in seq_coords_df.itertuples():
@@ -271,8 +274,6 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
         seq_1hot_insertions = []
         offsets_bp = []
         orientation_string = []
-        
-        #eval(f's.{insert}')
         
         s_df = pd.DataFrame([s], columns=seq_coords_df.columns.to_list())
 
@@ -358,3 +359,11 @@ def _check_overlaps(insert_limits, insertions_name_list=None):
     for i in range(len(sorted_insert_limits) - 1):
         if sorted_insert_limits[i][1] > sorted_insert_limits[i+1][0]:
             raise ValueError(f"Overlap found between inserted sequences: {sorted_insertions_name_list[i]} --> {sorted_insert_limits[i]}, {sorted_insertions_name_list[i+1]} --> {sorted_insert_limits[i+1]}")
+
+
+def generate_seq_from_fasta(fasta_file_path):  
+    with open(fasta_file_path, "r") as f:
+        for line in f.readlines():
+            if ">" in line:
+                continue
+            yield dna_1hot(line.strip())

@@ -128,7 +128,7 @@ def main():
     parser.add_option(
         "--head-index",
         dest="head_index",
-        default=0,
+        default=1,
         type="int",
         help="Specify head index (0=human 1=mus) ",
     )
