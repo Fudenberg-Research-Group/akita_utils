@@ -1,8 +1,6 @@
-import pandas as pd
 import numpy as np
 import pysam
 from .dna_utils import dna_1hot, permute_seq_k
-from .stats_utils import insul_diamonds_scores
 
 
 def create_flat_seqs_gen(
@@ -51,7 +49,7 @@ def create_flat_seqs_gen(
             pred = seqnn_model.predict(seq_1hot_batch, batch_size=batch_size)
             scores = np.sum(pred ** 2, axis=-1).sum(
                 axis=-1
-            )  # insul_diamonds_scores(pred)
+            ) 
             scores_pixelwise = np.max(pred ** 2, axis=-1).max(axis=-1)
 
             if np.all(

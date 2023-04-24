@@ -3,11 +3,6 @@ import numpy as np
 import akita_utils.format_io
 import pandas as pd
 
-########################################
-#           insertion utils            #
-########################################
-
-
 def _insert_casette(seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string):
     seq_length = seq_1hot.shape[0]
     insert_bp = len(seq_1hot_insertion)
@@ -99,15 +94,10 @@ def _multi_insert_offsets_casette(
                 + insert_bp
             ] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[insertion_index])
             
-            
-    # Check for overlaps between inserted sequences
-    insert_limits = sorted(insert_limits)
-    for i in range(len(insert_limits) - 1):
-        if insert_limits[i][1] > insert_limits[i+1][0]:
-            raise ValueError(f"Overlap found between inserted sequences: {insert_limits[i]}, {insert_limits[i+1]}")
-    
+    _check_overlaps(insert_limits)
     
     return output_seq
+
 
 
 def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
@@ -211,9 +201,10 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open, use_span=True):
             recognized.
     """
     motif = akita_utils.format_io.read_jaspar_to_numpy()
-    motif_window = (
-        len(motif) - 3
-    )  # for compartibility ie (19-3=16 which is a multiple of 2,4,8 the shuffle parameters)
+    # motif_window = (
+    #     len(motif) - 3
+    # )  # for compartibility ie (19-3=16 which is a multiple of 2,4,8 the shuffle parameters)
+    motif_window = 2 ** (math.ceil(math.log2(len(motif) - 1)))
     for s in seq_coords_df.itertuples():
         chrom, start, end = s.locus_specification.split(",")
         seq_dna = genome_open.fetch(chrom, int(start), int(end))
@@ -270,19 +261,19 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
         offsets_bp = []
         orientation_string = []
         
+        #eval(f's.{insert}')
+        
         s_df = pd.DataFrame([s], columns=seq_coords_df.columns.to_list())
 
         for col_name in seq_coords_df.columns:
             
             if "insert" in col_name:
                 
-                (
-                    insert_specification,
+                (   chrom, start, end, strand,
                     insert_flank_bp,
                     insert_offset,
                     insert_orientation,
-                ) = s_df[col_name][0].split("$")
-                chrom, start, end, strand = insert_specification.split(",")
+                ) = s_df[col_name][0].split(",")
                 seq_1hot_insertion = akita_utils.dna_utils.dna_1hot(
                     genome_open.fetch(
                         chrom,
@@ -305,3 +296,54 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
         )
 
         yield seq_1hot
+
+        
+def _inserts_overlap_check_pre_simulation(dataframe):
+    
+    for experiment in dataframe.itertuples(index=False):
+        offsets_bp = []
+        insertions_length_list = []
+        insertions_name_list = []
+        experiment_df = pd.DataFrame([experiment], columns=dataframe.columns.to_list())
+        for col_name in dataframe.columns:
+            if "insert" in col_name:
+
+                (   chrom, start, end, strand,
+                    insert_flank_bp,
+                    insert_offset,
+                    insert_orientation,
+                ) = experiment_df[col_name][0].split(",")
+
+                offsets_bp.append(int(insert_offset))
+                insertions_length_list.append(int(end)-int(start)+1+2*int(insert_flank_bp))
+                insertions_name_list.append(col_name)
+        _check_overlaps_pre_simulation(insertions_length_list, offsets_bp, insertions_name_list)
+                
+
+def _check_overlaps_pre_simulation(insertions_length_list, offsets_bp, insertions_name_list):
+        assert (
+            len(insertions_length_list) == len(offsets_bp)
+        ), "insertions and offsets dont match, please check"
+        insertion_start_bp = 0
+        insert_limits = []
+        
+        for insertion_index, insertion_length in enumerate(insertions_length_list):
+            
+            insert_bp = insertion_length
+            insertion_offset = offsets_bp[insertion_index]
+            insert_limits += [(
+                insertion_start_bp
+                + insertion_offset , insertion_start_bp
+                + insertion_offset
+                + insert_bp
+            )]
+        _check_overlaps(insert_limits, insertions_name_list)
+            
+            
+def _check_overlaps(insert_limits, insertions_name_list=None):
+    sorted_insert_limits = sorted(zip(insert_limits, insertions_name_list))
+    sorted_insertions_name_list = [name for _, name in sorted_insert_limits]
+    sorted_insert_limits = [limits for limits, _ in sorted_insert_limits]
+    for i in range(len(sorted_insert_limits) - 1):
+        if sorted_insert_limits[i][1] > sorted_insert_limits[i+1][0]:
+            raise ValueError(f"Overlap found between inserted sequences: {sorted_insertions_name_list[i]} --> {sorted_insert_limits[i]}, {sorted_insertions_name_list[i+1]} --> {sorted_insert_limits[i+1]}")

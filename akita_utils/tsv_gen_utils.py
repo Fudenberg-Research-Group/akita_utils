@@ -151,7 +151,7 @@ def filter_sites_by_score(
         .sort_values(score_key, ascending=False)
     )
 
-    if num_sites != None:
+    if num_sites is not None:
         assert num_sites <= len(
             filtered_sites
         ), "length of dataframe is smaller than requested number of sites, change contraints"
@@ -547,7 +547,7 @@ def add_background(seq_coords_df, background_indices_list):
 # functions below under review
 
 
-def generate_ctcf_positons(
+def generate_ctcf_motifs_list(
     h5_dirs,
     rmsk_file,
     jaspar_file,
@@ -559,21 +559,21 @@ def generate_ctcf_positons(
     unique_identifier="",
 ):
     """
-    This function generates a list of genomic coordinates for potential CTCF binding sites in DNA sequences.
+    Generates a list of genomic coordinates for potential CTCF binding sites in DNA sequences.
 
     Arguments:
+    - h5_dirs: A list of directories containing input .h5 files.
+    - rmsk_file: The path to a .bed file containing repeat-masker annotations.
+    - jaspar_file: The path to a JASPAR-formatted CTCF motif database.
+    - score_key: The key to extract score values of putative binding sites from input .h5 files.
+    - mode: One of "head", "tail", "uniform", or "random"; specifies which percentiles of CTCF sites ranked by score should be selected.
+    - num_sites: The number of sites to select per mode.
+    - weak_thresh_pct: The percentile below which putative binding sites are considered weak (default 1).
+    - strong_thresh_pct: The percentile above which putative binding sites are considered strong (default 99).
+    - unique_identifier: An optional string that can be used to add a unique identifier to the output.
 
-    h5_dirs: a list of directories containing input .h5 files
-    rmsk_file: path to a .bed file containing repeat-masker annotations
-    jaspar_file: path to a JASPAR-formatted CTCF motif database
-    score_key: key to extract score values of putative binding sites from input .h5 files
-    mode: one of "head", "tail", "uniform", "random"; specifies which percentiles of CTCF sites ranked by score should be selected
-    num_sites: number of sites to select per mode
-    weak_thresh_pct: percentile below which putative binding sites are considered weak (default 1)
-    strong_thresh_pct: percentile above which putative binding sites are considered strong (default 99)
     Returns:
-
-    A list of strings representing genomic coordinates of putative CTCF binding sites in format "chrom,start,end,strand#score_key=score_value".
+    - A list of strings representing genomic coordinates of putative CTCF binding sites in the following format: "chrom,start,end,strand#score_key=score_value".
     """
     sites = akita_utils.tsv_gen_utils.filter_boundary_ctcfs_from_h5(
         h5_dirs=h5_dirs, score_key=score_key, threshold_all_ctcf=5,
@@ -610,32 +610,11 @@ def generate_ctcf_positons(
     )
 
     seq_coords_df.reset_index(drop=True, inplace=True)
-    seq_coords_df["locus_specification"] = (
-        seq_coords_df["chrom"].astype(str)
-        + ","
-        + seq_coords_df["start"].astype(str)
-        + ","
-        + seq_coords_df["end"].astype(str)
-        + ","
-        + seq_coords_df["strand"].astype(str)
-    )
-
-    extra_cols = set(seq_coords_df.columns) - set(
-        ["chrom", "start", "end", "strand", "locus_specification"]
-    )
-    for col in extra_cols:
-        seq_coords_df["locus_specification"] += (
-            "#" + f"{unique_identifier}_" + col + "=" + seq_coords_df[col].astype(str)
-        )
-
-    return seq_coords_df["locus_specification"].tolist()
-
-
-# ---------------------------new implementation-------------------
+    return generate_locus_specification_list(dataframe=seq_coords_df, unique_identifier=unique_identifier)
 
 
 def generate_locus_specification_list(
-    dataframe, motif_threshold=1, specification_list=None, unique_identifier="dummy",
+    dataframe, filter_out_ctcf_motifs=False, specification_list=None, unique_identifier="",
 ):
     """
     Generate a list of locus specifications from a dataframe of genomic features.
@@ -643,7 +622,7 @@ def generate_locus_specification_list(
     Args:
         dataframe (pandas.DataFrame): A pandas dataframe containing genomic features with columns
             'chrom', 'start', 'end', 'strand' and additional columns to be included in the output.
-        motif_threshold (int, optional): The maximum number of motifs allowed in a feature. Defaults to 1.
+        filter_out_ctcf_motifs (bool, optional): Whether or not to filter out CTCF motifs. Defaults to False.
         specification_list (list, optional): A list of indices to include in the output. Defaults to None.
         unique_identifier (str, optional): A string to identify the unique identifier of additional columns. Defaults to "dummy".
 
@@ -653,42 +632,14 @@ def generate_locus_specification_list(
 
     """
 
-    # -----------different method of scanning for motifs-------------------
-    # feature_dataframe["enhancer_num_of_motifs"] = None # initialisation
-    # for row in feature_dataframe.itertuples():
-    #     seq_1hot = akita_utils.dna_utils.dna_1hot(genome_open.fetch(row.chrom,row.start,row.end))
-    #     motif = akita_utils.format_io.read_jaspar_to_numpy()
-    #     num_of_motifs = len(akita_utils.seq_gens.generate_spans_start_positions(seq_1hot, motif, 8))
-    #     feature_dataframe["enhancer_num_of_motifs"].at[row.Index] = num_of_motifs
-
-    # -----------different method of scanning for motifs-------------------
-    dataframe = filter_by_ctcf(dataframe, cols1=None)
-    dataframe = dataframe.rename(columns={"count": "num_of_motifs"})
-    # -----------------end-------------------
-
-    dataframe = dataframe[dataframe["num_of_motifs"] <= motif_threshold]
+    if filter_out_ctcf_motifs is True:
+        dataframe = filter_by_ctcf(dataframe, cols1=None)
+        dataframe = dataframe.rename(columns={"count": "num_of_ctcf_motifs"})
+    
     if "strand" not in dataframe.columns:  # some inserts dont have this column
         dataframe["strand"] = "+"
 
-    # Generate locus specification column
-    dataframe["locus_specification"] = (
-        dataframe["chrom"].astype(str)
-        + ","
-        + dataframe["start"].astype(str)
-        + ","
-        + dataframe["end"].astype(str)
-        + ","
-        + dataframe["strand"].astype(str)
-    )
-
-    # Add any other arbitrary columns from insert dataframe
-    extra_cols = set(dataframe.columns) - set(
-        ["chrom", "start", "end", "strand", "locus_specification"]
-    )
-    for col in extra_cols:
-        dataframe["locus_specification"] += (
-            "#" + f"{unique_identifier}_" + col + "=" + dataframe[col].astype(str)
-        )
+    dataframe = _dataframe_cleaning(dataframe=dataframe, unique_identifier=unique_identifier)
 
     # Generate list of locus specifications
     if specification_list is not None:
@@ -704,7 +655,7 @@ def generate_locus_specification_list(
 def parameter_dataframe_reorganisation(parameters_combo_dataframe, insert_names_list):
     """
     Reorganizes a parameter combination dataframe to have separate columns for each insert and its
-    associated parameters.
+    associated parameters. It also splits the dataframe to have the crucial columns alone and others kept as trailers with the respective identifiers.
 
     Args:
         parameters_combo_dataframe (pandas.DataFrame): A dataframe with the parameter combinations
@@ -766,9 +717,34 @@ def parameter_dataframe_reorganisation(parameters_combo_dataframe, insert_names_
         parameters_combo_dataframe[
             f"{insert_name}_insert"
         ] = parameters_combo_dataframe[insert_cols].apply(
-            lambda x: "$".join(x.astype(str)), axis=1
+            lambda x: ",".join(x.astype(str)), axis=1
         )
         parameters_combo_dataframe = parameters_combo_dataframe.drop(
             columns=insert_cols
         )
     return parameters_combo_dataframe
+
+
+def _dataframe_cleaning(dataframe, unique_identifier=""):
+    
+        # Generate locus specification column
+    dataframe["locus_specification"] = (
+        dataframe["chrom"].astype(str)
+        + ","
+        + dataframe["start"].astype(str)
+        + ","
+        + dataframe["end"].astype(str)
+        + ","
+        + dataframe["strand"].astype(str)
+    )
+
+    # Add any other arbitrary columns from insert dataframe
+    extra_cols = set(dataframe.columns) - set(
+        ["chrom", "start", "end", "strand", "locus_specification"]
+    )
+    for col in extra_cols:
+        dataframe["locus_specification"] += (
+            "#" + f"{unique_identifier}_" + col + "=" + dataframe[col].astype(str)
+        )
+        
+    return dataframe

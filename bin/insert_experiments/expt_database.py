@@ -24,14 +24,14 @@ enhancer_files = {
 }
 
 proj_dir = "/project/fudenber_735/collaborations/karissa_2022/"
-sub_folder_1 =  "20220812_EA18-1_RNAseq-Analysis_forGeoff/"
+sub_folder_1 = "20220812_EA18-1_RNAseq-Analysis_forGeoff/"
 
 proj_files = {
     "day1_sigRes": f"{proj_dir}{sub_folder_1}EA18.1_ESC_1d-depletion_DESeq2/20220817_EA18-1_resSig_ESC_1d-depletion.csv",
-    "normalized_counts" = f"{proj_dir}{sub_folder_1}EA18.1_ESC_1d-depletion_DESeq2/20220817_EA18-1_ESC-1d_sf-normalized.csv",
+    "normalized_counts": f"{proj_dir}{sub_folder_1}EA18.1_ESC_1d-depletion_DESeq2/20220817_EA18-1_ESC-1d_sf-normalized.csv",
     "feature_counts": f"{proj_dir}{sub_folder_1}20220816_featureCounts.csv",
     "vst_normalized_counts": f"{proj_dir}{sub_folder_1}EA18.1_ESC_1d-depletion_DESeq2/20220817_EA18-1_ESC-1d_sf-normalized_vst-transformed.csv",
-    "tss_annotations": f"{proj_dir}old/RNAseq/STAR_Gencode_alignment/tss_annotions_gencode.vM23.primary_assembly.gtf"
+    "tss_annotations": f"{proj_dir}old/RNAseq/STAR_Gencode_alignment/tss_annotions_gencode.vM23.primary_assembly.gtf",
 }
 
 
@@ -40,7 +40,7 @@ file_paths = {
     "bed_files": bed_files,
     "bw_files": bw_files,
     "enhancer_files": enhancer_files,
-    "proj_files": proj_files
+    "proj_files": proj_files,
 }
 
 # save to a JSON file

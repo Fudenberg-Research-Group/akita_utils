@@ -109,8 +109,8 @@ def main():
     )
     parser.add_option(
         "-l",
-        dest="plot_lim_min",
-        default=0.1,
+        dest="plot_lim",
+        default=2,
         type="float",
         help="Heatmap plot limit [Default: %default]",
     )
@@ -349,7 +349,7 @@ def main():
             seqnn_model.diagonal_offset,
             options.scd_stats,
             plot_dir,
-            options.plot_lim_min,
+            options.plot_lim,
             options.plot_freq,
         )
 
@@ -405,7 +405,7 @@ def write_snp(
     diagonal_offset,
     scd_stats=["SCD"],
     plot_dir=None,
-    plot_lim_min=0.1,
+    plot_lim=2,
     plot_freq=100,
 ):
     """Write SNP predictions to HDF."""
@@ -450,10 +450,7 @@ def write_snp(
             ref_map_ti = ref_map[..., ti]
             # TEMP: reduce resolution
             ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
-            vmin = min(ref_map_ti.min(), ref_map_ti.min())
-            vmax = max(ref_map_ti.max(), ref_map_ti.max())
-            vmin = min(-plot_lim_min, vmin)
-            vmax = max(plot_lim_min, vmax)
+            vmin, vmax = (-plot_lim, plot_lim)
             sns.heatmap(
                 ref_map_ti,
                 ax=axs[ti],

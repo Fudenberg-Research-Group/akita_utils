@@ -59,8 +59,8 @@ def main():
     )
     parser.add_option(
         "-l",
-        dest="plot_lim_min",
-        default=0.1,
+        dest="plot_lim",
+        default=2,
         type="float",
         help="Heatmap plot limit [Default: %default]",
     )

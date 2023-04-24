@@ -1,30 +1,32 @@
-[    {  "data": "/home1/kamulege/akita_utils/bin/insert_experiments/data/promoter_score_sample.csv",
-        "offset": [-200000],        
-        "flank_bp": [5],        
-        "orientation": [">"] },
-        
-    {   "data": "/home1/kamulege/akita_utils/bin/insert_experiments/data/enhancer_score_sample.csv",        
-        "offset": [5000],        
-        "flank_bp": [10],        
-        "orientation": [">"] },
-
-    {   "data": "/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",  
-        "offset": [490000],        
+[    {  "feature_name": "CTCF_1",
+        "path": "/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model1/scd.h5",  
+        "offset": [100],        
+        "flank_bp": [20],        
+        "orientation": [">"],
+        "rmsk_file": "/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz", 
+        "jaspar_file": "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
+        "num_sites": 1,
+        "score_key": "SCD",
+        "mode": "head" 
+    },
+ 
+     {  "feature_name": "CTCF_2",
+        "path": "/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model1/scd.h5",  
+        "offset": [120],        
         "flank_bp": [0],        
         "orientation": [">"],
         "rmsk_file": "/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz", 
         "jaspar_file": "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
         "num_sites": 1,
         "score_key": "SCD",
-        "mode": "head" },
- 
-    {   "data": "/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",  
-        "offset": [-490000],        
+        "mode": "head" 
+    },
+
+    {   "feature_name": "heterochromatin",
+        "path": "/home1/kamulege/akita_utils/bin/insert_experiments/heterochromatin_dataframe.tsv",     
+        "offset": [1120],        
         "flank_bp": [0],        
-        "orientation": ["<"],
-        "rmsk_file": "/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz", 
-        "jaspar_file": "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
-        "num_sites": 1,
-        "score_key": "SCD",
-        "mode": "head" }
+        "orientation": [">"],
+        "filter_out_inserts_with_ctcf_motifs": true
+    }
 ]

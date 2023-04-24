@@ -1,10 +1,10 @@
-'''
+"""
 This script explores experimental data containing information about different markers, such as NIPBL and H3K27 Acetylation. It creates three dataframes: transcription start sites, promoters with corresponding markers, and enhancers with corresponding markers. These dataframes are used to generate different layouts for virtual insertions.
 
 Arguments:
 
 up_stream_bps (int): the number of upstream basepairs that should be considered as promoter sequence.
-'''
+"""
 
 import pandas as pd
 import numpy as np
@@ -18,17 +18,23 @@ from akita_utils.seq_gens import generate_spans_start_positions
 import json
 import pandas as pd
 
-# Load JSON file
 with open("file_paths.json", "r") as f:
     file_paths = json.load(f)
 
 
 def main():
-    
     parser = argparse.ArgumentParser()
-    parser.add_argument("-up_stream_bps", dest="up_stream_bps", help="number of basepairs upstream to consider as promoter", default=20000, type=int)
+    parser.add_argument(
+        "-up_stream_bps",
+        dest="up_stream_bps",
+        help="number of basepairs upstream to consider as promoter",
+        default=20000,
+        type=int,
+    )
 
     args = parser.parse_args()
+    
+    NBINS = 1
 
     df = generate_expt_feature_df(file_paths)
 
@@ -45,23 +51,34 @@ def main():
     tss_df = tss_df.query("avg_counts> 5").copy()
     tss_df.to_csv(f"./data/tss_dataframe.tsv", sep="\t", index=False)
 
-    nbins = 1
     
+
     enhancer_path = file_paths["enhancer_files"]["enh_chen_s1"]
     enhancer_df = bioframe.read_table(enhancer_path, schema="bed3", header=1)
     enhancer_df = bioframe_clean_autosomes(enhancer_df)
-    enhancer_NIPBL_df = generate_score_df("Nipbl", "enhancer_NIPBL_score", enhancer_df, nbins=nbins)
-    enhancer_H3K27Ac_df = generate_score_df("H3K27Ac", "enhancer_H3K27Ac_score", enhancer_df, nbins=nbins)    
+    enhancer_NIPBL_df = append_score_value_to_df(
+        "Nipbl", "NIPBL_score", enhancer_df, nbins=NBINS
+    )
+    enhancer_H3K27Ac_df = append_score_value_to_df(
+        "H3K27Ac", "H3K27Ac_score", enhancer_df, nbins=NBINS
+    )
     enhancer_merged_df = pd.concat(
-        [        enhancer_df.reset_index(drop=True),        enhancer_NIPBL_df.reset_index(drop=True),        enhancer_H3K27Ac_df.reset_index(drop=True),    ],
+        [
+            enhancer_df.reset_index(drop=True),
+            enhancer_NIPBL_df.reset_index(drop=True),
+            enhancer_H3K27Ac_df.reset_index(drop=True),
+        ],
         axis=1,
     )
     enhancer_merged_df.to_csv("./data/enhancer_score_sample.csv")
 
-
     promoter_df = generate_promoter_df(tss_df, up_stream_bps=args.up_stream_bps)
-    promoter_NIPBL_df = generate_score_df("Nipbl", "promoter_NIPBL_score", enhancer_df, nbins=nbins)
-    promoter_H3K27Ac_df = generate_score_df("H3K27Ac", "promoter_H3K27Ac_score", enhancer_df, nbins=nbins)
+    promoter_NIPBL_df = append_score_value_to_df(
+        "Nipbl", "NIPBL_score", promoter_df, nbins=NBINS
+    )
+    promoter_H3K27Ac_df = append_score_value_to_df(
+        "H3K27Ac", "H3K27Ac_score", promoter_df, nbins=NBINS
+    )
     promoter_merged_df = pd.concat(
         [
             promoter_df.reset_index(drop=True),
@@ -70,12 +87,12 @@ def main():
         ],
         axis=1,
     )
-    promoter_merged_df.to_csv("./data/promoter_score_sample.csv")
+    promoter_merged_df.to_csv(f"./data/promoter_score_sample_upstream_bp_{args.up_stream_bps}.csv")
 
-    
-    
+
 # -------------------------------------------------------------------------------------------------
-# used functions below    
+# used functions below from https://github.com/Fudenberg-Research-Group/transcription_3Dfolding
+
 
 def generate_expt_feature_df(file_paths):
     """
@@ -105,9 +122,9 @@ def generate_expt_feature_df(file_paths):
         FileNotFoundError: If any of the required files are not found.
         ValueError: If any of the required files are empty or contain invalid data.
     """
-        
+
     WT_samples = ["KHRNA1", "KHRNA7", "KHRNA13", "KHRNA22", "KHRNA23", "KHRNA50"]
-    
+
     day1_sigRes = file_paths["proj_files"]["day1_sigRes"]
     day1_res_df = pd.read_csv(day1_sigRes)
 
@@ -124,7 +141,7 @@ def generate_expt_feature_df(file_paths):
         columns={"Unnamed: 0": "Geneid"}
     )
     vst_counts_df["avg"] = vst_counts_df[WT_samples].mean(axis="columns")
-    
+
     feat_counts_df = feat_counts_df.merge(
         vst_counts_df, on="Geneid", how="left", suffixes=("_counts", "_vst_counts")
     )
@@ -132,20 +149,20 @@ def generate_expt_feature_df(file_paths):
 
     # add average normalized counts value to results df
     day1_res_df = day1_res_df.merge(
-        feat_counts_df[["Geneid", "avg_vst_counts", "avg_counts"]], on="Geneid", how="outer"
+        feat_counts_df[["Geneid", "avg_vst_counts", "avg_counts"]],
+        on="Geneid",
+        how="outer",
     )
     expt_feature_df = day1_res_df.copy()
-    
+
     return expt_feature_df
 
 
-
-def generate_score_df(filename, column_name, enhancer_df, nbins=1):
-    bw_path = file_paths["bw_files"][filename]
-    score_matrix = generate_signal_matrix(enhancer_df, bw_path, nbins=nbins)
-    score_columns = [f"{column_name}_{i}" for i in range(nbins)]
+def append_score_value_to_df(score_name, new_column_name, df, nbins=1):
+    bw_path = file_paths["bw_files"][score_name]
+    score_matrix = generate_signal_matrix(df, bw_path, nbins=nbins)
+    score_columns = [f"{new_column_name}_{i}" for i in range(nbins)]
     return pd.DataFrame(score_matrix, columns=score_columns)
-
 
 
 def generate_signal_matrix(
@@ -292,6 +309,5 @@ def generate_promoter_df(feature_dataframe, up_stream_bps=10000):
     return feature_dataframe
 
 
-  
 if __name__ == "__main__":
     main()
