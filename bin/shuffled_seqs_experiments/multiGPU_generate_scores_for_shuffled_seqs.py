@@ -109,6 +109,12 @@ def main():
         default="/project/fudenber_735/tensorflow_models/akita/v2/analysis/background_seqs.fa",
         help="file with insertion seqs in fasta format",
     )
+    parser.add_option(
+        "--jasper_motif_file",
+        dest="jasper_motif_file",
+        default=None,
+        help="jasper file of the ctcf motif",
+    )
 
     # multi
     parser.add_option(

@@ -103,11 +103,11 @@ def main():
     )
     general_seq_gc_df = bioframe.frac_gc(seq_df, bioframe.load_fasta(args.genome_fasta), return_input=True)
 
-    grid_search_params = {
+    grid_params = {
         "shuffle_parameter": args.shuffle_parameter,
         "ctcf_detection_threshold": args.ctcf_detection_threshold,
         "mutation_method": args.mutation_method,
-        "map_score_threshold": args.map_score_threshold,  # this is SCD score
+        "map_score_threshold": args.map_score_threshold, 
         "scores_pixelwise_thresh": args.scores_pixelwise_thresh,
     }
 
@@ -121,7 +121,7 @@ def main():
         num_sites=args.num_backgrounds,
     )
 
-    # fixing locus specific variables together before grid_search
+    # fixing locus specific variables together before grid creation
     seq_gc_df = (
         seq_gc_df["chrom"].map(str)
         + ","
@@ -133,10 +133,10 @@ def main():
     )
     locus_list = seq_gc_df.values.tolist()
 
-    grid_search_params["locus_specification"] = locus_list
+    grid_params["locus_specification"] = locus_list
 
-    grid_search_param_set = list(itertools.product(*[v for v in grid_search_params.values()]))
-    parameters_combo_dataframe = pd.DataFrame(grid_search_param_set, columns=grid_search_params.keys())
+    grid_param_set = list(itertools.product(*[v for v in grid_params.values()]))
+    parameters_combo_dataframe = pd.DataFrame(grid_param_set, columns=grid_params.keys())
     parameters_combo_dataframe[["locus_specification", "GC_content"]] = parameters_combo_dataframe[
         "locus_specification"
     ].str.split("-", expand=True)

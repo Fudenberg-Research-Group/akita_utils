@@ -122,7 +122,14 @@ def main():
         default="/project/fudenber_735/tensorflow_models/akita/v2/analysis/background_seqs.fa",
         help="file with insertion seqs in fasta format",
     )
-
+    parser.add_option(
+        "--jasper_motif_file",
+        dest="jasper_motif_file",
+        default=None,
+        help="jasper file of the ctcf motif",
+    )
+    
+    
     (options, args) = parser.parse_args()
 
     log.info("\n++++++++++++++++++\n")
@@ -240,7 +247,7 @@ def main():
     # initialize predictions stream
     preds_stream = stream.PredStreamGen(
         seqnn_model,
-        akita_utils.seq_gens.background_exploration_seqs_gen(seq_coords_df, genome_open),
+        akita_utils.seq_gens.background_exploration_seqs_gen(seq_coords_df, genome_open, options.jasper_motif_file),
         batch_size,
     )
 
