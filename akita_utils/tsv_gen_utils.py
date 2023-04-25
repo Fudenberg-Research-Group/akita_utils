@@ -144,8 +144,8 @@ def filter_sites_by_score(
 
     """
 
-    if mode not in ("head", "tail", "random"):
-        raise ValueError("a mode has to be one from: head, tail, random")
+    if mode not in ("head", "tail", "uniform","random"):
+        raise ValueError("a mode has to be one from: head, tail, uniform, random")
 
     upper_thresh = np.percentile(sites[score_key].values, upper_threshold)
     lower_thresh = np.percentile(sites[score_key].values, lower_threshold)
@@ -155,10 +155,9 @@ def filter_sites_by_score(
             (sites[score_key] >= lower_thresh)
             & (sites[score_key] <= upper_thresh)
         ]
-        .copy()
-        .sort_values(score_key, ascending=False)
-    )
-
+        .copy().drop_duplicates(subset=[score_key]).sort_values(score_key, ascending=False))
+    
+    
     if num_sites != None:
         assert num_sites <= len(
             filtered_sites
@@ -168,9 +167,12 @@ def filter_sites_by_score(
             filtered_sites = filtered_sites[:num_sites]
         elif mode == "tail":
             filtered_sites = filtered_sites[-num_sites:]
+        elif mode == "uniform":
+            filtered_sites['binned'] = pd.cut(filtered_sites[score_key], bins=num_sites)
+            filtered_sites = filtered_sites.groupby('binned').apply(lambda x: x.head(1))
         else:
             filtered_sites = filtered_sites.sample(n=num_sites)
-
+            
     return filtered_sites
 
 
@@ -573,17 +575,3 @@ def add_background(seq_coords_df, background_indices_list):
     seq_coords_df["background_index"] = background_ls
 
     return seq_coords_df
-
-
-
-
-def calculate_GC(chrom_seq_bed_file,genome_fasta):
-    "takes a bed file and fasta, splits it in akita feedable windows, calculates GC content and adds a column GC"
-    chromsizes = bioframe.read_chromsizes(chrom_seq_bed_file,chrom_patterns=("^chr1$", "^chr2$", "^chr3$"))
-    raw_dataframe = pd.DataFrame(chromsizes)
-    raw_dataframe['end'] = raw_dataframe['length']+ 1310720 # akita's window size (open to another selection method)
-    raw_dataframe = raw_dataframe.reset_index()
-    raw_dataframe.rename(columns = {'index' : 'chrom', 'length':'start'}, inplace = True)
-    final_chrom_dataframe = bioframe.frac_gc(raw_dataframe, bioframe.load_fasta(genome_fasta), return_input=True)
-    return final_chrom_dataframe
-

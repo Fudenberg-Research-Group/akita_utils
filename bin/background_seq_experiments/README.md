@@ -1,34 +1,14 @@
 ### Commands
-<<<<<<< HEAD
 
-    - generating tsv table for bulk simulations
-        
-        `python background_scores_exploration_bulk_df.py` 
-        
+   - (1) create a table specifying how flat sequences should be generated. Includes: mutation method (default is "permute_whole_seq"), shuffle parameter, score thresholds (MPS_thresh, SCD_thresh) and ctcf_detection_thresholds. Can be used with either human or mouse genomes.
+   
+          python generate_flat_seqs_df.py -f /project/fudenber_735/genomes/mm10/mm10.fa -seq_bed_file /project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed --output_filename data/flat_seqs_mouse.tsv
+      
+   - (2) generate flat seqs fasta file. These sequences can be used as background sequences for virtual insertion experiments. Optionally plots pdfs of predictions for these flat sequences.
+   
+           python generate_flat_seqs.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 /home1/kamulege/akita_utils/bin/background_seq_experiments/data/flat_seqs_mouse.tsv --stats SCD,MPS,CS -o /scratch1/kamulege/flat_seqs_test -f /project/fudenber_735/genomes/mm10/mm10.fa
+   
+   - (3) generating flat seqs fasta file for further expts and sample pdfs using multiple processes
 
-    - Akita predictions in for bulk simulations
-
-        `python multiGPU_background_scores_exploration_bulk.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 /home1/kamulege/akita_utils/bin/background_seq_experiments/data/parameters_combo.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /home1/kamulege/akita_utils/bin/background_seq_experiments/data/background_scores --head-index 1 --model-index 1 --batch-size 4  --stats SCD -p 6 --max_proc 7 --time 01:00:00`
-        
-        
-        
-        
-        
-    - generating tsv table for creating final flat maps
-    
-     got to `background_scores_exploration_bulk_df.py` and put in desired parameters then create tsv file same way as before. 
-     (TIP) give it a different name to one used in bulk simulation, here i used `background_seq.tsv`
-     
-
-    - generating flat maps fasta file and pdfs
-
-        `python multiGPU_generate_flat_background.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 /home1/kamulege/akita_utils/bin/background_seq_experiments/data/background_seq.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /home1/kamulege/akita_utils/bin/background_seq_experiments/data/background_seqs --head-index 1 --model-index 1 --batch-size 4 -s -m --stats SCD -p 1 --max_proc 7 --time 01:00:00`
-        
-=======
-    - generating tsv table in /data
-        ```python background_scores_exploration_bulk_df.py```
-        
-    - Akita predictions in /data
-
-        ```python multiGPU_background_scores_exploration_bulk.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 /home1/kamulege/akita_utils/bin/background_seq_experiments/data/parameters_combo.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /home1/kamulege/akita_utils/bin/background_seq_experiments/data/background_scores --head-index 1 --model-index 1 --batch-size 4  --stats SCD -p 6 --max_proc 7```
->>>>>>> ca6d3bf7c1c3741116e21503d5e4fcc00c138994
+            python multiGPU_generate_flat_seqs.py /project/fudenber_735/tensorflow_models/akita/v2/models data/flat_seqs_mouse.tsv -o data/flat_seqs_mouse -f /project/fudenber_735/genomes/mm10/mm10.fa --head-index 1 --model-index 6 --batch-size 4 --max_iters 40 -s -m -p 1 --max_proc 7 --time 02:00:00 &
+          
