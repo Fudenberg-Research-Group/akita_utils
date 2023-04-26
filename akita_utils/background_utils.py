@@ -1,7 +1,10 @@
 import numpy as np
 import pysam
 from .dna_utils import dna_1hot, permute_seq_k
+import logging
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+log = logging.getLogger(__name__)
 
 def create_flat_seqs_gen(
     seqnn_model,
@@ -43,7 +46,7 @@ def create_flat_seqs_gen(
                 best_seq = seq_1hot_batch[best_ind]
                 best_pred = pred[best_ind]
                 best_score, best_score_pixelwise = (scores[best_ind],scores_pixelwise[best_ind])
-                print("success: best seq, thresh",np.min(scores),
+                log.info("success: best seq, thresh",np.min(scores),
                         " pixelwise",np.min(scores_pixelwise))
                 flat_seqs.append([best_seq,best_pred,best_score,best_score_pixelwise])
             num_iters += 1

@@ -115,7 +115,13 @@ def main():
         type="int",
         help="Specify head index (0=human 1=mus) ",
     )
-
+    parser.add_option(
+        "--model-index",
+        dest="model_index",
+        default=0,
+        type="int",
+        help="Specify model index (from 0 to 7)",
+    )
     parser.add_option(
         "-s",
         dest="save_seqs",
@@ -159,13 +165,6 @@ def main():
         help="Maximum concurrent processes [Default: %default]",
     )
     parser.add_option(
-        "-p",
-        dest="processes",
-        default=None,
-        type="int",
-        help="Number of processes, passed by multi script",
-    )
-    parser.add_option(
         "-q",
         dest="queue",
         default="gpu",
@@ -206,7 +205,7 @@ def main():
         params_file = model_dir + "params.json"
 
         new_args = [params_file, model_file, tsv_file]
-        options.name = f"{options.name}_m{options.model_index}"
+        options.name = f"{options.name}_m{options.model_index}_h{options.head_index}"
 
     #######################################################
     # prep work

@@ -89,7 +89,7 @@ def main():
         "--scores_pixelwise_thresh",
         type=int,
         nargs="+",
-        default=[0.2],
+        default=[0.3],
         help="maximum allowable intensity of a single pixel in a map",
     )
     args = parser.parse_args()

@@ -135,7 +135,7 @@ def main():
 
     parser.add_option("-s", dest="save_seqs", default=True, help="Save the final seqs in fasta format")
 
-    parser.add_option("--max_iters", dest="max_iters", default=10, help="maximum iterations")
+    parser.add_option("--max_iters", dest="max_iters", default=10, type=int, help="maximum iterations")
 
     (options, args) = parser.parse_args()
 
@@ -222,7 +222,7 @@ def main():
         seqnn_model,
         options.genome_fasta,
         seq_coords_df,
-        max_iters=options.max_iters,
+        max_iters=int(options.max_iters),
         batch_size=batch_size,
     )
 
