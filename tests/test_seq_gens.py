@@ -2,7 +2,7 @@ from akita_utils.dna_utils import dna_1hot, dna_1hot_to_seq, dna_seq_rc
 from akita_utils.seq_gens import _insert_casette
 import akita_utils
 import pytest
-
+import numpy as np
 
 def test_insert_casette():
 

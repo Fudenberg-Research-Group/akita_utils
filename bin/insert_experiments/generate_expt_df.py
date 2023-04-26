@@ -26,7 +26,7 @@ DEFAULT_FLANK_BP = [0]
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-background_seqs", nargs="+", dest="background_seqs", default=[0], type=int
+        "--background_seqs", nargs="+", dest="background_seqs", default=[0], type=int, help="list of which background seqs to pick, from the given set of background fasta seqs"
     )
     parser.add_argument(
         "-o", dest="out_dir", default="default_exp_data", help="where to store output"

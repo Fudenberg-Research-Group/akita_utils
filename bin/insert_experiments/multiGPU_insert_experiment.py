@@ -28,9 +28,6 @@ Relies on slurm_gf.py to auto-generate slurm jobs.
 
 from optparse import OptionParser
 import os
-
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-
 import pickle
 import subprocess
 import sys
@@ -60,7 +57,7 @@ def main():
     parser.add_option(
         "-l",
         dest="plot_lim",
-        default=2,
+        default=0.2,
         type="float",
         help="Heatmap plot limit [Default: %default]",
     )
@@ -151,7 +148,7 @@ def main():
     parser.add_option(
         "--name",
         dest="name",
-        default="dummy_insert",
+        default="insert_expt",
         help="SLURM name prefix [Default: %default]",
     )
     parser.add_option(
@@ -210,8 +207,11 @@ def main():
         model_file = model_dir + "model" + str(options.head_index) + "_best.h5"
         params_file = model_dir + "params.json"
         new_args = [params_file, model_file, tsv_file]
-
+        options.name = f"{options.name}_m{options.model_index}_h{options.head_index}"
+        
     # output directory
+    options.out_dir = f"{options.out_dir}/insert_expt_model{options.model_index}_head{options.head_index}"
+    
     if not options.restart:
         if os.path.isdir(options.out_dir):
             print("Please remove %s" % options.out_dir, file=sys.stderr)

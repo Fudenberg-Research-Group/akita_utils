@@ -48,8 +48,6 @@ def _multi_insert_offsets_casette(
     This function takes in a DNA sequence in one-hot encoding format, along with a list of other DNA sequences to be inserted into it.
     The function inserts each of the given sequences into the given sequence at specified locations, according to the given orientation and offset.
     The function then returns the modified DNA sequence in one-hot encoding format.
-
-    If any of the inserted sequences overlap with each other, the function raises a `ValueError` with a message indicating which pairs of sequences overlap.
     """
     assert (
         len(seq_1hot_insertions) == len(orientation_string) == len(offsets_bp)
@@ -57,21 +55,12 @@ def _multi_insert_offsets_casette(
     seq_length = seq_1hot.shape[0]
     output_seq = seq_1hot.copy()
     insertion_start_bp = seq_length // 2
-    insert_limits = []
     for insertion_index, insertion in enumerate(seq_1hot_insertions):
         insert_bp = len(seq_1hot_insertions[insertion_index])
         insertion_orientation_arrow = orientation_string[insertion_index]
         insertion_offset = offsets_bp[insertion_index]
 
         if insertion_orientation_arrow == ">":
-            
-            insert_limits += [(
-                insertion_start_bp
-                + insertion_offset , insertion_start_bp
-                + insertion_offset
-                + insert_bp
-            )]
-            
             output_seq[
                 insertion_start_bp
                 + insertion_offset : insertion_start_bp
@@ -79,23 +68,13 @@ def _multi_insert_offsets_casette(
                 + insert_bp
             ] = seq_1hot_insertions[insertion_index]
         else:
-            
-            insert_limits += [(
-                insertion_start_bp
-                + insertion_offset , insertion_start_bp
-                + insertion_offset
-                + insert_bp
-            )]
-            
             output_seq[
                 insertion_start_bp
                 + insertion_offset : insertion_start_bp
                 + insertion_offset
                 + insert_bp
             ] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[insertion_index])
-            
-    _check_overlaps(insert_limits)
-    
+                
     return output_seq
 
 
@@ -260,9 +239,6 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
         seq_1hot_insertions = []
         offsets_bp = []
         orientation_string = []
-        
-        #eval(f's.{insert}')
-        
         s_df = pd.DataFrame([s], columns=seq_coords_df.columns.to_list())
 
         for col_name in seq_coords_df.columns:

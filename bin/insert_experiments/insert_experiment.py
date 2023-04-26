@@ -110,7 +110,7 @@ def main():
     parser.add_option(
         "-l",
         dest="plot_lim",
-        default=2,
+        default=0.2,
         type="float",
         help="Heatmap plot limit [Default: %default]",
     )
@@ -189,11 +189,10 @@ def main():
         type="int",
         help="Specify model index (from 0 to 7)",
     )
-    ## insertion-specific options
     parser.add_option(
         "--background-file",
         dest="background_file",
-        default="/project/fudenber_735/tensorflow_models/akita/v2/analysis/background_seqs.fa",
+        default= "/home1/kamulege/akita_utils/bin/background_seq_experiments/data/background_seqs/job0/background_seqs.fa", # "/project/fudenber_735/tensorflow_models/akita/v2/analysis/background_seqs.fa",
         help="file with insertion seqs in fasta format",
     )
 
@@ -293,6 +292,7 @@ def main():
     num_experiments = len(seq_coords_df)
 
     log.info("===================================")
+    
     log.info(
         f"Number of experiements = {num_experiments} \n It's not number of predictions. Num of predictions is this {num_experiments} x {batch_size}"
     )
@@ -309,14 +309,9 @@ def main():
             if ">" in line:
                 continue
             background_seqs.append(dna_io.dna_1hot(line.strip()))
-    num_insert_backgrounds = seq_coords_df["background_seqs"].max()
-    if len(background_seqs) < num_insert_backgrounds:
-        raise ValueError(
-            "must provide a background file with at least as many"
-            + "backgrounds as those specified in the insert seq_coords tsv."
-            + f"\nThe provided background file has {len(background_seqs)} sequences."
-        )
 
+    log.info(f"There are {len(background_seqs)} background seqs")
+    
     # setup output
     scd_out = initialize_output_h5(
         options.out_dir,
