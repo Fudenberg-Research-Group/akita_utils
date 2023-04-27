@@ -34,6 +34,9 @@ import pandas as pd
 from skimage.measure import block_reduce
 import seaborn as sns
 
+
+pid = os.getpid()
+
 sns.set(style="ticks", font_scale=1.3)
 
 import tensorflow as tf
@@ -229,7 +232,7 @@ def main():
     # save flat sequences in fasta format if requested
 
     if options.save_seqs is not None:
-        with open(f"{options.out_dir}/background_seqs.fa", "w") as f:
+        with open(f"{options.out_dir}/{pid}_background_seqs.fa", "w") as f:
             for i in range(len(flat_seqs)):
                 f.write(
                     ">shuffled_chr"
@@ -238,10 +241,12 @@ def main():
                     + str(int(flat_seqs[i][2]))
                     + "_pixelwise"
                     + str(int(flat_seqs[i][3]))
+                    + "_custom"
+                    + str(int(flat_seqs[i][4]))
                     + "\n"
                 )
                 f.write(akita_utils.dna_utils.dna_1hot_to_seq(flat_seqs[i][0]) + "\n")
-        log.info(f"finished saving! \n plotting next if requested")
+        log.info(f"finished saving!")
 
     # plot flat sequences
     if options.plot_map is not None:

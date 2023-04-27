@@ -2,7 +2,7 @@
 
    - (1) create a table specifying how flat sequences should be generated. Includes: mutation method (default is "permute_whole_seq"), shuffle parameter, score thresholds (MPS_thresh, SCD_thresh) and ctcf_detection_thresholds. Can be used with either human or mouse genomes.
    
-          python generate_flat_seqs_df.py -f /project/fudenber_735/genomes/mm10/mm10.fa -seq_bed_file /project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed --output_filename data/flat_seqs_mouse.tsv --num_backgrounds 1
+          python generate_flat_seqs_df.py -f /project/fudenber_735/genomes/mm10/mm10.fa -seq_bed_file /project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed --output_filename data/flat_seqs_mouse.tsv --num_backgrounds 100
       
    - (2) generate flat seqs fasta file. These sequences can be used as background sequences for virtual insertion experiments. Optionally plots pdfs of predictions for these flat sequences.
    

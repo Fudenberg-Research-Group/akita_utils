@@ -75,21 +75,21 @@ def main():
     )
     parser.add_argument(
         "--mode",
-        default="uniform",
+        default="tail",
         help="loci selection criteria",
     )
     parser.add_argument(
         "--map_score_threshold",
         type=int,
         nargs="+",
-        default=[60],
+        default=[25],
         help="maximum allowable map score, SCD",
     )
     parser.add_argument(
         "--scores_pixelwise_thresh",
         type=int,
         nargs="+",
-        default=[0.3],
+        default=[0.2],
         help="maximum allowable intensity of a single pixel in a map",
     )
     args = parser.parse_args()
