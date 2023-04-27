@@ -1,7 +1,7 @@
 [    {  "feature_name": "CTCF_1",
         "path": "/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",  
         "offset": [0],        
-        "flank_bp": [0,5,10,15,20],        
+        "flank_bp": [60],        
         "orientation": [">"],
         "rmsk_file": "/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz", 
         "jaspar_file": "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",

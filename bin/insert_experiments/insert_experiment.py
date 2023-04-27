@@ -67,7 +67,7 @@ import pickle
 import random
 import sys
 import time
-
+import glob
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
@@ -304,6 +304,8 @@ def main():
     )  # needs to be closed at some point
 
     background_seqs = []
+    
+    
     with open(options.background_file, "r") as f:
         for line in f.readlines():
             if ">" in line:

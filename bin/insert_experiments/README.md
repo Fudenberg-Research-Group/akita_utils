@@ -19,9 +19,9 @@
     }
     ]
                 
-         python generate_expt_df.py --json-file /home1/kamulege/akita_utils/bin/insert_experiments/data.json -o zero_motif_promoters_5000.tsv --background_seqs 0 1 2 3 
+         python generate_expt_df.py --json-file /home1/kamulege/akita_utils/bin/insert_experiments/data.json -o one_strong_motif_in_different_backgrounds.tsv --background_seqs $(seq 0 30) 
                 
-        
+        $(seq 0 99)
    - Akita experiment predictions 
    
          python insert_experiment.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 /home1/kamulege/akita_utils/bin/insert_experiments/one_strong_motif_in_different_backgrounds.tsv  -f /project/fudenber_735/genomes/mm10/mm10.fa --head-index 1 --batch-size 4 -m -o /scratch1/kamulege/insert_experiments/one_strong_motif_in_different_backgrounds --stats SCD --background-file  /home1/kamulege/akita_utils/bin/background_seq_experiments/data/background_seqs/job0/background_seqs.fa
