@@ -64,16 +64,17 @@ def _seq_batch_generator_shuffled_seqs(seq_1hot, shuffle_k, batch_size):
 
 def _calculate_scores_from_predictions(predictions):
     """
-    Calculates SCD scores, MPS scores, and custom scores for each sequence in `predictions`.
+    Calculate scores for each sequence in the input numpy array of predictions.
 
     Args:
-        predictions (numpy.ndarray): A numpy array of shape `(num_sequences, sequence_length, num_classes)`
-            containing the predicted probabilities for each class for each position in each sequence.
+        predictions (numpy.ndarray): Input array of shape (num_sequences, seq_length, num_targets),
+                                      containing predicted sequences for each input sequence.
 
     Returns:
-        tuple: A tuple containing three numpy arrays: `scores` (maximum_of_SCD scores) of shape `(num_sequences,)`,
-            `scores_pixelwise` (maximum_of_MPS scores) of shape `(num_sequences,)`, and `custom_scores` (minimum_of_CS scores)
-            of shape `(num_sequences,)`.
+        Tuple of three numpy arrays containing the calculated scores for each sequence in the input:
+        - scores: maximum squared cumulative distance (SCD) between predicted and ground truth.
+        - pixelwise_scores: maximum pixel-wise difference (MPS) between predicted and ground truth.
+        - custom_scores: custom score calculated using mean and standard deviation of predicted sequence.
     """
     scores = []
     scores_pixelwise =[]
@@ -85,7 +86,7 @@ def _calculate_scores_from_predictions(predictions):
         
         scores_pixelwise += [np.max(np.max(np.abs(ref_preds), axis=0))] # maximum_of_MPS
         scores += [np.max(np.sqrt((ref_preds**2).sum(axis=0)))] # maximum_of_SCD
-        custom_score +=  [np.min(3/mean + 2/std)] # minimum_of_CS
+        custom_score +=  [np.min(3/mean + 2/std)] # minimum_of_CS  keep in mind custom_score = np.min(3 / (mean * np.log(mean)) + 2 / std_dev)
         
     return scores, scores_pixelwise, custom_score
 

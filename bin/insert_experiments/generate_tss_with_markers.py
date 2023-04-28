@@ -70,7 +70,7 @@ def main():
         ],
         axis=1,
     )
-    enhancer_merged_df.to_csv("./data/enhancer_score_sample.csv")
+    enhancer_merged_df.to_csv("./data/experimental_data/enhancer_score_sample.csv")
 
     promoter_df = generate_promoter_df(tss_df, up_stream_bps=args.up_stream_bps)
     promoter_NIPBL_df = append_score_value_to_df(
@@ -87,7 +87,7 @@ def main():
         ],
         axis=1,
     )
-    promoter_merged_df.to_csv(f"./data/promoter_score_sample_upstream_bp_{args.up_stream_bps}.csv")
+    promoter_merged_df.to_csv(f"./data/experimental_data/promoter_score_sample_upstream_bp_{args.up_stream_bps}.csv")
 
 
 # -------------------------------------------------------------------------------------------------

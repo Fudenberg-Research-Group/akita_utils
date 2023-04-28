@@ -2,13 +2,10 @@ from akita_utils.dna_utils import hot1_rc, dna_1hot
 import numpy as np
 import akita_utils.format_io
 import pandas as pd
-<<<<<<< HEAD
-=======
 import logging
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 log = logging.getLogger(__name__)
->>>>>>> background_first_merge
 
 def _insert_casette(seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string):
     seq_length = seq_1hot.shape[0]
@@ -67,27 +64,12 @@ def _multi_insert_offsets_casette(
     seq_length = seq_1hot.shape[0]
     output_seq = seq_1hot.copy()
     insertion_start_bp = seq_length // 2
-<<<<<<< HEAD
-=======
-    insert_limits = []
->>>>>>> background_first_merge
     for insertion_index, insertion in enumerate(seq_1hot_insertions):
         insert_bp = len(seq_1hot_insertions[insertion_index])
         insertion_orientation_arrow = orientation_string[insertion_index]
         insertion_offset = offsets_bp[insertion_index]
 
         if insertion_orientation_arrow == ">":
-<<<<<<< HEAD
-=======
-            
-            insert_limits += [(
-                insertion_start_bp
-                + insertion_offset , insertion_start_bp
-                + insertion_offset
-                + insert_bp
-            )]
-            
->>>>>>> background_first_merge
             output_seq[
                 insertion_start_bp
                 + insertion_offset : insertion_start_bp
@@ -95,30 +77,13 @@ def _multi_insert_offsets_casette(
                 + insert_bp
             ] = seq_1hot_insertions[insertion_index]
         else:
-<<<<<<< HEAD
-=======
-            
-            insert_limits += [(
-                insertion_start_bp
-                + insertion_offset , insertion_start_bp
-                + insertion_offset
-                + insert_bp
-            )]
-            
->>>>>>> background_first_merge
             output_seq[
                 insertion_start_bp
                 + insertion_offset : insertion_start_bp
                 + insertion_offset
                 + insert_bp
             ] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[insertion_index])
-<<<<<<< HEAD
-                
-=======
-            
-    _check_overlaps(insert_limits)
-    
->>>>>>> background_first_merge
+
     return output_seq
 
 
@@ -199,37 +164,7 @@ def random_seq_permutation(seq_1hot):
     return seq_1hot_perm
 
 
-<<<<<<< HEAD
-def background_exploration_seqs_gen(seq_coords_df, genome_open, use_span=True):
-    """
-    Generate mutated sequences based on a reference genome and a set of mutation specifications.
 
-    Args:
-        seq_coords_df (pandas.DataFrame): A pandas DataFrame with one row per mutation specification.
-            The DataFrame should have columns `locus_specification`, `mutation_method`, `ctcf_selection_threshold`,
-            and `shuffle_parameter`. The `locus_specification` column should have values in the format
-            "chrom,start,end". The `mutation_method` column should have values among "mask_motif", "permute_motif",
-            "randomise_motif", "permute_whole_seq", and "randomise_whole_seq". The `ctcf_detection_threshold` column
-            should have a float value, and is used only when `mutation_method` is "mask_motif" or "permute_motif". The
-            `shuffle_parameter` column should have a positive integer value i.e 2 4 8, and is used only when `mutation_method`
-            is "permute_motif" or "permute_whole_seq".
-        genome_open (pysam.FastaFile): A `pysam.FastaFile` object representing the reference genome.
-        use_span (bool, optional): Whether to restrict the mutation operations to the regions where a motif is found
-            (True) or apply them to the entire sequence (False). Defaults to True.
-
-    Yields:
-        numpy.ndarray: A mutated sequence in one-hot encoding format, as a numpy array with shape (n_positions, 4).
-
-    Raises:
-        ValueError: If any of the values in `seq_coords_df` is invalid or if any of the mutation methods is not
-            recognized.
-    """
-    motif = akita_utils.format_io.read_jaspar_to_numpy()
-    # motif_window = (
-    #     len(motif) - 3
-    # )  # for compartibility ie (19-3=16 which is a multiple of 2,4,8 the shuffle parameters)
-    motif_window = 2 ** (math.ceil(math.log2(len(motif) - 1)))
-=======
 def background_exploration_seqs_gen(seq_coords_df, genome_open, jasper_motif_file=None):
     """
     Generates mutated DNA sequences from genomic coordinates following given parameters like mutation method, shuffle parameter, ctcf detection threshold etc. if a mutation method provided is about motifs then make sure corresponding parameters are provided as well i.e if mask_motif method is used, then ctcf detection threshold is needed.
@@ -262,19 +197,12 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open, jasper_motif_fil
         log.info("CTCF motif jasper file was not provided, using default if available")
         motif = akita_utils.format_io.read_jaspar_to_numpy()
     
->>>>>>> background_first_merge
     for s in seq_coords_df.itertuples():
         chrom, start, end = s.locus_specification.split(",")
         seq_dna = genome_open.fetch(chrom, int(start), int(end))
         wt_1hot = akita_utils.dna_utils.dna_1hot(seq_dna)
         mutation_method = s.mutation_method
-<<<<<<< HEAD
-        spans = generate_spans_start_positions(
-            wt_1hot, motif, s.ctcf_detection_threshold
-        )
-=======
-        
->>>>>>> background_first_merge
+
         if mutation_method == "mask_motif":
             motif_positions = generate_spans_start_positions(
             wt_1hot, motif, s.ctcf_detection_threshold)
@@ -325,7 +253,6 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
 
     """
     
-<<<<<<< HEAD
     for experiment_index in seq_coords_df.itertuples(index=False):
         
         ref_and_pred =[]
@@ -337,16 +264,6 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
         offsets_bp = []
         orientation_string = []
         experiment_index_df = pd.DataFrame([experiment_index], columns=seq_coords_df.columns.to_list())
-=======
-    for s in seq_coords_df.itertuples(index=False):
-        
-        seq_1hot = background_seqs[s.background_seqs].copy()
-        seq_1hot_insertions = []
-        offsets_bp = []
-        orientation_string = []
-        
-        s_df = pd.DataFrame([s], columns=seq_coords_df.columns.to_list())
->>>>>>> background_first_merge
 
         for col_name in seq_coords_df.columns:
             
@@ -356,11 +273,7 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
                     insert_flank_bp,
                     insert_offset,
                     insert_orientation,
-<<<<<<< HEAD
                 ) = experiment_index_df[col_name][0].split(",")
-=======
-                ) = s_df[col_name][0].split(",")
->>>>>>> background_first_merge
                 seq_1hot_insertion = akita_utils.dna_utils.dna_1hot(
                     genome_open.fetch(
                         chrom,
@@ -381,15 +294,10 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
         seq_1hot = _multi_insert_offsets_casette(
             seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
         )
-<<<<<<< HEAD
         ref_and_pred += [seq_1hot]
         
         for seq_1hot in ref_and_pred:
             yield seq_1hot
-=======
-
-        yield seq_1hot
->>>>>>> background_first_merge
 
         
 def _inserts_overlap_check_pre_simulation(dataframe):
@@ -441,8 +349,6 @@ def _check_overlaps(insert_limits, insertions_name_list=None):
     for i in range(len(sorted_insert_limits) - 1):
         if sorted_insert_limits[i][1] > sorted_insert_limits[i+1][0]:
             raise ValueError(f"Overlap found between inserted sequences: {sorted_insertions_name_list[i]} --> {sorted_insert_limits[i]}, {sorted_insertions_name_list[i+1]} --> {sorted_insert_limits[i+1]}")
-<<<<<<< HEAD
-=======
 
 
 def generate_seq_from_fasta(fasta_file_path):  
@@ -451,4 +357,3 @@ def generate_seq_from_fasta(fasta_file_path):
             if ">" in line:
                 continue
             yield dna_1hot(line.strip())
->>>>>>> background_first_merge
