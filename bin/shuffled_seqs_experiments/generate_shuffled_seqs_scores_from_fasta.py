@@ -1,28 +1,28 @@
 #!/usr/bin/env python
 
-# =========================================================================
+"""
+This script generates scores for the shuffled seqs in the input fasta file while using the specified model and paramters
+"""
+
+
 from __future__ import print_function
 
 
 import logging
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 log = logging.getLogger(__name__)
 
 from optparse import OptionParser
 import json
 import os
 
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import pickle
 import random
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import pysam
 from skimage.measure import block_reduce
 import seaborn as sns
 
@@ -34,27 +34,14 @@ if tf.__version__[0] == "1":
     tf.compat.v1.enable_eager_execution()
 gpus = tf.config.experimental.list_physical_devices("GPU")
 
-# for gpu in gpus:
-#  tf.config.experimental.set_memory_growth(gpu, True)
 log.info(gpus)
 
-from basenji import seqnn, stream, dna_io
+from basenji import seqnn, stream
 import akita_utils
-from akita_utils.utils import ut_dense, split_df_equally
-from akita_utils.seq_gens import fasta_shuffled_seq_gen
 
 
-################################################################################
-# __main__
-################################################################################
 def main():
-    """
-    This script generates scores for the shuffled seqs in the input fasta file while using the specified model and paramters
-    """
-
-    usage = (
-        "usage: %prog [options] <params_file> <model_file> <shuffled_seqs_fasta_file>"
-    )
+    usage = "usage: %prog [options] <params_file> <model_file> <shuffled_seqs_fasta_file>"
     parser = OptionParser(usage)
     parser.add_option(
         "-f",
@@ -64,8 +51,8 @@ def main():
     )
     parser.add_option(
         "-l",
-        dest="plot_lim_min",
-        default=0.1,
+        dest="plot_lim",
+        default=0.2,
         type="float",
         help="Heatmap plot limit [Default: %default]",
     )
@@ -96,24 +83,10 @@ def main():
         type="int",
         help="Number of processes, passed by multi script",
     )
-    parser.add_option(  # reverse complement
-        "--rc",
-        dest="rc",
-        default=False,
-        action="store_true",
-        help="Average forward and reverse complement predictions [Default: %default]",
-    )
-    parser.add_option(  # shifts
-        "--shifts",
-        dest="shifts",
-        default="0",
-        type="str",
-        help="Ensemble prediction shifts [Default: %default]",
-    )
     parser.add_option(
         "--stats",
         dest="scd_stats",
-        default="SCD,MSS,MPS,CS",
+        default="SCD,MPS,CS",
         help="Comma-separated list of stats to save. [Default: %default]",
     )
     parser.add_option(
@@ -187,12 +160,10 @@ def main():
     else:
         plot_dir = None
 
-    options.shifts = [int(shift) for shift in options.shifts.split(",")]
     options.scd_stats = options.scd_stats.split(",")
 
     random.seed(44)
 
-    #################################################################
     # read model parameters
     with open(params_file) as params_open:
         params = json.load(params_open)
@@ -209,7 +180,6 @@ def main():
         target_ids = targets_df.identifier
         target_labels = targets_df.description
 
-    #################################################################
     # setup model
     head_index = options.head_index
     model_index = options.model_index
@@ -217,7 +187,6 @@ def main():
     # load model
     seqnn_model = seqnn.SeqNN(params_model)
     seqnn_model.restore(model_file, head_i=options.head_index)
-    seqnn_model.build_ensemble(options.rc, options.shifts)
     seq_length = int(params_model["seq_length"])
 
     # dummy target info
@@ -226,7 +195,6 @@ def main():
         target_ids = ["t%d" % ti for ti in range(num_targets)]
         target_labels = [""] * len(target_ids)
 
-    #################################################################
     # setup output
 
     scd_out = initialize_output_h5(
@@ -242,14 +210,12 @@ def main():
     log.info("initialized")
 
     seq_IDs = [line for line in open(shuffled_seqs_fasta_file) if line.startswith(">")]
-    num_experiments = num = len(seq_IDs)
-    #################################################################
-    # predict SNP scores, write output
+    num_experiments = len(seq_IDs)
 
-    # initialize predictions stream
+    # predict SNP scores, write output
     preds_stream = stream.PredStreamGen(
         seqnn_model,
-        fasta_shuffled_seq_gen(shuffled_seqs_fasta_file),
+        akita_utils.seq_gens.generate_seq_from_fasta(shuffled_seqs_fasta_file),
         batch_size,
         stream_seqs=32,
         verbose=True,
@@ -269,7 +235,7 @@ def main():
             seqnn_model.diagonal_offset,
             options.scd_stats,
             plot_dir,
-            options.plot_lim_min,
+            options.plot_lim,
             options.plot_freq,
         )
 
@@ -289,7 +255,7 @@ def initialize_output_h5(
 
     num_targets = len(target_ids)
     seq_IDs = [line for line in open(shuffled_seqs_fasta_file) if line.startswith(">")]
-    num_experiments = num = len(seq_IDs)
+    num_experiments = len(seq_IDs)
     scd_out = h5py.File(f"{out_dir}/scd.h5", "w")
 
     scd_out.create_dataset(
@@ -322,7 +288,7 @@ def write_snp(
     diagonal_offset,
     scd_stats=["SCD"],
     plot_dir=None,
-    plot_lim_min=0.1,
+    plot_lim=0.2,
     plot_freq=100,
 ):
     """Write SNP predictions to HDF."""
@@ -334,12 +300,11 @@ def write_snp(
     # log.info(f"****** ref_preds {ref_preds.shape}")
 
     if "MPS" in scd_stats:
-        # current standard map selection scores
-        Max_scores_pixelwise = np.max(ref_preds, axis=0)
+        Max_pixelwise_scores = np.max(ref_preds, axis=0)
         for target_ind in range(ref_preds.shape[1]):
-            scd_out[f"MPS_h{head_index}_m{model_index}_t{target_ind}"][
-                si
-            ] = Max_scores_pixelwise[target_ind].astype("float16")
+            scd_out[f"MPS_h{head_index}_m{model_index}_t{target_ind}"][si] = Max_pixelwise_scores[target_ind].astype(
+                "float16"
+            )
 
     if "CS" in scd_stats:
         # customised scores for exploration
@@ -347,32 +312,17 @@ def write_snp(
         mean = np.mean(ref_preds, axis=0)
         Custom_score = 3 / mean + 2 / std
         for target_ind in range(ref_preds.shape[1]):
-            scd_out[f"CS_h{head_index}_m{model_index}_t{target_ind}"][
-                si
-            ] = Custom_score[target_ind].astype("float16")
+            scd_out[f"CS_h{head_index}_m{model_index}_t{target_ind}"][si] = Custom_score[target_ind].astype("float16")
 
     # compare reference to alternative via mean subtraction
     if "SCD" in scd_stats:
         # sum of squared diffs
         sd2_preds = np.sqrt((ref_preds**2).sum(axis=0))
-        # log.info(f"scd----- {sd2_preds}")
         for target_ind in range(ref_preds.shape[1]):
-            scd_out[f"SCD_h{head_index}_m{model_index}_t{target_ind}"][si] = sd2_preds[
-                target_ind
-            ].astype("float16")
-
-    if "MSS" in scd_stats:
-        # sum of square diffs
-        s_preds = np.sum(ref_preds**2, axis=0)
-
-        # log.info(f"score----- {s_preds}")
-        for target_ind in range(ref_preds.shape[1]):
-            scd_out[f"MSS_h{head_index}_m{model_index}_t{target_ind}"][si] = s_preds[
-                target_ind
-            ].astype("float16")
+            scd_out[f"SCD_h{head_index}_m{model_index}_t{target_ind}"][si] = sd2_preds[target_ind].astype("float16")
 
     if np.any((["INS" in i for i in scd_stats])):
-        ref_map = ut_dense(ref_preds, diagonal_offset)
+        ref_map = akita_utils.utils.ut_dense(ref_preds, diagonal_offset)
         for stat in scd_stats:
             if "INS" in stat:
                 insul_window = int(stat.split("-")[1])
@@ -380,24 +330,20 @@ def write_snp(
                 for target_ind in range(ref_preds.shape[1]):
                     scd_out[f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][
                         si
-                    ] = akita_utils.stats_utils.insul_diamonds_scores(
-                        ref_map, window=insul_window
-                    )[
-                        target_ind
-                    ].astype(
+                    ] = akita_utils.stats_utils.insul_diamonds_scores(ref_map, window=insul_window)[target_ind].astype(
                         "float16"
                     )
 
     if (plot_dir is not None) and (np.mod(si, plot_freq) == 0):
         log.info(f"plotting {si}")
         # convert back to dense
-        ref_map = ut_dense(ref_preds, diagonal_offset)
+        ref_map = akita_utils.utils.ut_dense(ref_preds, diagonal_offset)
         _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4))
         for ti in range(ref_preds.shape[-1]):
             ref_map_ti = ref_map[..., ti]
             # TEMP: reduce resolution
             ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
-            vmin, vmax = -0.1, 0.1
+            vmin, vmax = -plot_lim, plot_lim
 
             sns.heatmap(
                 ref_map_ti,
@@ -419,15 +365,8 @@ def write_snp(
             )
 
         plt.tight_layout()
-        plt.savefig(
-            f"{plot_dir}/seq_{si}_max-SCD_{np.max(np.sqrt((ref_preds**2).sum(axis=0)))}.pdf"
-        )
+        plt.savefig(f"{plot_dir}/seq_{si}_max-SCD_{np.max(np.sqrt((ref_preds**2).sum(axis=0)))}.pdf")
         plt.close()
-
-
-################################################################################
-# __main__
-################################################################################
 
 
 if __name__ == "__main__":

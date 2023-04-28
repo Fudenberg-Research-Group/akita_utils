@@ -1,8 +1,8 @@
-### kita utilities
+# kita utilities
 
 import numpy as np
 
-### numeric utilites
+# numeric utilites
 def absmaxND(a, axis=None):
     """
     https://stackoverflow.com/a/39152275

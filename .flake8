@@ -9,6 +9,7 @@ ignore =
     E266  # too many leading '#' for block comment
     E501  # line too long
     W503  # line break before binary operator
+    E127  # Continuation line over-indented for visual indent 
 select =
     C  # mccabe complexity
     E  # pycodestyle

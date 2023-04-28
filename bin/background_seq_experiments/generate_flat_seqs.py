@@ -19,28 +19,23 @@ from __future__ import print_function
 
 import logging
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 log = logging.getLogger(__name__)
 
 
 from optparse import OptionParser
 import json
 import os
-import pdb
 import pickle
 import random
-import sys
-import time
-import bioframe
-import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import pysam
 from skimage.measure import block_reduce
 import seaborn as sns
+
+
+pid = os.getpid()
 
 sns.set(style="ticks", font_scale=1.3)
 
@@ -49,24 +44,16 @@ import tensorflow as tf
 if tf.__version__[0] == "1":
     tf.compat.v1.enable_eager_execution()
 gpus = tf.config.experimental.list_physical_devices("GPU")
-# for gpu in gpus:
-#  tf.config.experimental.set_memory_growth(gpu, True)
 log.info(gpus)
 
 from basenji import seqnn
-from basenji import stream
-from basenji import dna_io
-
 import akita_utils
-from akita_utils import ut_dense, split_df_equally
 
 
-################################################################################
-# __main__
-################################################################################
 def main():
     """
-    This script generates flat seqs following the provided flat_seq_tsv file, specified model, and its parameters
+    This script generates flat seqs following the provided flat_seq_tsv file, specified model, and its parameters.
+    It outputs the flat seqs in fasta format with name background_seqs.fa in specified directory
 
     """
     usage = "usage: %prog [options] <params_file> <model_file> <flat_seq_tsv_file>"
@@ -81,8 +68,8 @@ def main():
 
     parser.add_option(
         "-l",
-        dest="plot_lim_min",
-        default=0.1,
+        dest="plot_lim",
+        default=0.2,
         type="float",
         help="Heatmap plot limit [Default: %default]",
     )
@@ -119,22 +106,6 @@ def main():
     )
 
     parser.add_option(
-        "--rc",
-        dest="rc",
-        default=False,
-        action="store_true",
-        help="Average forward and reverse complement predictions [Default: %default]",
-    )
-
-    parser.add_option(
-        "--shifts",
-        dest="shifts",
-        default="0",
-        type="str",
-        help="Ensemble prediction shifts [Default: %default]",
-    )
-
-    parser.add_option(
         "--stats",
         dest="scd_stats",
         default="SCD",
@@ -160,50 +131,14 @@ def main():
     parser.add_option(
         "--head-index",
         dest="head_index",
-        default=0,
+        default=1,
         type="int",
         help="Specify head index (0=human 1=mus) ",
     )
 
-    parser.add_option(
-        "-s", dest="save_seqs", default=None, help="Save the final seqs in fasta format"
-    )
+    parser.add_option("-s", dest="save_seqs", default=True, help="Save the final seqs in fasta format")
 
-    parser.add_option(
-        "--shuffle_k",
-        dest="shuffle_k",
-        default=8,
-        type="int",
-        help="basepairs considered for shuffling",
-    )
-
-    parser.add_option(
-        "--ctcf-thresh",
-        dest="ctcf_thresh",
-        default=8,
-        type="int",
-        help="maximum alowable ctcf motifs in a flat seq",
-    )
-
-    parser.add_option(
-        "--scores-thresh",
-        dest="scores_thresh",
-        default=5500,
-        type="int",
-        help="maximum alowable score for a flat seq",
-    )
-
-    parser.add_option(
-        "--scores-pixelwise-thresh",
-        dest="scores_pixelwise_thresh",
-        default=0.04,
-        type="float",
-        help="maximum alowable pixel score for a flat seq",
-    )
-
-    parser.add_option(
-        "--max_iters", dest="max_iters", default=10, help="maximum iterations"
-    )
+    parser.add_option("--max_iters", dest="max_iters", default=10, type=int, help="maximum iterations")
 
     (options, args) = parser.parse_args()
 
@@ -231,8 +166,6 @@ def main():
 
     if not os.path.isdir(options.out_dir):
         os.mkdir(options.out_dir)
-
-    options.shifts = [int(shift) for shift in options.shifts.split(",")]
 
     random.seed(44)
 
@@ -262,7 +195,6 @@ def main():
     # load model
     seqnn_model = seqnn.SeqNN(params_model)
     seqnn_model.restore(model_file, head_i=options.head_index)
-    seqnn_model.build_ensemble(options.rc, options.shifts)
     seq_length = int(params_model["seq_length"])
 
     # dummy target info
@@ -277,9 +209,7 @@ def main():
     # filter for worker motifs
     if options.processes is not None:  # multi-GPU option
         seq_coords_full = pd.read_csv(flat_seq_tsv_file, sep="\t")
-        seq_coords_df = split_df_equally(
-            seq_coords_full, options.processes, worker_index
-        )
+        seq_coords_df = akita_utils.utils.split_df_equally(seq_coords_full, options.processes, worker_index)
     else:
         seq_coords_df = pd.read_csv(flat_seq_tsv_file, sep="\t")
 
@@ -289,22 +219,20 @@ def main():
         f"Number of experiements = {num_experiments} \n It's not equal to number of predictions. The number of predictions is upper bounded by {options.max_iters} x {batch_size} for each experiment while looking for a seq with desired qualities"
     )
     log.info("===================================")
-    #################################################################
     # create flat sequences
 
     flat_seqs = akita_utils.background_utils.create_flat_seqs_gen(
         seqnn_model,
         options.genome_fasta,
         seq_coords_df,
-        max_iters=options.max_iters,
+        max_iters=int(options.max_iters),
         batch_size=batch_size,
     )
 
-    #################################################################
     # save flat sequences in fasta format if requested
 
     if options.save_seqs is not None:
-        with open(f"{options.out_dir}/background_seqs.fa", "w") as f:
+        with open(f"{options.out_dir}/{pid}_background_seqs.fa", "w") as f:
             for i in range(len(flat_seqs)):
                 f.write(
                     ">shuffled_chr"
@@ -313,21 +241,20 @@ def main():
                     + str(int(flat_seqs[i][2]))
                     + "_pixelwise"
                     + str(int(flat_seqs[i][3]))
+                    + "_custom"
+                    + str(int(flat_seqs[i][4]))
                     + "\n"
                 )
-                f.write(dna_io.hot1_dna(flat_seqs[i][0]) + "\n")
-        log.info(f"finished saving! \n plotting next if requested")
+                f.write(akita_utils.dna_utils.dna_1hot_to_seq(flat_seqs[i][0]) + "\n")
+        log.info(f"finished saving!")
 
-    #################################################################
     # plot flat sequences
-
     if options.plot_map is not None:
         preds = [flat_seqs[i][1] for i in range(len(flat_seqs))]
-        plot_lim_min = 0.1
         hic_diags = params_model["diagonal_offset"]
         for no, pred in enumerate(preds):
             ref_preds = pred
-            ref_map = ut_dense(ref_preds, hic_diags)  # convert back to dense
+            ref_map = akita_utils.utils.ut_dense(ref_preds, hic_diags)  # convert back to dense
             _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4), sharey=True)
 
             sd2_preds = np.sqrt((ref_preds**2).sum(axis=0))
@@ -338,7 +265,7 @@ def main():
                 # TEMP: reduce resolution
                 ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
 
-                vmin, vmax = -0.2, 0.2
+                vmin, vmax = -args.plot_lim, args.plot_lim
                 sns.heatmap(
                     ref_map_ti,
                     ax=axs[ti],
@@ -352,15 +279,10 @@ def main():
                 # axs[ti].set_title(f"SCD {np.sqrt((ref_preds**2).sum(axis=0))[ti]}") #\nMSS {np.sum(ref_preds**2, axis=0)[ti]}\nCS {Custom_score[ti]}
 
             plt.tight_layout()
-            plt.savefig(
-                f"{options.out_dir}/job{worker_index}_seq{no}_max-SCD{max_scd}.pdf"
-            )
+            plt.savefig(f"{options.out_dir}/job{worker_index}_seq{no}_max-SCD{max_scd}.pdf")
             plt.close()
         log.info(f"finished plotting! \ncheck {options.out_dir} for plots")
 
 
-################################################################################
-# __main__
-################################################################################
 if __name__ == "__main__":
     main()

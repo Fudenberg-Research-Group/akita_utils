@@ -2,6 +2,13 @@ from akita_utils.dna_utils import hot1_rc, dna_1hot
 import numpy as np
 import akita_utils.format_io
 import pandas as pd
+<<<<<<< HEAD
+=======
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+log = logging.getLogger(__name__)
+>>>>>>> background_first_merge
 
 def _insert_casette(seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string):
     seq_length = seq_1hot.shape[0]
@@ -48,6 +55,11 @@ def _multi_insert_offsets_casette(
     This function takes in a DNA sequence in one-hot encoding format, along with a list of other DNA sequences to be inserted into it.
     The function inserts each of the given sequences into the given sequence at specified locations, according to the given orientation and offset.
     The function then returns the modified DNA sequence in one-hot encoding format.
+<<<<<<< HEAD
+=======
+
+    If any of the inserted sequences overlap with each other, the function raises a `ValueError` with a message indicating which pairs of sequences overlap.
+>>>>>>> background_first_merge
     """
     assert (
         len(seq_1hot_insertions) == len(orientation_string) == len(offsets_bp)
@@ -55,12 +67,27 @@ def _multi_insert_offsets_casette(
     seq_length = seq_1hot.shape[0]
     output_seq = seq_1hot.copy()
     insertion_start_bp = seq_length // 2
+<<<<<<< HEAD
+=======
+    insert_limits = []
+>>>>>>> background_first_merge
     for insertion_index, insertion in enumerate(seq_1hot_insertions):
         insert_bp = len(seq_1hot_insertions[insertion_index])
         insertion_orientation_arrow = orientation_string[insertion_index]
         insertion_offset = offsets_bp[insertion_index]
 
         if insertion_orientation_arrow == ">":
+<<<<<<< HEAD
+=======
+            
+            insert_limits += [(
+                insertion_start_bp
+                + insertion_offset , insertion_start_bp
+                + insertion_offset
+                + insert_bp
+            )]
+            
+>>>>>>> background_first_merge
             output_seq[
                 insertion_start_bp
                 + insertion_offset : insertion_start_bp
@@ -68,13 +95,30 @@ def _multi_insert_offsets_casette(
                 + insert_bp
             ] = seq_1hot_insertions[insertion_index]
         else:
+<<<<<<< HEAD
+=======
+            
+            insert_limits += [(
+                insertion_start_bp
+                + insertion_offset , insertion_start_bp
+                + insertion_offset
+                + insert_bp
+            )]
+            
+>>>>>>> background_first_merge
             output_seq[
                 insertion_start_bp
                 + insertion_offset : insertion_start_bp
                 + insertion_offset
                 + insert_bp
             ] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[insertion_index])
+<<<<<<< HEAD
                 
+=======
+            
+    _check_overlaps(insert_limits)
+    
+>>>>>>> background_first_merge
     return output_seq
 
 
@@ -155,6 +199,7 @@ def random_seq_permutation(seq_1hot):
     return seq_1hot_perm
 
 
+<<<<<<< HEAD
 def background_exploration_seqs_gen(seq_coords_df, genome_open, use_span=True):
     """
     Generate mutated sequences based on a reference genome and a set of mutation specifications.
@@ -184,20 +229,67 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open, use_span=True):
     #     len(motif) - 3
     # )  # for compartibility ie (19-3=16 which is a multiple of 2,4,8 the shuffle parameters)
     motif_window = 2 ** (math.ceil(math.log2(len(motif) - 1)))
+=======
+def background_exploration_seqs_gen(seq_coords_df, genome_open, jasper_motif_file=None):
+    """
+    Generates mutated DNA sequences from genomic coordinates following given parameters like mutation method, shuffle parameter, ctcf detection threshold etc. if a mutation method provided is about motifs then make sure corresponding parameters are provided as well i.e if mask_motif method is used, then ctcf detection threshold is needed.
+
+    Parameters:
+    -----------
+    seq_coords_df: pandas.DataFrame
+        DataFrame containing genomic coordinates and mutation methods for generating mutated DNA sequences.
+        The DataFrame must have the following columns:
+        - locus_specification: string specifying the genomic coordinates in the format "chromosome,start,end".
+        - mutation_method: string specifying the type of mutation to apply to the DNA sequence.
+        - other parameters to help implement the mutation method
+
+    genome_open: object
+        An object with a fetch method that can retrieve DNA sequences from genomic coordinates.
+
+    jasper_motif_file: str, optional
+        Path to a JASPAR motif file for the transcription factor motif to mask or permute.
+        If None, the default CTCF motif is used.
+
+    Yields:
+    -------
+    numpy.ndarray
+        Mutated DNA sequence in one-hot encoded format, generated according to the specified mutation method.
+    """
+
+    if jasper_motif_file is not None:
+        motif = read_jaspar_to_numpy(jasper_motif_file)
+    else:
+        log.info("CTCF motif jasper file was not provided, using default if available")
+        motif = akita_utils.format_io.read_jaspar_to_numpy()
+    
+>>>>>>> background_first_merge
     for s in seq_coords_df.itertuples():
         chrom, start, end = s.locus_specification.split(",")
         seq_dna = genome_open.fetch(chrom, int(start), int(end))
         wt_1hot = akita_utils.dna_utils.dna_1hot(seq_dna)
         mutation_method = s.mutation_method
+<<<<<<< HEAD
         spans = generate_spans_start_positions(
             wt_1hot, motif, s.ctcf_detection_threshold
         )
+=======
+        
+>>>>>>> background_first_merge
         if mutation_method == "mask_motif":
-            yield mask_spans(wt_1hot, spans, motif_window)
+            motif_positions = generate_spans_start_positions(
+            wt_1hot, motif, s.ctcf_detection_threshold)
+            motif_window = 2 ** (math.ceil(math.log2(len(motif) - 1)))
+            yield mask_spans(wt_1hot, motif_positions, motif_window)
         elif mutation_method == "permute_motif":
-            yield permute_spans(wt_1hot, spans, motif_window, s.shuffle_parameter)
+            motif_positions = generate_spans_start_positions(
+            wt_1hot, motif, s.ctcf_detection_threshold)
+            motif_window = 2 ** (math.ceil(math.log2(len(motif) - 1)))
+            yield permute_spans(wt_1hot, motif_positions, motif_window, s.shuffle_parameter)
         elif mutation_method == "randomise_motif":
-            yield randomise_spans(wt_1hot, spans, motif_window)
+            motif_positions = generate_spans_start_positions(
+            wt_1hot, motif, s.ctcf_detection_threshold)
+            motif_window = 2 ** (math.ceil(math.log2(len(motif) - 1)))
+            yield randomise_spans(wt_1hot, motif_positions, motif_window)
         elif mutation_method == "permute_whole_seq":
             yield akita_utils.dna_utils.permute_seq_k(wt_1hot, k=s.shuffle_parameter)
         elif mutation_method == "randomise_whole_seq":
@@ -233,6 +325,7 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
 
     """
     
+<<<<<<< HEAD
     for experiment_index in seq_coords_df.itertuples(index=False):
         
         ref_and_pred =[]
@@ -244,6 +337,16 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
         offsets_bp = []
         orientation_string = []
         experiment_index_df = pd.DataFrame([experiment_index], columns=seq_coords_df.columns.to_list())
+=======
+    for s in seq_coords_df.itertuples(index=False):
+        
+        seq_1hot = background_seqs[s.background_seqs].copy()
+        seq_1hot_insertions = []
+        offsets_bp = []
+        orientation_string = []
+        
+        s_df = pd.DataFrame([s], columns=seq_coords_df.columns.to_list())
+>>>>>>> background_first_merge
 
         for col_name in seq_coords_df.columns:
             
@@ -253,7 +356,11 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
                     insert_flank_bp,
                     insert_offset,
                     insert_orientation,
+<<<<<<< HEAD
                 ) = experiment_index_df[col_name][0].split(",")
+=======
+                ) = s_df[col_name][0].split(",")
+>>>>>>> background_first_merge
                 seq_1hot_insertion = akita_utils.dna_utils.dna_1hot(
                     genome_open.fetch(
                         chrom,
@@ -274,10 +381,15 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
         seq_1hot = _multi_insert_offsets_casette(
             seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
         )
+<<<<<<< HEAD
         ref_and_pred += [seq_1hot]
         
         for seq_1hot in ref_and_pred:
             yield seq_1hot
+=======
+
+        yield seq_1hot
+>>>>>>> background_first_merge
 
         
 def _inserts_overlap_check_pre_simulation(dataframe):
@@ -329,3 +441,14 @@ def _check_overlaps(insert_limits, insertions_name_list=None):
     for i in range(len(sorted_insert_limits) - 1):
         if sorted_insert_limits[i][1] > sorted_insert_limits[i+1][0]:
             raise ValueError(f"Overlap found between inserted sequences: {sorted_insertions_name_list[i]} --> {sorted_insert_limits[i]}, {sorted_insertions_name_list[i+1]} --> {sorted_insert_limits[i+1]}")
+<<<<<<< HEAD
+=======
+
+
+def generate_seq_from_fasta(fasta_file_path):  
+    with open(fasta_file_path, "r") as f:
+        for line in f.readlines():
+            if ">" in line:
+                continue
+            yield dna_1hot(line.strip())
+>>>>>>> background_first_merge
