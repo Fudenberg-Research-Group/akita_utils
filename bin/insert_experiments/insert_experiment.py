@@ -288,10 +288,7 @@ def main():
     num_experiments = len(seq_coords_df)
 
     log.info("===================================")
-    
-    log.info(
-        f"Number of experiements = {num_experiments} \n It's not number of predictions. Num of predictions is this {num_experiments} x {batch_size}"
-    )
+    log.info(f"Number of experiements = {num_experiments}")
     log.info("===================================")
 
     # open genome FASTA
@@ -326,14 +323,23 @@ def main():
         akita_utils.seq_gens.modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open),
         batch_size,
     )
-    for exp in range(num_experiments):
+   
+    # predictions index
+    pi = 0
+
+    for si in range(num_experiments):
         # get predictions
-        preds = preds_stream[exp]
+        ref_preds = preds_stream[pi]
+        pi += 1
+        alt_preds = preds_stream[pi]
+        pi += 1
+
         # process SNP
         write_snp(
-            preds,
+            ref_preds,
+            alt_preds,
             scd_out,
-            exp,
+            si,
             head_index,
             model_index,
             seqnn_model.diagonal_offset,
@@ -342,6 +348,8 @@ def main():
             options.plot_lim,
             options.plot_freq,
         )
+        
+    """Write SNP predictions to HDF."""
 
     genome_open.close()
     scd_out.close()
@@ -369,25 +377,40 @@ def initialize_output_h5(
             scd_out.create_dataset(key, data=seq_coords_df[key].values.astype("S"))
         else:
             scd_out.create_dataset(key, data=seq_coords_df[key])
-
+            
     # initialize scd stats
     for scd_stat in scd_stats:
         if scd_stat in seq_coords_df.keys():
             raise KeyError("check input tsv for clashing score name")
-
+            
         for target_ind in range(num_targets):
-            scd_out.create_dataset(
-                f"{scd_stat}_h{head_index}_m{model_index}_t{target_ind}",
-                shape=(num_experiments,),
-                dtype="float16",
-                compression=None,
-            )
+            if "INS" not in scd_stat:
+                scd_out.create_dataset(
+                    f"{scd_stat}_h{head_index}_m{model_index}_t{target_ind}",
+                    shape=(num_experiments,),
+                    dtype="float16",
+                    compression=None,
+                )
+            else:
+                scd_out.create_dataset(
+                    "ref_" + f"{scd_stat}_h{head_index}_m{model_index}_t{target_ind}",
+                    shape=(num_experiments,),
+                    dtype="float16",
+                    compression=None,
+                )
+                scd_out.create_dataset(
+                    "alt_" + f"{scd_stat}_h{head_index}_m{model_index}_t{target_ind}",
+                    shape=(num_experiments,),
+                    dtype="float16",
+                    compression=None,
+                )
 
     return scd_out
 
 
 def write_snp(
     ref_preds,
+    alt_preds,
     scd_out,
     si,
     head_index,
@@ -395,7 +418,7 @@ def write_snp(
     diagonal_offset,
     scd_stats=["SCD"],
     plot_dir=None,
-    plot_lim=2,
+    plot_lim=4,
     plot_freq=100,
 ):
     """Write SNP predictions to HDF."""
@@ -404,27 +427,49 @@ def write_snp(
 
     # increase dtype
     ref_preds = ref_preds.astype("float32")
-
-    # compare reference to alternative via mean subtraction
+    alt_preds = alt_preds.astype("float32")
+            
     if "SCD" in scd_stats:
         # sum of squared diffs
-        sd2_preds = np.sqrt((ref_preds**2).sum(axis=0))
+        diff2_preds = (ref_preds - alt_preds) ** 2
+        sd2_preds = np.sqrt(diff2_preds.sum(axis=0))
         for target_ind in range(ref_preds.shape[1]):
             scd_out[f"SCD_h{head_index}_m{model_index}_t{target_ind}"][si] = sd2_preds[
                 target_ind
             ].astype("float16")
-
+        
+    if "SSD" in scd_stats:
+        # sum of squared diffs
+        ref_ss = (ref_preds**2).sum(axis=0)
+        alt_ss = (alt_preds**2).sum(axis=0)
+        s2d_preds = np.sqrt(alt_ss) - np.sqrt(ref_ss)
+        for target_ind in range(ref_preds.shape[1]):
+            scd_out[f"SSD_h{head_index}_m{model_index}_t{target_ind}"][si] = sd2_preds[
+                target_ind
+            ].astype("float16")
+            
     if np.any((["INS" in i for i in scd_stats])):
         ref_map = ut_dense(ref_preds, diagonal_offset)
+        alt_map = ut_dense(alt_preds, diagonal_offset)
         for stat in scd_stats:
             if "INS" in stat:
                 insul_window = int(stat.split("-")[1])
 
                 for target_ind in range(ref_preds.shape[1]):
-                    scd_out[f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][
+                    scd_out["ref_" + f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][
                         si
                     ] = akita_utils.stats_utils.insul_diamonds_scores(
                         ref_map, window=insul_window
+                    )[
+                        target_ind
+                    ].astype(
+                        "float16"
+                    )
+                    
+                    scd_out["alt_" + f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][
+                        si
+                    ] = akita_utils.stats_utils.insul_diamonds_scores(
+                        alt_map, window=insul_window
                     )[
                         target_ind
                     ].astype(

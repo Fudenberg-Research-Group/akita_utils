@@ -233,13 +233,17 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
 
     """
     
-    for s in seq_coords_df.itertuples(index=False):
+    for experiment_index in seq_coords_df.itertuples(index=False):
         
-        seq_1hot = background_seqs[s.background_seqs].copy()
+        ref_and_pred =[]
+        
+        seq_1hot = background_seqs[experiment_index.background_seqs].copy()
+        ref_and_pred += [seq_1hot]
+        
         seq_1hot_insertions = []
         offsets_bp = []
         orientation_string = []
-        s_df = pd.DataFrame([s], columns=seq_coords_df.columns.to_list())
+        experiment_index_df = pd.DataFrame([experiment_index], columns=seq_coords_df.columns.to_list())
 
         for col_name in seq_coords_df.columns:
             
@@ -249,7 +253,7 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
                     insert_flank_bp,
                     insert_offset,
                     insert_orientation,
-                ) = s_df[col_name][0].split(",")
+                ) = experiment_index_df[col_name][0].split(",")
                 seq_1hot_insertion = akita_utils.dna_utils.dna_1hot(
                     genome_open.fetch(
                         chrom,
@@ -270,8 +274,10 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
         seq_1hot = _multi_insert_offsets_casette(
             seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
         )
-
-        yield seq_1hot
+        ref_and_pred += [seq_1hot]
+        
+        for seq_1hot in ref_and_pred:
+            yield seq_1hot
 
         
 def _inserts_overlap_check_pre_simulation(dataframe):

@@ -19,7 +19,7 @@
     }
     ]
                 
-         python generate_expt_df.py --json-file /home1/kamulege/akita_utils/bin/insert_experiments/data.json -o one_strong_motif_in_different_backgrounds.tsv --background_seqs $(seq 0 30) 
+         python generate_expt_df.py --json-file /home1/kamulege/akita_utils/bin/insert_experiments/data.json -o one_weak_motif_in_different_backgrounds.tsv --background_seqs $(seq 0 87) 
                 
         $(seq 0 99)
    - Akita experiment predictions 
