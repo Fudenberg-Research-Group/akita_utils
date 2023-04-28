@@ -89,13 +89,9 @@ log.info(gpus)
 
 from basenji import seqnn
 from basenji import stream
-from basenji import dna_io
 
 import akita_utils
 from akita_utils import ut_dense, split_df_equally
-from akita_utils.seq_gens import (
-    modular_offsets_insertion_seqs_gen,
-)
 
 
 def main():
@@ -304,15 +300,12 @@ def main():
     )  # needs to be closed at some point
 
     background_seqs = []
-    
-    
-    with open(options.background_file, "r") as f:
-        for line in f.readlines():
-            if ">" in line:
-                continue
-            background_seqs.append(dna_io.dna_1hot(line.strip()))
-
-    log.info(f"There are {len(background_seqs)} background seqs")
+    for file_path in glob.glob(options.background_file):
+        with open(file_path, 'r') as f:
+            for line in f.readlines():
+                if '>' in line:
+                    continue
+                background_seqs.append(akita_utils.dna_utils.dna_1hot(line.strip()))
     
     # setup output
     scd_out = initialize_output_h5(
@@ -330,7 +323,7 @@ def main():
     # predict SNP scores, write output
     preds_stream = stream.PredStreamGen(
         seqnn_model,
-        modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open),
+        akita_utils.seq_gens.modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open),
         batch_size,
     )
     for exp in range(num_experiments):

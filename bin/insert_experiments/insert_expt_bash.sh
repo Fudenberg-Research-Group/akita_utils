@@ -19,8 +19,8 @@ if [ ! -f "$genome_fasta" ]; then
     exit 1
 fi
 
-if [ ! -f "$background_seqs" ]; then
-    echo "Error: background sequences fasta file does not exist."
+if ! ls -1 $background_seqs >/dev/null 2>&1; then
+    echo "Error: no background sequences fasta files found."
     exit 1
 fi
 
@@ -28,6 +28,9 @@ if [ ! -d "$output" ]; then
     echo "Output directory does not exist. Creating directory..."
     mkdir -p "$output"
 fi
+
+
+set -f
 
 # Run experiments for each model
 for model in $models
@@ -41,5 +44,8 @@ do
 
     sleep 15
 done
+
+set +f
+
 
 echo "All done."
