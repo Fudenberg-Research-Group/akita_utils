@@ -35,7 +35,7 @@ set -f
 # Run experiments for each model
 for model in $models
 do
-    python multiGPU_insert_experiment.py $models_dir $tsv_file -f $genome_fasta -o $output --head-index $head --model-index $model --batch-size $batch_size -p $processes --max_proc $max_proc --stats $stats --time $time --background-file $background_seqs
+    python multiGPU_insert_experiment.py $models_dir $tsv_file -f $genome_fasta -o $output --head-index $head --model-index $model --batch-size $batch_size -p $processes --max_proc $max_proc --stats $stats --time $time --background-file $background_seqs 
 
     if [ $? -ne 0 ]; then
         echo "Error: failed to run experiments for model $model."

@@ -19,7 +19,7 @@
     }
     ]
                 
-         python generate_expt_df.py --json-file /home1/kamulege/akita_utils/bin/insert_experiments/data.json -o one_weak_motif_in_different_backgrounds.tsv --background_seqs $(seq 0 87) 
+         python generate_expt_df.py --json-file /home1/kamulege/akita_utils/bin/insert_experiments/data.json -o data/1000_uniformly_selcted_model1_motifs.tsv --background_seqs 0 
                 
 
    - Akita experiment predictions 
@@ -29,4 +29,4 @@
         
    - Akita experiment predictions multiple processes
    
-         python multiGPU_insert_experiment.py /project/fudenber_735/tensorflow_models/akita/v2/models /home1/kamulege/akita_utils/bin/insert_experiments/one_strong_motif_in_different_backgrounds.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /scratch1/kamulege/insert_experiments/one_strong_motif_in_different_backgrounds --head-index 1 --model-index 1 --batch-size 4  --stats SCD -p 1 --max_proc 7 --time 0:10:00 &
+         python multiGPU_insert_experiment.py /project/fudenber_735/tensorflow_models/akita/v2/models /home1/kamulege/akita_utils/bin/insert_experiments/one_strong_motif_in_different_backgrounds.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /scratch1/kamulege/insert_experiments/one_strong_motif_in_different_backgrounds --head-index 1 --model-index 1 --batch-size 4  --stats SCD,SSD -p 1 --max_proc 7 --time 0:10:00 &

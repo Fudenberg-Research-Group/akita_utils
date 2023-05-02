@@ -1,13 +1,11 @@
-[    {  "feature_name": "CTCF_1",
-        "path": "/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
+[    
+    {   "feature_name": "heterochromatin",
+        "path": "/home1/kamulege/akita_utils/bin/insert_experiments/data/heterochromatin_dataframe.tsv",
         "offset": [0],        
-        "flank_bp": [60],        
+        "flank_bp": [0],        
         "orientation": [">"],
-        "rmsk_file": "/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz", 
-        "jaspar_file": "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
-        "num_sites": 1,
-        "score_key": "SCD",
-        "mode": "tail" 
+        "filter_out_inserts_with_ctcf_motifs": true
     }
 
 ]
+

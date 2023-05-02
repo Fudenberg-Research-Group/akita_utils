@@ -454,7 +454,7 @@ def write_snp(
         for stat in scd_stats:
             if "INS" in stat:
                 insul_window = int(stat.split("-")[1])
-
+    
                 for target_ind in range(ref_preds.shape[1]):
                     scd_out["ref_" + f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][
                         si
@@ -475,20 +475,30 @@ def write_snp(
                     ].astype(
                         "float16"
                     )
-
+    
+        
     if (plot_dir is not None) and (np.mod(si, plot_freq) == 0):
         log.info(f"plotting map for {si}")
+
         # convert back to dense
         ref_map = ut_dense(ref_preds, diagonal_offset)
-        _, axs = plt.subplots(1, ref_preds.shape[-1], figsize=(24, 4))
+        alt_map = ut_dense(alt_preds, diagonal_offset)
+        
+        _, (ax_ref, ax_alt, ax_diff) = plt.subplots(3, ref_preds.shape[-1], figsize=(21, 6))
+
         for ti in range(ref_preds.shape[-1]):
             ref_map_ti = ref_map[..., ti]
+            alt_map_ti = alt_map[..., ti]
+    
             # TEMP: reduce resolution
             ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
+            alt_map_ti = block_reduce(alt_map_ti, (2, 2), np.mean)
             vmin, vmax = (-plot_lim, plot_lim)
+
+            
             sns.heatmap(
                 ref_map_ti,
-                ax=axs[ti],
+                ax=ax_ref[ti],
                 center=0,
                 vmin=vmin,
                 vmax=vmax,
@@ -496,9 +506,26 @@ def write_snp(
                 xticklabels=False,
                 yticklabels=False,
             )
-
+            sns.heatmap(
+                alt_map_ti,
+                ax=ax_alt[ti],
+                center=0,
+                vmin=vmin,
+                vmax=vmax,
+                cmap="RdBu_r",
+                xticklabels=False,
+                yticklabels=False,
+            )
+            sns.heatmap(
+                alt_map_ti - ref_map_ti,
+                ax=ax_diff[ti],
+                center=0,
+                cmap="PRGn",
+                xticklabels=False,
+                yticklabels=False,
+            )
         plt.tight_layout()
-        plt.savefig("%s/s%d.pdf" % (plot_dir, si))
+        plt.savefig(f"{plot_dir}/experiment_{si}.pdf")
         plt.close()
 
 

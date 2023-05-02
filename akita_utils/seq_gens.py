@@ -192,7 +192,7 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open, jasper_motif_fil
     """
 
     if jasper_motif_file is not None:
-        motif = read_jaspar_to_numpy(jasper_motif_file)
+        motif = akita_utils.format_io.read_jaspar_to_numpy(jasper_motif_file)
     else:
         log.info("CTCF motif jasper file was not provided, using default if available")
         motif = akita_utils.format_io.read_jaspar_to_numpy()
