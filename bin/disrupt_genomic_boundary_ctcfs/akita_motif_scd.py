@@ -270,81 +270,6 @@ def main():
     # open genome FASTA
     genome_open = pysam.Fastafile(options.genome_fasta)
 
-    # define sequence generator
-    def mask_central_seq(seq_1hot, motif_width=20):
-        seq_1hot_perm = seq_1hot.copy()
-        mask_inds = np.arange(
-            seq_length // 2 - motif_width // 2, seq_length // 2 + motif_width // 2
-        )
-        seq_1hot_perm[mask_inds, :] = 0
-        return seq_1hot_perm
-
-    def permute_central_seq(seq_1hot, motif_width=20):
-        seq_1hot_perm = seq_1hot.copy()
-        central_inds = np.arange(
-            seq_length // 2 - motif_width // 2, seq_length // 2 + motif_width // 2
-        )
-        mask_inds = np.random.permutation(central_inds)
-        seq_1hot_perm[mask_inds, :] = seq_1hot[central_inds, :].copy()
-        return seq_1hot_perm
-
-    def mask_spans(seq_1hot, spans):
-        seq_1hot_perm = seq_1hot.copy()
-        for s in spans:
-            seq_1hot_perm[s[0] : s[1], :] = 0
-        return seq_1hot_perm
-
-    def permute_spans(seq_1hot, spans):
-        seq_1hot_perm = seq_1hot.copy()
-        spans_flat = np.array([]).astype(int)
-        for s in spans:
-            spans_flat = np.hstack((spans_flat, np.arange(s[0], s[1])))
-        spans_permuted = np.random.permutation(spans_flat)
-        seq_1hot_perm[spans_permuted, :] = seq_1hot[spans_flat, :].copy()
-        return seq_1hot_perm
-
-    def split_span(span_string):
-        spans = []
-        for j in span_string.split(","):
-            spans.append([int(j.split("-")[0]), int(j.split("-")[1])])
-        return spans
-
-    def fetch_centered_padded_seq(chrom, start, end):
-        mid = (start + end) // 2
-        start_centered, end_centered = int(mid - seq_length // 2), int(
-            mid + seq_length // 2
-        )
-        seq_dna = genome_open.fetch(chrom, start_centered, end_centered).upper()
-        chromosome_length = genome_open.get_reference_length(chrom)
-        pad_upstream = "N" * max(-start_centered, 0)
-        pad_downstream = "N" * max(end_centered - chromosome_length, 0)
-        return pad_upstream + seq_dna + pad_downstream
-
-    def seqs_gen(motif_width):
-        for s in seq_coords_df.itertuples():
-            list_1hot = []
-            seq_dna = fetch_centered_padded_seq(s.chrom, s.start, s.end)
-            wt_1hot = dna_io.dna_1hot(seq_dna)
-            list_1hot.append(wt_1hot)
-
-            if use_span:
-                spans = split_span(s.span)
-                spans = np.array(spans) - start
-                if mutation_method == "mask":
-                    list_1hot.append(mask_spans(wt_1hot, spans))
-                elif mutation_method == "permute":
-                    list_1hot.append(permute_spans(wt_1hot, spans))
-
-            else:  ## just mask central motif
-                if mutation_method == "mask":
-                    list_1hot.append(mask_central_seq(wt_1hot, motif_width=motif_width))
-                elif mutation_method == "permute":
-                    list_1hot.append(
-                        permute_central_seq(wt_1hot, motif_width=motif_width)
-                    )
-
-            for seq_1hot in list_1hot:
-                yield seq_1hot
 
     #################################################################
     # setup output
@@ -361,7 +286,7 @@ def main():
     write_thread = None
 
     # initialize predictions stream
-    preds_stream = stream.PredStreamGen(seqnn_model, seqs_gen(motif_width), batch_size)
+    preds_stream = stream.PredStreamGen(seqnn_model, akita_utils.seq_gens.disruption_seqs_gen(motif_width), batch_size)
 
     # predictions index
     pi = 0
@@ -432,26 +357,6 @@ def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_l
     return scd_out
 
 
-def _insul_diamond_central(mat, window=10):
-    """calculate insulation in a diamond around the central pixel"""
-    N = mat.shape[0]
-    if window > N // 2:
-        raise ValueError("window cannot be larger than matrix")
-    mid = N // 2
-    lo = max(0, mid + 1 - window)
-    hi = min(mid + window, N)
-    score = np.nanmean(mat[lo : (mid + 1), mid:hi])
-    return score
-
-
-def insul_diamonds_scores(mats, window=10):
-    num_targets = mats.shape[-1]
-    scores = np.zeros((num_targets,))
-    for ti in range(num_targets):
-        scores[ti] = _insul_diamond_central(mats[:, :, ti], window=window)
-    return scores
-
-
 def write_snp(
     ref_preds,
     alt_preds,
@@ -493,10 +398,10 @@ def write_snp(
         for stat in scd_stats:
             if "INS" in stat:
                 insul_window = int(stat.split("-")[1])
-                scd_out["ref_" + stat][si, :] = insul_diamonds_scores(
+                scd_out["ref_" + stat][si, :] = akita_utils.stats_utils.insul_diamonds_scores(
                     ref_map, window=insul_window
                 )
-                scd_out["alt_" + stat][si, :] = insul_diamonds_scores(
+                scd_out["alt_" + stat][si, :] = akita_utils.stats_utils.insul_diamonds_scores(
                     alt_map, window=insul_window
                 )
 
