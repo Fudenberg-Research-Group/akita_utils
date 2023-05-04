@@ -5,8 +5,8 @@ import glob
 import bioframe
 import itertools
 from io import StringIO
-from akita_utils.format_io import h5_to_df
 import akita_utils.format_io
+
 
 def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
     """Helper function to split a span 'start-end' into two integer series, and either
@@ -20,10 +20,7 @@ def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
         .copy()
     )
     if concat:
-        return pd.concat(
-            [sites, sites_spans_split],
-            axis=1,
-        )
+        return pd.concat([sites, sites_spans_split], axis=1,)
 
     else:
         return sites_spans_split
@@ -103,9 +100,7 @@ def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
     chromend_zones["start"] = chromend_zones["end"] - buffer_bp
     chromstart_zones = view_df.copy()
     chromstart_zones["end"] = chromstart_zones["start"] + buffer_bp
-    filter_zones = pd.concat([chromend_zones, chromstart_zones]).reset_index(
-        drop=True
-    )
+    filter_zones = pd.concat([chromend_zones, chromstart_zones]).reset_index(drop=True)
     df_filtered = bioframe.setdiff(df, filter_zones)
     return df_filtered
 
@@ -118,7 +113,6 @@ def filter_sites_by_score(
     mode="head",
     num_sites=None,
 ):
-
     """
     Given a dataframe of CTCF-binding sites returns a subset of them.
 
@@ -144,21 +138,20 @@ def filter_sites_by_score(
 
     """
 
-    if mode not in ("head", "tail", "uniform","random"):
+    if mode not in ("head", "tail", "uniform", "random"):
         raise ValueError("a mode has to be one from: head, tail, uniform, random")
 
     upper_thresh = np.percentile(sites[score_key].values, upper_threshold)
     lower_thresh = np.percentile(sites[score_key].values, lower_threshold)
 
     filtered_sites = (
-        sites[
-            (sites[score_key] >= lower_thresh)
-            & (sites[score_key] <= upper_thresh)
-        ]
-        .copy().drop_duplicates(subset=[score_key]).sort_values(score_key, ascending=False))
-    
-    
-    if num_sites != None:
+        sites[(sites[score_key] >= lower_thresh) & (sites[score_key] <= upper_thresh)]
+        .copy()
+        .drop_duplicates(subset=[score_key])
+        .sort_values(score_key, ascending=False)
+    )
+
+    if num_sites is not None:
         assert num_sites <= len(
             filtered_sites
         ), "length of dataframe is smaller than requested number of sites, change contraints"
@@ -168,16 +161,15 @@ def filter_sites_by_score(
         elif mode == "tail":
             filtered_sites = filtered_sites[-num_sites:]
         elif mode == "uniform":
-            filtered_sites['binned'] = pd.cut(filtered_sites[score_key], bins=num_sites)
-            filtered_sites = filtered_sites.groupby('binned').apply(lambda x: x.head(1))
+            filtered_sites["binned"] = pd.cut(filtered_sites[score_key], bins=num_sites)
+            filtered_sites = filtered_sites.groupby("binned").apply(lambda x: x.head(1))
         else:
             filtered_sites = filtered_sites.sample(n=num_sites)
-            
+
     return filtered_sites
 
 
 def unpack_range(int_range):
-
     """
     Given start and end of a range of integer numbers as a string converts it to a tuple of integers (int type).
 
@@ -204,7 +196,6 @@ def filter_by_rmsk(
     site_cols=["chrom", "start", "end"],
     verbose=True,
 ):
-
     """
     Filter out sites that overlap any entry in rmsk.
     This is important for sineB2 in mice, and perhaps for other repetitive elements as well.
@@ -236,10 +227,7 @@ def filter_by_rmsk(
         )
     )
 
-    rmsk = pd.read_table(
-        rmsk_file,
-        names=rmsk_cols,
-    )
+    rmsk = pd.read_table(rmsk_file, names=rmsk_cols,)
     rmsk.rename(
         columns={"genoName": "chrom", "genoStart": "start", "genoEnd": "end"},
         inplace=True,
@@ -261,10 +249,10 @@ def filter_by_ctcf(
     sites,
     ctcf_file="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
     exclude_window=60,
-    site_cols=["chrom", "start", "end"],
+    cols1=["chrom", "start_2", "end_2"],
+    cols2=["chrom", "start", "end"],
     verbose=True,
 ):
-
     """
     Filter out sites that overlap any entry in ctcf within a window of 60bp up- and downstream.
 
@@ -285,22 +273,14 @@ def filter_by_ctcf(
         print("filtering sites by overlap with ctcfs")
 
     ctcf_cols = list(
-        pd.read_csv(
-            StringIO("""chrom start end name score pval strand"""),
-            sep=" ",
-        )
+        pd.read_csv(StringIO("""chrom start end name score pval strand"""), sep=" ",)
     )
 
-    ctcf_motifs = pd.read_table(
-        ctcf_file,
-        names=ctcf_cols,
-    )
+    ctcf_motifs = pd.read_table(ctcf_file, names=ctcf_cols,)
 
     ctcf_motifs = bioframe.expand(ctcf_motifs, pad=exclude_window)
 
-    sites = bioframe.count_overlaps(
-        sites, ctcf_motifs[site_cols], cols1=["chrom", "start_2", "end_2"]
-    )
+    sites = bioframe.count_overlaps(sites, ctcf_motifs, cols1=cols1, cols2=cols2)
     sites = sites.iloc[sites["count"].values == 0]
     sites.reset_index(inplace=True, drop=True)
 
@@ -315,7 +295,6 @@ def validate_df_lenght(
     number_of_flanks_or_spacers,
     df,
 ):
-
     """
     validates if a created dataframe has an expected length (if number of experiments, so number of rows agrees)
     sizes.
@@ -355,7 +334,6 @@ def validate_df_lenght(
 
 
 def generate_all_orientation_strings(N):
-
     """
     Function generates all possible orientations of N-long string consisting of binary characters (> and <) only.
     Example: for N=2 the result is ['>>', '><', '<>', '<<'].
@@ -372,7 +350,6 @@ def generate_all_orientation_strings(N):
     """
 
     def _binary_to_orientation_string_map(binary_list):
-
         binary_to_orientation_dict = {0: ">", 1: "<"}
         orientation_list = [
             binary_to_orientation_dict[number] for number in binary_list
@@ -389,7 +366,6 @@ def generate_all_orientation_strings(N):
 
 
 def add_orientation(seq_coords_df, orientation_strings, all_permutations):
-
     """
     Function adds an additional column named 'orientation', to the given dataframe where each row corresponds to a set of CTCF-binding sites.
 
@@ -411,7 +387,6 @@ def add_orientation(seq_coords_df, orientation_strings, all_permutations):
     df_len = len(seq_coords_df)
 
     if len(orientation_strings) > 1:
-
         orientation_ls = []
         rep_unit = seq_coords_df
 
@@ -419,15 +394,12 @@ def add_orientation(seq_coords_df, orientation_strings, all_permutations):
             orientation = orientation_strings[ind]
             orientation_ls = orientation_ls + [orientation] * df_len
             if len(seq_coords_df) != len(orientation_ls):
-                seq_coords_df = pd.concat(
-                    [seq_coords_df, rep_unit], ignore_index=True
-                )
+                seq_coords_df = pd.concat([seq_coords_df, rep_unit], ignore_index=True)
 
         seq_coords_df["orientation"] = orientation_ls
 
     else:
         if all_permutations:
-
             N = len(orientation_strings[0])
 
             orientation_strings = generate_all_orientation_strings(N)
@@ -457,7 +429,6 @@ def add_orientation(seq_coords_df, orientation_strings, all_permutations):
 def add_diff_flanks_and_const_spacer(
     seq_coords_df, flank_start, flank_end, flank_spacer_sum
 ):
-
     """
     Function adds two additional columns named "flank_bp" and "spacer_bp" to the given dataframe where each row corresponds to a set of CTCF-binding sites. Here, spacing stays constant while flank changes.
 
@@ -486,8 +457,7 @@ def add_diff_flanks_and_const_spacer(
     spacer_ls = []
 
     seq_coords_df = pd.concat(
-        [rep_unit for i in range(flank_end - flank_start + 1)],
-        ignore_index=True,
+        [rep_unit for i in range(flank_end - flank_start + 1)], ignore_index=True,
     )
 
     for flank in range(flank_start, flank_end + 1):
@@ -502,7 +472,6 @@ def add_diff_flanks_and_const_spacer(
 
 
 def add_const_flank_and_diff_spacer(seq_coords_df, flank, spacing_list):
-
     """
     Function adds two additional columns named "flank_bp" and "spacer_bp" to the given dataframe where each row corresponds to a set of CTCF-binding sites. Here flank is constant, while spacing is changing.
 
@@ -542,7 +511,6 @@ def add_const_flank_and_diff_spacer(seq_coords_df, flank, spacing_list):
 
 
 def add_background(seq_coords_df, background_indices_list):
-
     """
     Function adds an additional column named 'orientation', to the given dataframe where each row corresponds to a set of CTCF-binding sites.
 
@@ -568,10 +536,215 @@ def add_background(seq_coords_df, background_indices_list):
         background_ls = background_ls + [background_ind] * df_len
 
         if len(seq_coords_df) != len(background_ls):
-            seq_coords_df = pd.concat(
-                [seq_coords_df, rep_unit], ignore_index=True
-            )
+            seq_coords_df = pd.concat([seq_coords_df, rep_unit], ignore_index=True)
 
     seq_coords_df["background_index"] = background_ls
 
     return seq_coords_df
+
+
+# -------------------------------------------------------------------------------------------------
+# functions below under review
+
+
+def generate_ctcf_motifs_list(
+    h5_dirs,
+    rmsk_file,
+    jaspar_file,
+    score_key,
+    mode,
+    num_sites,
+    weak_thresh_pct=1,
+    strong_thresh_pct=99,
+    unique_identifier="",
+):
+    """
+    Generates a list of genomic coordinates for potential CTCF binding sites in DNA sequences.
+
+    Arguments:
+    - h5_dirs: A list of directories containing input .h5 files.
+    - rmsk_file: The path to a .bed file containing repeat-masker annotations.
+    - jaspar_file: The path to a JASPAR-formatted CTCF motif database.
+    - score_key: The key to extract score values of putative binding sites from input .h5 files.
+    - mode: One of "head", "tail", "uniform", or "random"; specifies which percentiles of CTCF sites ranked by score should be selected.
+    - num_sites: The number of sites to select per mode.
+    - weak_thresh_pct: The percentile below which putative binding sites are considered weak (default 1).
+    - strong_thresh_pct: The percentile above which putative binding sites are considered strong (default 99).
+    - unique_identifier: An optional string that can be used to add a unique identifier to the output.
+
+    Returns:
+    - A list of strings representing genomic coordinates of putative CTCF binding sites in the following format: "chrom,start,end,strand#score_key=score_value".
+    """
+    sites = akita_utils.tsv_gen_utils.filter_boundary_ctcfs_from_h5(
+        h5_dirs=h5_dirs, score_key=score_key, threshold_all_ctcf=5,
+    )
+
+    sites = akita_utils.tsv_gen_utils.filter_by_rmsk(
+        sites, rmsk_file=rmsk_file, verbose=True
+    )
+
+    sites = akita_utils.tsv_gen_utils.filter_by_ctcf(
+        sites, ctcf_file=jaspar_file, verbose=True
+    )
+
+    site_df = akita_utils.tsv_gen_utils.filter_sites_by_score(
+        sites,
+        score_key=score_key,
+        lower_threshold=weak_thresh_pct,
+        upper_threshold=strong_thresh_pct,
+        mode=mode,
+        num_sites=num_sites,
+    )
+
+    seq_coords_df = (
+        site_df[["chrom", "start_2", "end_2", "strand_2", score_key]]
+        .copy()
+        .rename(
+            columns={
+                "start_2": "start",
+                "end_2": "end",
+                "strand_2": "strand",
+                score_key: "genomic_" + score_key,
+            }
+        )
+    )
+
+    seq_coords_df.reset_index(drop=True, inplace=True)
+    return generate_locus_specification_list(dataframe=seq_coords_df, unique_identifier=unique_identifier)
+
+
+def generate_locus_specification_list(
+    dataframe, filter_out_ctcf_motifs=False, specification_list=None, unique_identifier="",
+):
+    """
+    Generate a list of locus specifications from a dataframe of genomic features.
+
+    Args:
+        dataframe (pandas.DataFrame): A pandas dataframe containing genomic features with columns
+            'chrom', 'start', 'end', 'strand' and additional columns to be included in the output.
+        filter_out_ctcf_motifs (bool, optional): Whether or not to filter out CTCF motifs. Defaults to False.
+        specification_list (list, optional): A list of indices to include in the output. Defaults to None.
+        unique_identifier (str, optional): A string to identify the unique identifier of additional columns. Defaults to "dummy".
+
+    Returns:
+        list: A list of locus specifications generated from the dataframe, where each specification is
+            of the format "chrom,start,end,strand#unique_identifier_col_name=value#unique_identifier_col_name=value..."
+
+    """
+
+    if filter_out_ctcf_motifs is True:
+        dataframe = filter_by_ctcf(dataframe, cols1=None)
+        dataframe = dataframe.rename(columns={"count": "num_of_ctcf_motifs"})
+    
+    if "strand" not in dataframe.columns:  # some inserts dont have this column
+        dataframe["strand"] = "+"
+
+    dataframe = _dataframe_cleaning(dataframe=dataframe, unique_identifier=unique_identifier)
+
+    # Generate list of locus specifications
+    if specification_list is not None:
+        locus_specifications = dataframe.loc[
+            specification_list, "locus_specification"
+        ].tolist()
+    else:
+        locus_specifications = dataframe["locus_specification"].tolist()
+
+    return locus_specifications
+
+
+def parameter_dataframe_reorganisation(parameters_combo_dataframe, insert_names_list):
+    """
+    Reorganizes a parameter combination dataframe to have separate columns for each insert and its
+    associated parameters. It also splits the dataframe to have the crucial columns alone and others kept as trailers with the respective identifiers.
+
+    Args:
+        parameters_combo_dataframe (pandas.DataFrame): A dataframe with the parameter combinations
+            to test, where each row represents a unique combination of parameters and each column
+            represents a different parameter. The dataframe must have columns with the locus
+            specification for each insert, as well as columns with the flank size, offset, and
+            orientation for each insert.
+        insert_names_list (list): A list of the names of the inserts to be included in the final
+            output dataframe.
+
+    Returns:
+        pandas.DataFrame: A reorganized version of the input dataframe, with separate columns for
+        each insert and its associated parameters. Each row corresponds to a unique combination of
+        parameters, and each column contains the locus specification, flank size, offset, and
+        orientation for one insert.
+
+    Raises:
+        AssertionError: If any of the insert-specific column names are not found in the input
+            dataframe columns.
+
+    """
+    for col_name in parameters_combo_dataframe.columns:
+        if "locus_specification" in col_name:
+            split_df = parameters_combo_dataframe[col_name].str.split("#", expand=True)
+            parameters_combo_dataframe = parameters_combo_dataframe.drop(
+                columns=[col_name]
+            )
+            column_names = [col_name] + [x.split("=")[0] for x in split_df.iloc[0, 1:]]
+            split_df.columns = column_names
+
+            # Update the values in each cell of the split dataframe
+            for column in column_names[1:]:
+                split_df[column] = split_df[column].apply(lambda x: x.split("=")[1])
+
+            new_df = pd.concat([parameters_combo_dataframe, split_df], axis=1)
+            parameters_combo_dataframe = new_df
+
+    for insert_name in insert_names_list:
+        assert (
+            f"{insert_name}_locus_specification" in parameters_combo_dataframe.columns
+        ), f"{insert_name}_locus_specification not found in dataframe columns."
+        assert (
+            f"{insert_name}_flank_bp" in parameters_combo_dataframe.columns
+        ), f"{insert_name}_flank_bp not found in dataframe columns."
+        assert (
+            f"{insert_name}_offset" in parameters_combo_dataframe.columns
+        ), f"{insert_name}_offset not found in dataframe columns."
+        assert (
+            f"{insert_name}_orientation" in parameters_combo_dataframe.columns
+        ), f"{insert_name}_orientation not found in dataframe columns."
+
+        # Combine all columns into one column separated by "$"
+        insert_cols = [
+            f"{insert_name}_locus_specification",
+            f"{insert_name}_flank_bp",
+            f"{insert_name}_offset",
+            f"{insert_name}_orientation",
+        ]
+        parameters_combo_dataframe[
+            f"{insert_name}_insert"
+        ] = parameters_combo_dataframe[insert_cols].apply(
+            lambda x: ",".join(x.astype(str)), axis=1
+        )
+        parameters_combo_dataframe = parameters_combo_dataframe.drop(
+            columns=insert_cols
+        )
+    return parameters_combo_dataframe
+
+
+def _dataframe_cleaning(dataframe, unique_identifier=""):
+    
+        # Generate locus specification column
+    dataframe["locus_specification"] = (
+        dataframe["chrom"].astype(str)
+        + ","
+        + dataframe["start"].astype(str)
+        + ","
+        + dataframe["end"].astype(str)
+        + ","
+        + dataframe["strand"].astype(str)
+    )
+
+    # Add any other arbitrary columns from insert dataframe
+    extra_cols = set(dataframe.columns) - set(
+        ["chrom", "start", "end", "strand", "locus_specification"]
+    )
+    for col in extra_cols:
+        dataframe["locus_specification"] += (
+            "#" + f"{unique_identifier}_" + col + "=" + dataframe[col].astype(str)
+        )
+        
+    return dataframe
