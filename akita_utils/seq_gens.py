@@ -239,7 +239,7 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open, jasper_motif_fil
             yield random_seq_permutation(wt_1hot)
 
 # define sequence generator
-def mask_central_seq(seq_1hot, motif_width=20):
+def mask_central_seq(seq_1hot, seq_length, motif_width=20):
     seq_1hot_perm = seq_1hot.copy()
     mask_inds = np.arange(
         seq_length // 2 - motif_width // 2, seq_length // 2 + motif_width // 2
@@ -247,7 +247,7 @@ def mask_central_seq(seq_1hot, motif_width=20):
     seq_1hot_perm[mask_inds, :] = 0
     return seq_1hot_perm
 
-def permute_central_seq(seq_1hot, motif_width=20):
+def permute_central_seq(seq_1hot, seq_length, motif_width=20):
     seq_1hot_perm = seq_1hot.copy()
     central_inds = np.arange(
         seq_length // 2 - motif_width // 2, seq_length // 2 + motif_width // 2
@@ -277,7 +277,7 @@ def split_span(span_string):
         spans.append([int(j.split("-")[0]), int(j.split("-")[1])])
     return spans
 
-def fetch_centered_padded_seq(chrom, start, end):
+def fetch_centered_padded_seq(chrom, start, end, seq_length, genome_open):
     mid = (start + end) // 2
     start_centered, end_centered = int(mid - seq_length // 2), int(
         mid + seq_length // 2
@@ -287,37 +287,12 @@ def fetch_centered_padded_seq(chrom, start, end):
     pad_upstream = "N" * max(-start_centered, 0)
     pad_downstream = "N" * max(end_centered - chromosome_length, 0)
     return pad_upstream + seq_dna + pad_downstream
-    def seqs_gen(motif_width):
-        for s in seq_coords_df.itertuples():
-            list_1hot = []
-            seq_dna = fetch_centered_padded_seq(s.chrom, s.start, s.end)
-            wt_1hot = dna_io.dna_1hot(seq_dna)
-            list_1hot.append(wt_1hot)
-
-            if use_span:
-                spans = split_span(s.span)
-                spans = np.array(spans) - start
-                if mutation_method == "mask":
-                    list_1hot.append(mask_spans(wt_1hot, spans))
-                elif mutation_method == "permute":
-                    list_1hot.append(permute_spans(wt_1hot, spans))
-
-            else:  ## just mask central motif
-                if mutation_method == "mask":
-                    list_1hot.append(mask_central_seq(wt_1hot, motif_width=motif_width))
-                elif mutation_method == "permute":
-                    list_1hot.append(
-                        permute_central_seq(wt_1hot, motif_width=motif_width)
-                    )
-
-            for seq_1hot in list_1hot:
-                yield seq_1hot
                 
-def disruption_seqs_gen(motif_width):
+def disruption_seqs_gen(seq_coords_df, mutation_method, motif_width, seq_length, genome_open, use_span):
     for s in seq_coords_df.itertuples():
         list_1hot = []
-        seq_dna = fetch_centered_padded_seq(s.chrom, s.start, s.end)
-        wt_1hot = dna_io.dna_1hot(seq_dna)
+        seq_dna = fetch_centered_padded_seq(s.chrom, s.start, s.end, seq_length, genome_open)
+        wt_1hot = akita_utils.dna_utils.dna_1hot(seq_dna)
         list_1hot.append(wt_1hot)
 
         if use_span:
@@ -330,10 +305,10 @@ def disruption_seqs_gen(motif_width):
 
         else:  ## just mask central motif
             if mutation_method == "mask":
-                list_1hot.append(mask_central_seq(wt_1hot, motif_width=motif_width))
+                list_1hot.append(mask_central_seq(wt_1hot,seq_length=seq_length, motif_width=motif_width))
             elif mutation_method == "permute":
                 list_1hot.append(
-                    permute_central_seq(wt_1hot, motif_width=motif_width)
+                    permute_central_seq(wt_1hot, seq_length=seq_length, motif_width=motif_width)
                 )
 
         for seq_1hot in list_1hot:

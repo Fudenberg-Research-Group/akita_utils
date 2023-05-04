@@ -46,8 +46,13 @@ print(gpus)
 from basenji import seqnn
 from basenji import stream
 from basenji import dna_io
-
+import akita_utils
 from akita_utils import ut_dense
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+log = logging.getLogger(__name__)
+
 
 """
 akita_motif_scd.py
@@ -215,14 +220,18 @@ def main():
         batch_size = params_train["batch_size"]
     else:
         batch_size = options.batch_size
-    print(batch_size)
+        
+    log.info(f"batch_size {batch_size}")
+    
     mutation_method = options.mutation_method
+    
     if not mutation_method in ["mask", "permute"]:
         raise ValueError("undefined mutation method:", mutation_method)
+        
     motif_width = options.motif_width
     use_span = options.use_span
     if options.use_span:
-        print("using SPANS")
+        log.info("using SPANS")
 
     if options.targets_file is not None:
         targets_df = pd.read_csv(options.targets_file, sep="\t", index_col=0)
@@ -278,7 +287,7 @@ def main():
         options.out_dir, options.scd_stats, seq_coords_df, target_ids, target_labels
     )
 
-    print("initialized")
+    log.info("initialized")
 
     #################################################################
     # predict SNP scores, write output
@@ -286,7 +295,7 @@ def main():
     write_thread = None
 
     # initialize predictions stream
-    preds_stream = stream.PredStreamGen(seqnn_model, akita_utils.seq_gens.disruption_seqs_gen(motif_width), batch_size)
+    preds_stream = stream.PredStreamGen(seqnn_model, akita_utils.seq_gens.disruption_seqs_gen(seq_coords_df, mutation_method, motif_width, seq_length, genome_open, use_span), batch_size)
 
     # predictions index
     pi = 0
@@ -406,7 +415,7 @@ def write_snp(
                 )
 
     if (plot_dir is not None) and (np.mod(si, plot_freq) == 0):
-        print("plotting ", si)
+        log.info("plotting ", si)
         # TEMP: average across targets
         ref_preds = ref_preds.mean(axis=-1, keepdims=True)
         alt_preds = alt_preds.mean(axis=-1, keepdims=True)

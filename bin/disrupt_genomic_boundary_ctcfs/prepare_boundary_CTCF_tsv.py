@@ -39,7 +39,7 @@ from akita_utils import filter_by_chrmlen
 # main
 ################################################################################
 def main():
-    usage = "usage: %prog [options] <params_file> <model_file> <vcf_file>"
+    usage = "usage: %prog [options] <params_file> <vcf_file>"
     parser = OptionParser(usage)
 
     parser.add_option(
