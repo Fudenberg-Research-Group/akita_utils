@@ -231,9 +231,11 @@ def main():
     # prep work
 
     # output directory
+    options.out_dir = f"{options.out_dir}/motif_expt_model{options.model_index}_head{options.head_index}"
+    
     if not options.restart:
         if os.path.isdir(options.out_dir):
-            log.info(f"Please remove {options.out_dir}")
+            print("Please remove %s" % options.out_dir, file=sys.stderr)
             exit(1)
         os.mkdir(options.out_dir)
 
