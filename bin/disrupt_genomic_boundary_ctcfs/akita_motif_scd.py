@@ -275,7 +275,13 @@ def main():
         seq_coords_df = pd.read_csv(motif_file, sep="\t")
 
     num_motifs = len(seq_coords_df)
+    
+    log.info(f"====================================")
+    
+    log.info(f"There are {num_motifs} number of experiments, but each experiment constitutes two predictions. i.e reference and altered seqs")
 
+    log.info(f"====================================")
+    
     # open genome FASTA
     genome_open = pysam.Fastafile(options.genome_fasta)
 
@@ -378,6 +384,8 @@ def write_snp(
     plot_freq=100,
 ):
     """Write SNP predictions to HDF."""
+    
+    log.info(f"writting predictions for experiment {si}")
 
     # increase dtype
     ref_preds = ref_preds.astype("float32")
@@ -415,7 +423,7 @@ def write_snp(
                 )
 
     if (plot_dir is not None) and (np.mod(si, plot_freq) == 0):
-        log.info("plotting ", si)
+        log.info(f"plotting {si}")
         # TEMP: average across targets
         ref_preds = ref_preds.mean(axis=-1, keepdims=True)
         alt_preds = alt_preds.mean(axis=-1, keepdims=True)

@@ -78,7 +78,7 @@ def main():
     parser.add_option(
         "-o",
         dest="out_dir",
-        default="scd",
+        default="motif_scd",
         help="Output directory for tables and plots [Default: %default]",
     )
     parser.add_option(
@@ -165,7 +165,7 @@ def main():
     parser.add_option(
         "--name",
         dest="name",
-        default="scd",
+        default="motif_scd",
         help="SLURM name prefix [Default: %default]",
     )
     parser.add_option(
@@ -191,7 +191,7 @@ def main():
     parser.add_option(
         "-r",
         dest="restart",
-        default=False,
+        default=True,
         action="store_true",
         help="Restart a partially completed job [Default: %default]",
     )
@@ -226,7 +226,7 @@ def main():
 
         new_args = [params_file, model_file, tsv_file]
         options.name = f"{options.name}_m{options.model_index}_h{options.head_index}"
-
+        options.out_dir = f"{options.out_dir}_model{options.model_index}_head{options.head_index}"
     #######################################################
     # prep work
 
@@ -314,7 +314,8 @@ def collect_h5(file_name, out_dir, num_procs):
         # open job
         job_h5_file = "%s/job%d/%s" % (out_dir, pi, file_name)
         job_h5_open = h5py.File(job_h5_file, "r")
-        num_variants += len(job_h5_open["chrom_core"])
+        # print(job_h5_open)
+        num_variants += len(job_h5_open["chrom"]) #chrom_core
         job_h5_open.close()
 
     # initialize final h5

@@ -39,6 +39,7 @@ def filter_boundary_ctcfs_from_h5(
     for h5_file in glob.glob(h5_dirs):
         dfs.append(akita_utils.format_io.h5_to_df(h5_file))
     df = dfs[0].copy()
+    # print([df[score_key] for df in dfs])
     df[score_key] = np.mean([df[score_key] for df in dfs], axis=0)
 
     # append scores for full mut and all ctcf mut to table
@@ -234,7 +235,9 @@ def filter_by_rmsk(
     )
 
     rmsk = bioframe.expand(rmsk, pad=exclude_window)
-
+    
+    # print(sites.columns)
+    
     sites = bioframe.count_overlaps(
         sites, rmsk[site_cols], cols1=["chrom", "start_2", "end_2"]
     )
