@@ -19,7 +19,7 @@
     }
     ]
                 
-         python generate_expt_df.py --json-file /home1/kamulege/akita_utils/bin/insert_experiments/data.json -o data/1000_uniformly_selcted_model1_motifs.tsv --background_seqs 0 
+         python generate_expt_df.py --json-file /home1/kamulege/akita_utils/bin/insert_experiments/data.json -o data/12_uniformly_selcted_model2_motifs.tsv --background_seqs 0 
                 
 
    - Akita experiment predictions 

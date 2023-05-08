@@ -154,7 +154,7 @@ def filter_sites_by_score(
     if num_sites is not None:
         assert num_sites <= len(
             filtered_sites
-        ), "length of dataframe is smaller than requested number of sites, change contraints"
+        ), f"length of dataframe ({len(filtered_sites)}) is smaller than requested number of sites({num_sites}), change contraints"
 
         if mode == "head":
             filtered_sites = filtered_sites[:num_sites]
