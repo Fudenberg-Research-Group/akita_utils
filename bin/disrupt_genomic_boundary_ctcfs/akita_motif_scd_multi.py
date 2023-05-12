@@ -191,7 +191,7 @@ def main():
     parser.add_option(
         "-r",
         dest="restart",
-        default=True,
+        default=False,
         action="store_true",
         help="Restart a partially completed job [Default: %default]",
     )
@@ -226,7 +226,6 @@ def main():
 
         new_args = [params_file, model_file, tsv_file]
         options.name = f"{options.name}_m{options.model_index}_h{options.head_index}"
-        options.out_dir = f"{options.out_dir}_model{options.model_index}_head{options.head_index}"
     #######################################################
     # prep work
 
