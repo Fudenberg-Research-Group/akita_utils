@@ -110,15 +110,15 @@ def main():
         "map_score_threshold": args.map_score_threshold, 
         "scores_pixelwise_thresh": args.scores_pixelwise_thresh,
     }
-
+    
     # sampling seq_df dataframe respecting GC content
-    seq_gc_df = akita_utils.tsv_gen_utils.filter_sites_by_score(
+    seq_gc_df = akita_utils.tsv_gen_utils.filter_dataframe_by_column(
         general_seq_gc_df,
-        score_key="GC",
+        column_name="GC",
         upper_threshold=99,
         lower_threshold=1,
-        mode=args.mode,
-        num_sites=args.num_backgrounds,
+        filter_mode=args.mode,
+        num_rows=args.num_backgrounds,
     )
 
     # fixing locus specific variables together before grid creation
