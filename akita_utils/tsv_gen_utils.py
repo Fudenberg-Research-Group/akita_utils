@@ -147,7 +147,6 @@ def filter_sites_by_score(
     filtered_sites = (
         sites[(sites[score_key] >= lower_thresh) & (sites[score_key] <= upper_thresh)]
         .copy()
-        .drop_duplicates(subset=[score_key])
         .sort_values(score_key, ascending=False)
     )
 
@@ -161,7 +160,7 @@ def filter_sites_by_score(
         elif mode == "tail":
             filtered_sites = filtered_sites[-num_sites:]
         elif mode == "uniform":
-            filtered_sites["binned"] = pd.cut(filtered_sites[score_key], bins=num_sites)
+            filtered_sites["binned"] = pd.cut(filtered_sites[score_key].drop_duplicates(), bins=num_sites)
             filtered_sites = filtered_sites.groupby("binned").apply(lambda x: x.head(1))
         else:
             filtered_sites = filtered_sites.sample(n=num_sites)
@@ -241,6 +240,8 @@ def filter_by_rmsk(
 
     sites = sites.iloc[sites["count"].values == 0]
     sites.reset_index(inplace=True, drop=True)
+    
+    print("length after filtering sites by overlap with rmsk", len(sites))
 
     return sites
 
