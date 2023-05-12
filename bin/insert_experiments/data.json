@@ -8,7 +8,7 @@
         "jaspar_file": "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
         "num_sites": 30,
         "score_key": "SCD",
-        "mode": "uniform" 
+        "mode": "head" 
     }
 ]
 
