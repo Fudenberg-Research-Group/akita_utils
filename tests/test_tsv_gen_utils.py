@@ -1,7 +1,7 @@
 import pandas as pd
 from akita_utils.tsv_gen_utils import (
     filter_by_chrmlen,
-    filter_sites_by_score,
+    filter_dataframe_by_column,
     generate_all_orientation_strings,
 )
 
