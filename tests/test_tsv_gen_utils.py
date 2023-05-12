@@ -25,16 +25,16 @@ def test_filter_by_chrmlen():
     assert filter_by_chrmlen(df1, {"chr1": 10, "chrX": 7}, 5).shape == (0, 3)
 
 
-def test_filter_sites_by_score():
+def test_filter_dataframe_by_column():
     simple_df = pd.DataFrame([i for i in range(10)], columns=["stat"])
 
-    two_and_one = filter_sites_by_score(
+    two_and_one = filter_dataframe_by_column(
         simple_df,
-        score_key="stat",
+        column_name="stat",
         upper_threshold=90,
         lower_threshold=10,
-        mode="tail",
-        num_sites=2,
+        filter_mode="tail",
+        num_rows=2,
     )
 
     assert list(two_and_one.stat) == [2, 1]
