@@ -48,6 +48,12 @@ from basenji import stream
 from basenji import dna_io
 
 from akita_utils.utils import ut_dense, split_df_equally
+from akita_utils.seq_gens import disruption_seqs_gen
+
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+log = logging.getLogger(__name__)
 
 """
 akita_motif_scd.py
@@ -215,15 +221,14 @@ def main():
         batch_size = params_train["batch_size"]
     else:
         batch_size = options.batch_size
-    print(batch_size)
-    mutation_method = options.mutation_method
+    
+    mutation_method, motif_width, use_span = options.mutation_method, options.motif_width, options.use_span
+    
     if not mutation_method in ["mask", "permute"]:
         raise ValueError("undefined mutation method:", mutation_method)
-    motif_width = options.motif_width
-    use_span = options.use_span
+        
     if options.use_span:
-        print("using SPANS")
-
+        log.info(f"using SPANS")
     if options.targets_file is not None:
         targets_df = pd.read_csv(options.targets_file, sep="\t", index_col=0)
         target_ids = targets_df.identifier
@@ -258,85 +263,14 @@ def main():
         seq_coords_df = pd.read_csv(motif_file, sep="\t")
 
     num_motifs = len(seq_coords_df)
-
+    
+    log.info("====================================================")
+    log.info(f"This script is going to run {num_motifs} experiments, remember each experiment has two predictions i.e reference and alternate")
+    log.info(f"Batch size to be used is {batch_size}")
+    log.info("====================================================")
+    
     # open genome FASTA
     genome_open = pysam.Fastafile(options.genome_fasta)
-
-    # define sequence generator
-    def mask_central_seq(seq_1hot, motif_width=20):
-        seq_1hot_perm = seq_1hot.copy()
-        mask_inds = np.arange(
-            seq_length // 2 - motif_width // 2, seq_length // 2 + motif_width // 2
-        )
-        seq_1hot_perm[mask_inds, :] = 0
-        return seq_1hot_perm
-
-    def permute_central_seq(seq_1hot, motif_width=20):
-        seq_1hot_perm = seq_1hot.copy()
-        central_inds = np.arange(
-            seq_length // 2 - motif_width // 2, seq_length // 2 + motif_width // 2
-        )
-        mask_inds = np.random.permutation(central_inds)
-        seq_1hot_perm[mask_inds, :] = seq_1hot[central_inds, :].copy()
-        return seq_1hot_perm
-
-    def mask_spans(seq_1hot, spans):
-        seq_1hot_perm = seq_1hot.copy()
-        for s in spans:
-            seq_1hot_perm[s[0] : s[1], :] = 0
-        return seq_1hot_perm
-
-    def permute_spans(seq_1hot, spans):
-        seq_1hot_perm = seq_1hot.copy()
-        spans_flat = np.array([]).astype(int)
-        for s in spans:
-            spans_flat = np.hstack((spans_flat, np.arange(s[0], s[1])))
-        spans_permuted = np.random.permutation(spans_flat)
-        seq_1hot_perm[spans_permuted, :] = seq_1hot[spans_flat, :].copy()
-        return seq_1hot_perm
-
-    def split_span(span_string):
-        spans = []
-        for j in span_string.split(","):
-            spans.append([int(j.split("-")[0]), int(j.split("-")[1])])
-        return spans
-
-    def fetch_centered_padded_seq(chrom, start, end):
-        mid = (start + end) // 2
-        start_centered, end_centered = int(mid - seq_length // 2), int(
-            mid + seq_length // 2
-        )
-        seq_dna = genome_open.fetch(chrom, start_centered, end_centered).upper()
-        chromosome_length = genome_open.get_reference_length(chrom)
-        pad_upstream = "N" * max(-start_centered, 0)
-        pad_downstream = "N" * max(end_centered - chromosome_length, 0)
-        return pad_upstream + seq_dna + pad_downstream
-
-    def seqs_gen(motif_width):
-        for s in seq_coords_df.itertuples():
-            list_1hot = []
-            seq_dna = fetch_centered_padded_seq(s.chrom, s.start, s.end)
-            wt_1hot = dna_io.dna_1hot(seq_dna)
-            list_1hot.append(wt_1hot)
-
-            if use_span:
-                spans = split_span(s.span)
-                spans = np.array(spans) - start
-                if mutation_method == "mask":
-                    list_1hot.append(mask_spans(wt_1hot, spans))
-                elif mutation_method == "permute":
-                    list_1hot.append(permute_spans(wt_1hot, spans))
-
-            else:  ## just mask central motif
-                if mutation_method == "mask":
-                    list_1hot.append(mask_central_seq(wt_1hot, motif_width=motif_width))
-                elif mutation_method == "permute":
-                    list_1hot.append(
-                        permute_central_seq(wt_1hot, motif_width=motif_width)
-                    )
-
-            for seq_1hot in list_1hot:
-                yield seq_1hot
 
     #################################################################
     # setup output
@@ -345,15 +279,11 @@ def main():
         options.out_dir, options.scd_stats, seq_coords_df, target_ids, target_labels
     )
 
-    print("initialized")
-
     #################################################################
     # predict SNP scores, write output
 
-    write_thread = None
-
     # initialize predictions stream
-    preds_stream = stream.PredStreamGen(seqnn_model, seqs_gen(motif_width), batch_size)
+    preds_stream = stream.PredStreamGen(seqnn_model, disruption_seqs_gen(seq_coords_df, mutation_method, motif_width, seq_length, genome_open, use_span), batch_size)
 
     # predictions index
     pi = 0
@@ -378,14 +308,12 @@ def main():
             options.plot_freq,
         )
 
-    """Write SNP predictions to HDF."""
-
     genome_open.close()
     scd_out.close()
 
 
 def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_labels):
-    """Initialize an output HDF5 file for SCD stats."""
+    log.info("Initialize an output HDF5 file for SCD stats.")
 
     num_targets = len(target_ids)
     num_motifs = len(seq_coords_df)
@@ -456,6 +384,8 @@ def write_snp(
     plot_freq=100,
 ):
     """Write SNP predictions to HDF."""
+    
+    log.info(f"Writing predictions for experiment {si}")
 
     # increase dtype
     ref_preds = ref_preds.astype("float32")
@@ -501,10 +431,6 @@ def write_snp(
         # convert back to dense
         ref_map = ut_dense(ref_preds, diagonal_offset)
         alt_map = ut_dense(alt_preds, diagonal_offset)
-
-        # with h5py.File('%s/s%d_maps.h5' % (plot_dir, si), 'w') as map_h5:
-        #  map_h5.create_dataset('ref', data=ref_map, dtype='float16')
-        #  map_h5.create_dataset('alt', data=alt_map, dtype='float16')
 
         for ti in range(1):  # ref_preds.shape[-1]):
             ref_map_ti = ref_map[..., ti]
