@@ -69,7 +69,7 @@ from akita_utils.tsv_gen_utils import (
     add_background,
     add_const_flank_and_diff_spacer,
     validate_df_lenght,
-    filter_sites_by_score,
+    filter_dataframe_by_column,
 )
 
 from cooltools.lib import numutils
@@ -235,23 +235,23 @@ def main():
         exclude_window=ctcf_exclude_window,
         verbose=True,
     )
-
-    strong_sites = filter_sites_by_score(
+    
+    strong_sites = filter_dataframe_by_column(
         sites,
-        score_key="SCD",
+        column_name="SCD",
         upper_threshold=99,
         lower_threshold=1,
-        mode="head",
-        num_sites=options.num_strong_motifs,
+        filter_mode="head",
+        num_rows=options.num_strong_motifs,
     )
 
-    weak_sites = filter_sites_by_score(
+    weak_sites = filter_dataframe_by_column(
         sites,
-        score_key="SCD",
+        column_name="SCD",
         upper_threshold=99,
         lower_threshold=1,
-        mode="tail",
-        num_sites=options.num_weak_motifs,
+        filter_mode="tail",
+        num_rows=options.num_weak_motifs,
     )
 
     site_df = pd.concat([strong_sites.copy(), weak_sites.copy()])

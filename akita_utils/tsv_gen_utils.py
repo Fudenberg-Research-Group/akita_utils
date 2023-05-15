@@ -110,70 +110,71 @@ def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
     return df_filtered
 
 
-def filter_sites_by_score(
-    sites,
-    score_key="SCD",
+def filter_dataframe_by_column(
+    df,
+    column_name="SCD",
     upper_threshold=100,
     lower_threshold=0,
-    mode="head",
-    num_sites=None,
+    filter_mode="uniform",
+    num_rows=None,
 ):
 
     """
-    Given a dataframe of CTCF-binding sites returns a subset of them.
+    Given a dataframe of CTCF-binding sites returns a subset of its rows.
 
     Parameters
     -----------
-    sites : dataframe
-        Dataframe of a given CTCF-binding sites.
-    score_key : str
-        Column that filtering and sorting is done by.
+    df : dataframe
+        An imput pandas dataframe with a column specified by column_name.
+    column_name : str
+        Column that filtering is done by.
     upper_threshold : float
-        Float in a range (0,100); all the sites above this percentile will be removed from further analysis.
+        Float in a range (0,100); all the rows with column_name's values above this percentile will be removed from further analysis.
     lower_threshold : float
-        Float in a range (0,100); all the sites bellow this percentile will be removed from further analysis.
-    mode : str
+        Float in a range (0,100); all the rows with column_name's values above this percentile will be removed from further analysis.
+    filter_mode : str
         Specification which part of a filtered dataframe is of a user's interest: if "head" - first rows are returned, if "tail" - last rows are returned, if "random" - a set of random rows is returned.
-    num_sites : int
-        A requested number of sites. If type of num_sites is None, the function returns all filtered sites.
+        Otherwise, rows are sampled uniformly with respect to their column_name's values.
+    num_rows : int
+        A requested number of rows. If type of num_rows is None, the function returns the unchanged input dataframe.
 
     Returns
     --------
-    filtered_sites : dataframe
-        An output dataframe with filtered CTCF-binding sites.
+    filtered_df : dataframe
+        An output dataframe filtered with respect to the given column name.
 
     """
 
-    if mode not in ("head", "tail", "uniform","random"):
-        raise ValueError("a mode has to be one from: head, tail, uniform, random")
+    if filter_mode not in ("head", "tail", "uniform", "random"):
+        raise ValueError("a filter_mode has to be one from: head, tail, uniform, random")
 
-    upper_thresh = np.percentile(sites[score_key].values, upper_threshold)
-    lower_thresh = np.percentile(sites[score_key].values, lower_threshold)
+    upper_thresh = np.percentile(df[column_name].values, upper_threshold)
+    lower_thresh = np.percentile(df[column_name].values, lower_threshold)
 
-    filtered_sites = (
-        sites[
-            (sites[score_key] >= lower_thresh)
-            & (sites[score_key] <= upper_thresh)
+    filtered_df = (
+        df[
+            (df[column_name] >= lower_thresh)
+            & (df[column_name] <= upper_thresh)
         ]
-        .copy().drop_duplicates(subset=[score_key]).sort_values(score_key, ascending=False))
+        .copy().drop_duplicates(subset=[column_name]).sort_values(column_name, ascending=False))
     
     
-    if num_sites != None:
-        assert num_sites <= len(
-            filtered_sites
+    if num_rows != None:
+        assert num_rows <= len(
+            filtered_df
         ), "length of dataframe is smaller than requested number of sites, change contraints"
 
-        if mode == "head":
-            filtered_sites = filtered_sites[:num_sites]
-        elif mode == "tail":
-            filtered_sites = filtered_sites[-num_sites:]
-        elif mode == "uniform":
-            filtered_sites['binned'] = pd.cut(filtered_sites[score_key], bins=num_sites)
-            filtered_sites = filtered_sites.groupby('binned').apply(lambda x: x.head(1))
+        if filter_mode == "head":
+            filtered_df = filtered_df[:num_rows]
+        elif filter_mode == "tail":
+            filtered_df = filtered_df[-num_rows:]
+        elif filter_mode == "uniform":
+            filtered_df['binned'] = pd.cut(filtered_df[column_name], bins=num_rows)
+            filtered_df = filtered_df.groupby("binned").apply(lambda x: x.head(1))
         else:
-            filtered_sites = filtered_sites.sample(n=num_sites)
+            filtered_df = filtered_df.sample(n=num_rows)
             
-    return filtered_sites
+    return filtered_df
 
 
 def unpack_range(int_range):

@@ -101,15 +101,15 @@ def main():
         "ctcf_detection_threshold": args.ctcf_detection_threshold,
         "mutation_method": args.mutation_method,
     }
-
+    
     # sampling seq_df dataframe respecting GC content
-    seq_gc_df = akita_utils.tsv_gen_utils.filter_sites_by_score(
+    seq_gc_df = akita_utils.tsv_gen_utils.filter_dataframe_by_column(
         general_seq_gc_df,
-        score_key="GC",
+        column_name="GC",
         upper_threshold=99,
         lower_threshold=1,
-        mode=args.mode,
-        num_sites=args.num_seqs,
+        filter_mode=args.mode,
+        num_rows=args.num_seqs,
     )
 
     # fixing locus specific chacteristics together before grid_search
