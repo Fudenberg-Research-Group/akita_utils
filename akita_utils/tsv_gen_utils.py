@@ -198,13 +198,13 @@ def unpack_range(int_range):
     return (range_start, range_end)
 
 
-def filter_by_overlap(
+def filter_by_overlap_num(
     working_df,
     filter_df,
-    exclude_window=60,
+    expand_window=60,
     working_df_cols=["chrom","start","end"],
     filter_df_cols=["chrom","start","end"],
-    overlap_threshold=0):
+    max_overlap_num=0):
     
     """
     Filter out rows from working_df that overlap entries in filter_df above given threshold.
@@ -215,14 +215,14 @@ def filter_by_overlap(
         First set of genomic intervals.
     filter_df : dataFrame
         Second set of genomic intervals.
-    exclude_window : int
+    expand_window : int
         Indicates how big window around the given genomic intervals should be taken into account.
     working_df_cols : list
         Columns specifying genomic intervals in the working_df.
     filter_df_cols : list
         Columns specifying genomic intervals in the filter_df.
-    overlap_threshold : int
-        All the rows with overlaps above this threshold will be filtered out.
+    max_overlap_num : int
+        All the rows with number of overlaps above this threshold will be filtered out.
         
     Returns
     --------
@@ -231,11 +231,11 @@ def filter_by_overlap(
 
     """
     
-    filter_df = bioframe.expand(filter_df, pad=exclude_window)
+    filter_df = bioframe.expand(filter_df, pad=expand_window)
     
     working_df = bioframe.count_overlaps(working_df, filter_df[filter_df_cols], cols1=working_df_cols)
     
-    working_df = working_df.iloc[working_df["count"].values <= overlap_threshold]
+    working_df = working_df.iloc[working_df["count"].values <= max_overlap_num]
     working_df.reset_index(inplace=True, drop=True)
 
     return working_df
