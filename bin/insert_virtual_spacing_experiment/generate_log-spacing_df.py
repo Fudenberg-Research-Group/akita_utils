@@ -61,10 +61,12 @@ from optparse import OptionParser
 import pandas as pd
 import numpy as np
 
+import bioframe
+
+from akita_utils.format_io import read_rmsk
 from akita_utils.tsv_gen_utils import (
     filter_boundary_ctcfs_from_h5,
-    filter_by_rmsk,
-    filter_by_ctcf,
+    filter_by_overlap,
     add_orientation,
     add_background,
     add_const_flank_and_diff_spacer,
@@ -221,21 +223,24 @@ def main():
         score_key=score_key,
         threshold_all_ctcf=5,
     )
-
-    sites = filter_by_rmsk(
-        sites,
-        rmsk_file=options.rmsk_file,
-        exclude_window=rmsk_exclude_window,
-        verbose=True,
-    )
-
-    sites = filter_by_ctcf(
-        sites,
-        ctcf_file=options.jaspar_file,
-        exclude_window=ctcf_exclude_window,
-        verbose=True,
-    )
     
+    # filtering by rmsk
+    rmsk_df = read_rmsk(options.rmsk_file)
+
+    sites = filter_by_overlap(sites,
+                                rmsk_df,
+                                exclude_window=rmsk_exclude_window,
+                                working_df_cols = ["chrom","start_2","end_2"])
+    
+    # filtering by ctcf
+    ctcf_df = bioframe.read_table(options.jaspar_file, schema="jaspar")
+    
+    sites = filter_by_overlap(sites,
+                            ctcf_df,
+                            exclude_window=ctcf_exclude_window,
+                            working_df_cols = ["chrom","start_2","end_2"])
+    
+    # chosing strong and weak sites
     strong_sites = filter_dataframe_by_column(
         sites,
         column_name="SCD",
