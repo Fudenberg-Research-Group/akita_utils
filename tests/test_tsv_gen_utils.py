@@ -3,7 +3,7 @@ from akita_utils.tsv_gen_utils import (
     filter_by_chrmlen,
     filter_dataframe_by_column,
     generate_all_orientation_strings,
-    filter_by_overlap
+    filter_by_overlap_num,
 )
 
 
@@ -47,9 +47,9 @@ def test_generate_all_orientation_strings():
     for orientation in generate_all_orientation_strings(2):
         assert orientation in orientation_list
 
-        
-def test_filter_by_overlap():
-    
+
+def test_filter_by_overlap_num():
+
     # sub-test 1 : testing if counting works
 
     df1 = pd.DataFrame(
@@ -74,16 +74,14 @@ def test_filter_by_overlap():
         columns=["chrom", "start", "end"],
     )
 
-    test1_out = filter_by_overlap(df1,
-                                    df2,
-                                    exclude_window=0,
-                                    overlap_threshold=1)
+    test1_out = filter_by_overlap_num(
+        df1, df2, expand_window=0, max_overlap_num=1
+    )
 
     assert len(test1_out) == 4, "sub-test 1 failed"
     # the only row that is filtered out is: ["chr1", 500, 510]
     # since it repeats twice in the df2
-    
-    
+
     # sub-test 2 : checking if expanding the window by 30 bp works
 
     df1 = pd.DataFrame(
@@ -101,15 +99,11 @@ def test_filter_by_overlap():
         columns=["chrom", "start", "end"],
     )
 
-
-    test2_out = filter_by_overlap(df1,
-                                df2,
-                                exclude_window=30)
+    test2_out = filter_by_overlap_num(df1, df2, expand_window=30)
 
     assert len(test2_out) == 2, "sub-test 2 failed"
     # only the middle, ["chr1", 500, 510], row should be filtered out
-    
-    
+
     # sub-test 3 : checking if expanding the window by 40 bp works
 
     df1 = pd.DataFrame(
@@ -129,15 +123,12 @@ def test_filter_by_overlap():
         columns=["chrom", "start", "end"],
     )
 
-    test3_out = filter_by_overlap(df1,
-                df2,
-                exclude_window=60)
+    test3_out = filter_by_overlap_num(df1, df2, expand_window=60)
 
     assert len(test3_out) == 2, "sub-test 3 failed"
-    # the only left df1 rows are the first and the last 
+    # the only left df1 rows are the first and the last
     # since they do not overlap expanded window od df2
-    
-    
+
     # sub-test 4 : as sub-test 3, but we're checking the col names
 
     df1 = pd.DataFrame(
@@ -157,12 +148,10 @@ def test_filter_by_overlap():
         columns=["chrom", "start", "end"],
     )
 
-    test4_out = filter_by_overlap(df1,
-                df2,
-                working_df_cols=["alt_chrom", "alt_start", "alt_end"])
+    test4_out = filter_by_overlap_num(
+        df1, df2, working_df_cols=["alt_chrom", "alt_start", "alt_end"]
+    )
 
     assert len(test4_out) == 2, "sub-test 4 failed"
     # same as in sub-test 3;
     # checking if column names' renaming works as expected
-            
-    
