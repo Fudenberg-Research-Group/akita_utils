@@ -198,114 +198,47 @@ def unpack_range(int_range):
     return (range_start, range_end)
 
 
-def filter_by_rmsk(
-    sites,
-    rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz",
-    exclude_window=60,
-    site_cols=["chrom", "start", "end"],
-    verbose=True,
-):
-
+def filter_by_overlap_num(
+    working_df,
+    filter_df,
+    expand_window=60,
+    working_df_cols=["chrom","start","end"],
+    filter_df_cols=["chrom","start","end"],
+    max_overlap_num=0):
+    
     """
-    Filter out sites that overlap any entry in rmsk.
-    This is important for sineB2 in mice, and perhaps for other repetitive elements as well.
+    Filter out rows from working_df that overlap entries in filter_df above given threshold.
 
     Parameters
     -----------
-    sites : dataFrame
-        Set of genomic intervals, currently with columns "chrom","start_2","end_2"
-        TODO: update this and allow columns to be passed
-    rmsk_file : str
-        File in repeatmasker format used for filtering sites.
-
+    working_df : dataFrame
+        First set of genomic intervals.
+    filter_df : dataFrame
+        Second set of genomic intervals.
+    expand_window : int
+        Indicates how big window around the given genomic intervals should be taken into account.
+    working_df_cols : list
+        Columns specifying genomic intervals in the working_df.
+    filter_df_cols : list
+        Columns specifying genomic intervals in the filter_df.
+    max_overlap_num : int
+        All the rows with number of overlaps above this threshold will be filtered out.
+        
     Returns
     --------
-    sites : dataFrame
-        Subset of sites that do not have overlaps with repeats in the rmsk_file.
+    working_df : dataFrame
+        Subset of working_df that do not have overlaps with filter_df above given threshold.
 
     """
+    
+    filter_df = bioframe.expand(filter_df, pad=expand_window)
+    
+    working_df = bioframe.count_overlaps(working_df, filter_df[filter_df_cols], cols1=working_df_cols)
+    
+    working_df = working_df.iloc[working_df["count"].values <= max_overlap_num]
+    working_df.reset_index(inplace=True, drop=True)
 
-    if verbose:
-        print("filtering sites by overlap with rmsk")
-
-    rmsk_cols = list(
-        pd.read_csv(
-            StringIO(
-                """bin swScore milliDiv milliDel milliIns genoName genoStart genoEnd genoLeft strand repName repClass repFamily repStart repEnd repLeft id"""
-            ),
-            sep=" ",
-        )
-    )
-
-    rmsk = pd.read_table(
-        rmsk_file,
-        names=rmsk_cols,
-    )
-    rmsk.rename(
-        columns={"genoName": "chrom", "genoStart": "start", "genoEnd": "end"},
-        inplace=True,
-    )
-
-    rmsk = bioframe.expand(rmsk, pad=exclude_window)
-
-    sites = bioframe.count_overlaps(
-        sites, rmsk[site_cols], cols1=["chrom", "start_2", "end_2"]
-    )
-
-    sites = sites.iloc[sites["count"].values == 0]
-    sites.reset_index(inplace=True, drop=True)
-
-    return sites
-
-
-def filter_by_ctcf(
-    sites,
-    ctcf_file="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
-    exclude_window=60,
-    site_cols=["chrom", "start", "end"],
-    verbose=True,
-):
-
-    """
-    Filter out sites that overlap any entry in ctcf within a window of 60bp up- and downstream.
-
-    Parameters
-    -----------
-    sites : dataFrame
-        Set of genomic intervals, currently with columns "chrom","start_2","end_2"
-    ctcf_file : str
-        File in tsv format used for filtering ctcf binding sites.
-
-    Returns
-    --------
-    sites : dataFrame
-        Subset of sites that do not have overlaps with ctcf binding sites in the ctcf_file.
-    """
-
-    if verbose:
-        print("filtering sites by overlap with ctcfs")
-
-    ctcf_cols = list(
-        pd.read_csv(
-            StringIO("""chrom start end name score pval strand"""),
-            sep=" ",
-        )
-    )
-
-    ctcf_motifs = pd.read_table(
-        ctcf_file,
-        names=ctcf_cols,
-    )
-
-    ctcf_motifs = bioframe.expand(ctcf_motifs, pad=exclude_window)
-
-    sites = bioframe.count_overlaps(
-        sites, ctcf_motifs[site_cols], cols1=["chrom", "start_2", "end_2"]
-    )
-    sites = sites.iloc[sites["count"].values == 0]
-    sites.reset_index(inplace=True, drop=True)
-
-    return sites
+    return working_df
 
 
 def validate_df_lenght(
