@@ -161,7 +161,7 @@ def main():
     parser.add_option(
         "--use-span",
         dest="use_span",
-        default=False,
+        default=True,
         action="store_true",
         help="specify if using spans",
     )
@@ -267,6 +267,7 @@ def main():
     log.info("====================================================")
     log.info(f"This script is going to run {num_motifs} experiments, remember each experiment has two predictions i.e reference and alternate")
     log.info(f"Batch size to be used is {batch_size}")
+    log.info(f"mutation_method {mutation_method}, motif_width {motif_width}, use_span {use_span}")
     log.info("====================================================")
     
     # open genome FASTA
