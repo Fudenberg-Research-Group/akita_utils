@@ -66,7 +66,7 @@ import bioframe
 from akita_utils.format_io import read_rmsk
 from akita_utils.tsv_gen_utils import (
     filter_boundary_ctcfs_from_h5,
-    filter_by_overlap,
+    filter_by_overlap_num,
     add_orientation,
     add_background,
     add_const_flank_and_diff_spacer,
@@ -227,18 +227,18 @@ def main():
     # filtering by rmsk
     rmsk_df = read_rmsk(options.rmsk_file)
 
-    sites = filter_by_overlap(sites,
+    sites = filter_by_overlap_num(sites,
                                 rmsk_df,
-                                exclude_window=rmsk_exclude_window,
+                                expand_window=rmsk_exclude_window,
                                 working_df_cols = ["chrom","start_2","end_2"])
     
     # filtering by ctcf
     ctcf_df = bioframe.read_table(options.jaspar_file, schema="jaspar")
     
-    sites = filter_by_overlap(sites,
-                            ctcf_df,
-                            exclude_window=ctcf_exclude_window,
-                            working_df_cols = ["chrom","start_2","end_2"])
+    sites = filter_by_overlap_num(sites,
+                                ctcf_df,
+                                expand_window=ctcf_exclude_window,
+                                working_df_cols = ["chrom","start_2","end_2"])
     
     # chosing strong and weak sites
     strong_sites = filter_dataframe_by_column(
