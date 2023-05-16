@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from akita_utils.utils import ut_dense
-from akita_utils.stats_utils import insul_diamonds_scores
+from akita_utils.stats_utils import insul_diamonds_scores, scd_target_matrix
 
 
 def initialize_output_h5(
@@ -109,7 +109,7 @@ def write_to_h5_stats_for_prediction(
 
     # saving
     if "SCD" in stat_metrics:
-        SCDs = np.sqrt((prediction_matrix**2).sum(axis=0))
+        SCDs = scd_target_matrix(prediction_matrix)
         for target_ind in range(prediction_matrix.shape[1]):
             scd_out[f"SCD_h{head_index}_m{model_index}_t{target_ind}"][
                 experiment_index
