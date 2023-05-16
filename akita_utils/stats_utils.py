@@ -26,7 +26,7 @@ def scd_target_matrix(prediction_matrix):
     return np.sqrt((prediction_matrix**2).sum(axis=0))
 
 
-def single_scd(prediction_vector):
+def scd_single_pred(prediction_vector):
     return np.sqrt((prediction_vector**2)
 
                    
