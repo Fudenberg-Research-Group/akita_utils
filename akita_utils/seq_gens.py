@@ -144,24 +144,24 @@ def generate_spans_start_positions(seq_1hot, motif, threshold):
     return spans
 
 
-def permute_spans(seq_1hot, spans, motif_window, shuffle_parameter):
-    seq_1hot_mut = seq_1hot.copy()
-    half_motif_window = int(np.ceil(motif_window / 2))
-    for s in spans:
-        start, end = s - half_motif_window, s + half_motif_window
-        seq_1hot_mut[start:end] = akita_utils.dna_utils.permute_seq_k(
-            seq_1hot_mut[start:end], k=shuffle_parameter
-        )
-    return seq_1hot_mut
+# def permute_spans(seq_1hot, spans, motif_window, shuffle_parameter):
+#     seq_1hot_mut = seq_1hot.copy()
+#     half_motif_window = int(np.ceil(motif_window / 2))
+#     for s in spans:
+#         start, end = s - half_motif_window, s + half_motif_window
+#         seq_1hot_mut[start:end] = akita_utils.dna_utils.permute_seq_k(
+#             seq_1hot_mut[start:end], k=shuffle_parameter
+#         )
+#     return seq_1hot_mut
 
 
-def mask_spans(seq_1hot, spans, motif_window):
-    seq_1hot_perm = seq_1hot.copy()
-    half_motif_window = int(np.ceil(motif_window / 2))
-    for s in spans:
-        start, end = s - half_motif_window, s + half_motif_window
-        seq_1hot_perm[start:end, :] = 0
-    return seq_1hot_perm
+# def mask_spans(seq_1hot, spans, motif_window):
+#     seq_1hot_perm = seq_1hot.copy()
+#     half_motif_window = int(np.ceil(motif_window / 2))
+#     for s in spans:
+#         start, end = s - half_motif_window, s + half_motif_window
+#         seq_1hot_perm[start:end, :] = 0
+#     return seq_1hot_perm
 
 
 def randomise_spans(seq_1hot, spans, motif_window):
@@ -297,7 +297,7 @@ def disruption_seqs_gen(seq_coords_df, mutation_method, motif_width, seq_length,
 
         if use_span:
             spans = split_span(s.span)
-            spans = np.array(spans) - start
+            spans = np.array(spans) - s.start
             if mutation_method == "mask":
                 list_1hot.append(mask_spans(wt_1hot, spans))
             elif mutation_method == "permute":

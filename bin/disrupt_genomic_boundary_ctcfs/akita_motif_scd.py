@@ -222,7 +222,7 @@ def main():
     else:
         batch_size = options.batch_size
     
-    mutation_method, motif_width, use_span = options.mutation_method, options.motif_width, options.use_span
+    mutation_method, motif_width, use_span = options.mutation_method, options.motif_width, True
     
     if not mutation_method in ["mask", "permute"]:
         raise ValueError("undefined mutation method:", mutation_method)
