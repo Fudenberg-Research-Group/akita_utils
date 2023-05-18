@@ -106,68 +106,70 @@ def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
     return df_filtered
 
 
-def filter_sites_by_score(
-    sites,
-    score_key="SCD",
+def filter_dataframe_by_column(
+    df,
+    column_name="SCD",
     upper_threshold=100,
     lower_threshold=0,
-    mode="head",
-    num_sites=None,
+    filter_mode="uniform",
+    num_rows=None,
 ):
     """
-    Given a dataframe of CTCF-binding sites returns a subset of them.
+    Given a dataframe of CTCF-binding sites returns a subset of its rows.
 
     Parameters
     -----------
-    sites : dataframe
-        Dataframe of a given CTCF-binding sites.
-    score_key : str
-        Column that filtering and sorting is done by.
+    df : dataframe
+        An imput pandas dataframe with a column specified by column_name.
+    column_name : str
+        Column that filtering is done by.
     upper_threshold : float
-        Float in a range (0,100); all the sites above this percentile will be removed from further analysis.
+        Float in a range (0,100); all the rows with column_name's values above this percentile will be removed from further analysis.
     lower_threshold : float
-        Float in a range (0,100); all the sites bellow this percentile will be removed from further analysis.
-    mode : str
+        Float in a range (0,100); all the rows with column_name's values above this percentile will be removed from further analysis.
+    filter_mode : str
         Specification which part of a filtered dataframe is of a user's interest: if "head" - first rows are returned, if "tail" - last rows are returned, if "random" - a set of random rows is returned.
-    num_sites : int
-        A requested number of sites. If type of num_sites is None, the function returns all filtered sites.
+        Otherwise, rows are sampled uniformly with respect to their column_name's values.
+    num_rows : int
+        A requested number of rows. If type of num_rows is None, the function returns the unchanged input dataframe.
 
     Returns
     --------
-    filtered_sites : dataframe
-        An output dataframe with filtered CTCF-binding sites.
+    filtered_df : dataframe
+        An output dataframe filtered with respect to the given column name.
 
     """
 
-    if mode not in ("head", "tail", "uniform", "random"):
-        raise ValueError("a mode has to be one from: head, tail, uniform, random")
 
-    upper_thresh = np.percentile(sites[score_key].values, upper_threshold)
-    lower_thresh = np.percentile(sites[score_key].values, lower_threshold)
+    if filter_mode not in ("head", "tail", "uniform", "random"):
+        raise ValueError("a filter_mode has to be one from: head, tail, uniform, random")
 
-    filtered_sites = (
-        sites[(sites[score_key] >= lower_thresh) & (sites[score_key] <= upper_thresh)]
-        .copy()
-        .drop_duplicates(subset=[score_key])
-        .sort_values(score_key, ascending=False)
-    )
+    upper_thresh = np.percentile(df[column_name].values, upper_threshold)
+    lower_thresh = np.percentile(df[column_name].values, lower_threshold)
 
-    if num_sites is not None:
-        assert num_sites <= len(
-            filtered_sites
+    filtered_df = (
+        df[
+            (df[column_name] >= lower_thresh)
+            & (df[column_name] <= upper_thresh)
+        ]
+        .copy().drop_duplicates(subset=[column_name]).sort_values(column_name, ascending=False))
+    
+    if num_rows != None:
+        assert num_rows <= len(
+            filtered_df
         ), "length of dataframe is smaller than requested number of sites, change contraints"
 
-        if mode == "head":
-            filtered_sites = filtered_sites[:num_sites]
-        elif mode == "tail":
-            filtered_sites = filtered_sites[-num_sites:]
-        elif mode == "uniform":
-            filtered_sites["binned"] = pd.cut(filtered_sites[score_key], bins=num_sites)
-            filtered_sites = filtered_sites.groupby("binned").apply(lambda x: x.head(1))
+        if filter_mode == "head":
+            filtered_df = filtered_df[:num_rows]
+        elif filter_mode == "tail":
+            filtered_df = filtered_df[-num_rows:]
+        elif filter_mode == "uniform":
+            filtered_df['binned'] = pd.cut(filtered_df[column_name], bins=num_rows)
+            filtered_df = filtered_df.groupby("binned").apply(lambda x: x.head(1))
         else:
-            filtered_sites = filtered_sites.sample(n=num_sites)
-
-    return filtered_sites
+            filtered_df = filtered_df.sample(n=num_rows)
+            
+    return filtered_df
 
 
 def unpack_range(int_range):
@@ -190,104 +192,47 @@ def unpack_range(int_range):
     return (range_start, range_end)
 
 
-def filter_by_rmsk(
-    sites,
-    rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz",
-    exclude_window=60,
-    site_cols=["chrom", "start", "end"],
-    verbose=True,
-):
+def filter_by_overlap_num(
+    working_df,
+    filter_df,
+    expand_window=60,
+    working_df_cols=["chrom","start","end"],
+    filter_df_cols=["chrom","start","end"],
+    max_overlap_num=0):
+    
     """
-    Filter out sites that overlap any entry in rmsk.
-    This is important for sineB2 in mice, and perhaps for other repetitive elements as well.
+    Filter out rows from working_df that overlap entries in filter_df above given threshold.
 
     Parameters
     -----------
-    sites : dataFrame
-        Set of genomic intervals, currently with columns "chrom","start_2","end_2"
-        TODO: update this and allow columns to be passed
-    rmsk_file : str
-        File in repeatmasker format used for filtering sites.
-
+    working_df : dataFrame
+        First set of genomic intervals.
+    filter_df : dataFrame
+        Second set of genomic intervals.
+    expand_window : int
+        Indicates how big window around the given genomic intervals should be taken into account.
+    working_df_cols : list
+        Columns specifying genomic intervals in the working_df.
+    filter_df_cols : list
+        Columns specifying genomic intervals in the filter_df.
+    max_overlap_num : int
+        All the rows with number of overlaps above this threshold will be filtered out.
+        
     Returns
     --------
-    sites : dataFrame
-        Subset of sites that do not have overlaps with repeats in the rmsk_file.
 
+    working_df : dataFrame
+        Subset of working_df that do not have overlaps with filter_df above given threshold.
     """
-
-    if verbose:
-        print("filtering sites by overlap with rmsk")
-
-    rmsk_cols = list(
-        pd.read_csv(
-            StringIO(
-                """bin swScore milliDiv milliDel milliIns genoName genoStart genoEnd genoLeft strand repName repClass repFamily repStart repEnd repLeft id"""
-            ),
-            sep=" ",
-        )
-    )
-
-    rmsk = pd.read_table(rmsk_file, names=rmsk_cols,)
-    rmsk.rename(
-        columns={"genoName": "chrom", "genoStart": "start", "genoEnd": "end"},
-        inplace=True,
-    )
-
-    rmsk = bioframe.expand(rmsk, pad=exclude_window)
     
-    # print(sites.columns)
+    filter_df = bioframe.expand(filter_df, pad=expand_window)
     
-    sites = bioframe.count_overlaps(
-        sites, rmsk[site_cols], cols1=["chrom", "start_2", "end_2"]
-    )
+    working_df = bioframe.count_overlaps(working_df, filter_df[filter_df_cols], cols1=working_df_cols)
+    
+    working_df = working_df.iloc[working_df["count"].values <= max_overlap_num]
+    working_df.reset_index(inplace=True, drop=True)
 
-    sites = sites.iloc[sites["count"].values == 0]
-    sites.reset_index(inplace=True, drop=True)
-
-    return sites
-
-
-def filter_by_ctcf(
-    sites,
-    ctcf_file="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
-    exclude_window=60,
-    cols1=["chrom", "start_2", "end_2"],
-    cols2=["chrom", "start", "end"],
-    verbose=True,
-):
-    """
-    Filter out sites that overlap any entry in ctcf within a window of 60bp up- and downstream.
-
-    Parameters
-    -----------
-    sites : dataFrame
-        Set of genomic intervals, currently with columns "chrom","start_2","end_2"
-    ctcf_file : str
-        File in tsv format used for filtering ctcf binding sites.
-
-    Returns
-    --------
-    sites : dataFrame
-        Subset of sites that do not have overlaps with ctcf binding sites in the ctcf_file.
-    """
-
-    if verbose:
-        print("filtering sites by overlap with ctcfs")
-
-    ctcf_cols = list(
-        pd.read_csv(StringIO("""chrom start end name score pval strand"""), sep=" ",)
-    )
-
-    ctcf_motifs = pd.read_table(ctcf_file, names=ctcf_cols,)
-
-    ctcf_motifs = bioframe.expand(ctcf_motifs, pad=exclude_window)
-
-    sites = bioframe.count_overlaps(sites, ctcf_motifs, cols1=cols1, cols2=cols2)
-    sites = sites.iloc[sites["count"].values == 0]
-    sites.reset_index(inplace=True, drop=True)
-
-    return sites
+    return working_df
 
 
 def validate_df_lenght(
