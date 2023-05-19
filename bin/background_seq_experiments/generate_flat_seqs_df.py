@@ -82,14 +82,14 @@ def main():
         "--map_score_threshold",
         type=int,
         nargs="+",
-        default=[25],
+        default=[50],
         help="maximum allowable map score, SCD",
     )
     parser.add_argument(
         "--scores_pixelwise_thresh",
         type=int,
         nargs="+",
-        default=[0.2],
+        default=[0.3],
         help="maximum allowable intensity of a single pixel in a map",
     )
     args = parser.parse_args()

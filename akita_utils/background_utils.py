@@ -81,6 +81,7 @@ def _calculate_scores_from_predictions(predictions):
     custom_score =[]
     for seq_num in range(predictions.shape[0]):
         ref_preds=predictions[seq_num,:,:]
+        ref_preds = ref_preds.astype("float32")
         std = np.std(ref_preds, axis=0)
         mean = np.mean(ref_preds, axis=0)
         
