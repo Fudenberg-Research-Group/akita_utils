@@ -161,7 +161,7 @@ def main():
     parser.add_option(
         "--use-span",
         dest="use_span",
-        default=True,
+        default=False,
         action="store_true",
         help="specify if using spans",
     )
