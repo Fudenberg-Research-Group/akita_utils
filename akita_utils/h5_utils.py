@@ -36,7 +36,7 @@ def initialize_output_h5(
 
     num_experiments = len(seq_coords_df)
 
-    h5_outfile = h5py.File(f"%s/stat_summary_h{head_index}_m{model_index}.h5" % out_dir, "w")
+    h5_outfile = h5py.File(f"%s/OUT.h5" % out_dir, "w")
     seq_coords_df_dtypes = seq_coords_df.dtypes
 
     for key in seq_coords_df:
@@ -61,11 +61,12 @@ def initialize_output_h5(
                 compression=None,
             )
 
-    return scd_out
+    return h5_outfile
 
 
 def write_stat_metrics_to_h5(
     prediction_matrix,
+    reference_map_matrix,
     h5_outfile,
     experiment_index,
     head_index,
@@ -80,6 +81,8 @@ def write_stat_metrics_to_h5(
     ------------
     prediction_matrix : numpy matrix
         Matrix collecting Akita's predictions.
+    reference_map_matrix : numpy matrix
+        Matrix collecting Akita's reference predictions.
     h5_outfile : h5py object
         An initialized h5 file.
     experiment_index : int
@@ -100,7 +103,7 @@ def write_stat_metrics_to_h5(
     plot_freq : int
         A plot of one out of plot_freq number of predictions is saved.
     """
-
+        
     # increase dtype
     prediction_matrix = prediction_matrix.astype("float32")
     
@@ -110,13 +113,11 @@ def write_stat_metrics_to_h5(
     # getting desired scores
     # TODO: reference_map_matrix may not be None if the experiments are done in the genomic context,
     # it should be adjusted in the future
-    scores = calculate_scores(stat_metrics, map_matrix, reference_map_matrix=None)
+    scores = calculate_scores(stat_metrics, map_matrix, reference_map_matrix)
     
-    for score in scores:
+    for key in scores:
         for target_index in range(prediction_matrix.shape[1]):
-            h5_outfile[f"{score}_h{head_index}_m{model_index}_t{target_index}"][
-                experiment_index
-            ] = score[target_ind].astype("float16")
+            h5_outfile[f"{key}_h{head_index}_m{model_index}_t{target_index}"][experiment_index] = scores[key][target_index].astype("float16")
 
 
 def write_maps_to_h5(

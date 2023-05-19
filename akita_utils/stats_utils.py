@@ -71,13 +71,14 @@ def calculate_SCD(map_matrix, reference_map_matrix=None):
     ---------
     num_targets-long vector with SCD score calculated for eacg target.
     """
-    if reference_map_matrix == None:
-        return np.sqrt((map_matrix**2).sum(axis=0)) * (1/2)
+    if type(reference_map_matrix) != np.ndarray:
+        return np.sqrt((map_matrix**2).sum(axis=(0,1)) * (1/2))
     else:
         return np.sqrt(
-            ((map_matrix - reference_map_matrix) ** 2).sum(axis=0)  * (1/2)
+            ((map_matrix - reference_map_matrix) ** 2).sum(axis=(0,1))  * (1/2)
         )
-
+    
+    
 # 3) dot score
 
 def calculate_dot_score(map_matrix):
@@ -96,9 +97,13 @@ def calculate_scores(stat_metrics, map_matrix, reference_map_matrix=None):
     scores = {}
     
     if "SCD" in stat_metrics:
-        SCDs = calculate_SCD(map_matrix, reference_map_matrix)
+        SCDs = calculate_SCD(map_matrix, None)
         scores["SCD"] = SCDs
-
+    
+    if "diffSCD" in stat_metrics:
+        diffSCDs = calculate_SCD(map_matrix, reference_map_matrix)
+        scores["diffSCD"] = diffSCDs
+    
     if np.any((["INS" in i.split("-")[0] for i in stat_metrics])):
         for stat in stat_metrics:
             if stat.split("-")[0] == "INS":
