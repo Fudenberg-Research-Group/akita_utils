@@ -41,7 +41,7 @@ Relies on slurm_gf.py to auto-generate slurm jobs.
 """
 
 ################################################################################
-# main
+# main 
 ################################################################################
 def main():
     usage = "usage: %prog [options] <models_dir> <tsv_file>"
