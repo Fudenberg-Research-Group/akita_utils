@@ -27,16 +27,11 @@ Relies on slurm_gf.py to auto-generate slurm jobs.
 
 from optparse import OptionParser
 import os
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
-import pickle
-import subprocess
-import sys
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 import h5py
 import numpy as np
-
-import akita_utils.slurm_gf as slurm
 
 ################################################################################
 # main
@@ -71,12 +66,17 @@ def main():
         help="Name of the files with all the results collected together [Default: %default]",
     )
     (options, args) = parser.parse_args()
-    
+
     #######################################################
     # collect output
 
-    collect_h5(options.collected_results_name, options.filename, options.out_dir, options.processes)
-    
+    collect_h5(
+        options.collected_results_name,
+        options.filename,
+        options.out_dir,
+        options.processes,
+    )
+
 
 def collect_h5(collected_results_name, file_name, out_dir, num_procs):
     # count variants
@@ -99,11 +99,22 @@ def collect_h5(collected_results_name, file_name, out_dir, num_procs):
     job0_h5_open = h5py.File(job0_h5_file, "r")
     for key in job0_h5_open.keys():
 
-        if key in ["experiment_id", "chrom", "start", "end", "strand", "genomic_SCD", "orientation", "background_index", "flank_bp", "spacer_bp"]:
+        if key in [
+            "experiment_id",
+            "chrom",
+            "start",
+            "end",
+            "strand",
+            "genomic_SCD",
+            "orientation",
+            "background_index",
+            "flank_bp",
+            "spacer_bp",
+        ]:
             final_h5_open.create_dataset(
                 key, shape=(num_variants,), dtype=job0_h5_open[key].dtype
             )
-            
+
         elif job0_h5_open[key].dtype.char == "S":
             final_strings[key] = []
 
@@ -115,7 +126,9 @@ def collect_h5(collected_results_name, file_name, out_dir, num_procs):
         else:
             num_targets = job0_h5_open[key].shape[1]
             final_h5_open.create_dataset(
-                key, shape=(num_variants, num_targets), dtype=job0_h5_open[key].dtype
+                key,
+                shape=(num_variants, num_targets),
+                dtype=job0_h5_open[key].dtype,
             )
 
     job0_h5_open.close()
@@ -130,24 +143,39 @@ def collect_h5(collected_results_name, file_name, out_dir, num_procs):
 
         # append to final
         for key in job_h5_open.keys():
-            
+
             job_variants = job_h5_open[key].shape[0]
-            
-            if key in ["experiment_id", "chrom", "start", "end", "strand", "genomic_SCD", "orientation", "background_index", "flank_bp", "spacer_bp"]:
+
+            if key in [
+                "experiment_id",
+                "chrom",
+                "start",
+                "end",
+                "strand",
+                "genomic_SCD",
+                "orientation",
+                "background_index",
+                "flank_bp",
+                "spacer_bp",
+            ]:
                 final_h5_open[key][vi : vi + job_variants] = job_h5_open[key]
 
             else:
                 if job_h5_open[key].dtype.char == "S":
                     final_strings[key] = list(job_h5_open[key])
                 else:
-                    final_h5_open[key][vi : vi + job_variants] = job_h5_open[key]
+                    final_h5_open[key][vi : vi + job_variants] = job_h5_open[
+                        key
+                    ]
 
         vi += job_variants
         job_h5_open.close()
 
     # create final string datasets
     for key in final_strings:
-        final_h5_open.create_dataset(key, data=np.array(final_strings[key], dtype="S"))
+        final_h5_open.create_dataset(
+            key, data=np.array(final_strings[key], dtype="S")
+        )
 
     final_h5_open.close()
 
