@@ -286,18 +286,18 @@ def fetch_centered_padded_seq(chrom, start, end, seq_length, genome_open):
     chromosome_length = genome_open.get_reference_length(chrom)
     pad_upstream = "N" * max(-start_centered, 0)
     pad_downstream = "N" * max(end_centered - chromosome_length, 0)
-    return pad_upstream + seq_dna + pad_downstream
+    return start_centered, pad_upstream + seq_dna + pad_downstream
                 
 def disruption_seqs_gen(seq_coords_df, mutation_method, motif_width, seq_length, genome_open, use_span):
     for s in seq_coords_df.itertuples():
         list_1hot = []
-        seq_dna = fetch_centered_padded_seq(s.chrom, s.start, s.end, seq_length, genome_open)
+        start, seq_dna = fetch_centered_padded_seq(s.chrom, s.start, s.end, seq_length, genome_open)
         wt_1hot = akita_utils.dna_utils.dna_1hot(seq_dna)
         list_1hot.append(wt_1hot)
 
         if use_span:
             spans = split_span(s.span)
-            spans = np.array(spans) - s.start
+            spans = np.array(spans) - start
             if mutation_method == "mask":
                 list_1hot.append(mask_spans(wt_1hot, spans))
             elif mutation_method == "permute":
