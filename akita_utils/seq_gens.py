@@ -131,6 +131,17 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
 
         yield seq_1hot
 
+
+def reference_seqs_gen(background_seqs):
+    """sequence generator for making insertions from tsvs
+    construct an iterator that yields a one-hot encoded sequence
+    that can be used as input to akita via PredStreamGen
+    """
+
+    for background_index in range(len(background_seqs)):
+        seq_1hot = background_seqs[background_index].copy()
+        yield seq_1hot
+        
         
 # define sequence generator
 def generate_spans_start_positions(seq_1hot, motif, threshold):
