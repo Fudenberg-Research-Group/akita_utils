@@ -268,7 +268,7 @@ def main():
     log.info("====================================================")
     log.info(f"This script is going to run {num_motifs} experiments, remember each experiment has two predictions i.e reference and alternate")
     log.info(f"Batch size to be used is {batch_size}")
-    log.info(f"mutation_method {mutation_method}, motif_width {motif_width}, use_span {use_span}")
+    log.info(f"OPTIONS {options}")
     log.info("====================================================")
     
     # open genome FASTA
