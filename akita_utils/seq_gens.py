@@ -15,14 +15,15 @@ def _insert_casette(seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string)
     insert_plus_spacer_bp = insert_bp + 2 * spacer_bp
     multi_insert_bp = num_inserts * insert_plus_spacer_bp
     insert_start_bp = seq_length // 2 - multi_insert_bp // 2
-
+        
     output_seq = seq_1hot.copy()
     insertion_starting_positions = []
     for i in range(num_inserts):
         offset = insert_start_bp + i * insert_plus_spacer_bp + spacer_bp
-
         insertion_starting_positions.append(offset)
 
+        assert (offset >= 0 and offset < seq_length - insert_bp), f"offset = {offset}. Please, check length of insert and inter-insert spacing."
+        
         for orientation_arrow in orientation_string[i]:
             if orientation_arrow == ">":
                 output_seq[offset : offset + insert_bp] = seq_1hot_insertion
@@ -124,7 +125,7 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
             # now, all motifs are standarized to this orientation ">"
 
         seq_1hot = background_seqs[s.background_index].copy()
-
+        
         seq_1hot = _insert_casette(
             seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string
         )

@@ -121,21 +121,21 @@ def write_stat_metrics_to_h5(
 
 
 def write_maps_to_h5(
-    prediction_matrix,
+    map_matrix,
     h5_outfile,
     experiment_index,
     head_index,
     model_index,
     diagonal_offset=2,
-    plot_dir=None
+    reference=False
 ):
     """
     Writes entire maps to an h5 file.
 
     Parameters
     ------------
-    prediction_matrix : numpy matrix
-        Matrix collecting Akita's predictions.
+    map_matrix : numpy matrix
+        Matrix collecting Akita's prediction maps. Shape: (map_size, map_size, num_targets).
     h5_outfile : h5py object
         An initialized h5 file.
     experiment_index : int
@@ -147,19 +147,50 @@ def write_maps_to_h5(
     diagonal_offset : int
         Number of diagonals that are added as zeros in the conversion.
         Typically 2 diagonals are ignored in Hi-C data processing.
-    plot_dir : str
-        Path to the desired location of the output plots (plots will not be saved if plot_dir == None).
     """
-    
-    # increase dtype
-    prediction_matrix = prediction_matrix.astype("float32")
-    
-    # convert prediction vectors to maps
-    map_matrix = ut_dense(prediction_matrix, diagonal_offset)
-    
-    for target_index in range(prediction_matrix.shape[1]):
-        h5_outfile[f"e{experiment_index}_h{head_index}_m{model_index}_t{target_index}"] = map_matrix[:, :, target_index]
+    prefix = "e"
+    if reference:
+        prefix = "ref"
         
+    for target_index in range(map_matrix.shape[-1]):
+        h5_outfile[f"{prefix}{experiment_index}_h{head_index}_m{model_index}_t{target_index}"] = map_matrix[:, :, target_index]
+
+        
+def write_maps_to_h5_background(
+    map_matrix,
+    h5_outfile,
+    experiment_index,
+    background_index,
+    head_index,
+    model_index,
+    diagonal_offset=2,
+    reference=False
+):
+    """
+    Writes entire maps to an h5 file.
+
+    Parameters
+    ------------
+    map_matrix : numpy matrix
+        Matrix collecting Akita's prediction maps. Shape: (map_size, map_size, num_targets).
+    h5_outfile : h5py object
+        An initialized h5 file.
+    experiment_index : int
+        Index identifying one experiment.
+    head_index : int
+        Head index used to get a prediction (Mouse: head_index=1; Human: head_index=0).
+    model_index : int
+        Index of one of 8 models that has been used to make predictions (an index between 0 and 7).
+    diagonal_offset : int
+        Number of diagonals that are added as zeros in the conversion.
+        Typically 2 diagonals are ignored in Hi-C data processing.
+    """
+    prefix = "e"
+    if reference:
+        prefix = "ref"
+        
+    for target_index in range(map_matrix.shape[-1]):
+        h5_outfile[f"{prefix}{experiment_index}_h{head_index}_m{model_index}_t{target_index}_b{background_index}"] = map_matrix[:, :, target_index]
             
 # TODO: this function should be moved somewhere else - where?
             
