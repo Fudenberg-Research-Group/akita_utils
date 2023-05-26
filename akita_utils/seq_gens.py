@@ -3,6 +3,7 @@ import numpy as np
 import akita_utils.format_io
 import pandas as pd
 import logging
+import math 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 log = logging.getLogger(__name__)
@@ -120,39 +121,35 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
 def generate_spans_start_positions(seq_1hot, motif, threshold):
     index_scores_array = akita_utils.dna_utils.scan_motif(seq_1hot, motif)
     motif_window = len(motif)
-    half_motif_window = int(np.ceil(motif_window / 2))
     spans = []
     for i in np.where(index_scores_array > threshold)[0]:
-        if half_motif_window < i < len(seq_1hot) - half_motif_window:
+        if i < (len(seq_1hot) - motif_window):
             spans.append(i)
     return spans
 
 
-def permute_spans(seq_1hot, spans, motif_window, shuffle_parameter):
+def permute_spans_from_start_positions(seq_1hot, spans, motif_window, shuffle_parameter):
     seq_1hot_mut = seq_1hot.copy()
-    half_motif_window = int(np.ceil(motif_window / 2))
     for s in spans:
-        start, end = s - half_motif_window, s + half_motif_window
+        start, end = s, s + motif_window
         seq_1hot_mut[start:end] = akita_utils.dna_utils.permute_seq_k(
             seq_1hot_mut[start:end], k=shuffle_parameter
         )
     return seq_1hot_mut
 
 
-def mask_spans(seq_1hot, spans, motif_window):
+def mask_spans_from_start_positions(seq_1hot, spans, motif_window):
     seq_1hot_perm = seq_1hot.copy()
-    half_motif_window = int(np.ceil(motif_window / 2))
     for s in spans:
-        start, end = s - half_motif_window, s + half_motif_window
+        start, end = s, s + motif_window
         seq_1hot_perm[start:end, :] = 0
     return seq_1hot_perm
 
 
-def randomise_spans(seq_1hot, spans, motif_window):
+def randomise_spans_from_start_positions(seq_1hot, spans, motif_window):
     seq_1hot_perm = seq_1hot.copy()
-    half_motif_window = int(np.ceil(motif_window / 2))
     for s in spans:
-        start, end = s - half_motif_window, s + half_motif_window
+        start, end = s, s + motif_window
         seq_1hot_perm[start:end] = random_seq_permutation(seq_1hot_perm[start:end])
     return seq_1hot_perm
 
@@ -207,17 +204,17 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open, jasper_motif_fil
             motif_positions = generate_spans_start_positions(
             wt_1hot, motif, s.ctcf_detection_threshold)
             motif_window = 2 ** (math.ceil(math.log2(len(motif) - 1)))
-            yield mask_spans(wt_1hot, motif_positions, motif_window)
+            yield mask_spans_from_start_positions(wt_1hot, motif_positions, motif_window)
         elif mutation_method == "permute_motif":
             motif_positions = generate_spans_start_positions(
             wt_1hot, motif, s.ctcf_detection_threshold)
             motif_window = 2 ** (math.ceil(math.log2(len(motif) - 1)))
-            yield permute_spans(wt_1hot, motif_positions, motif_window, s.shuffle_parameter)
+            yield permute_spans_from_start_positions(wt_1hot, motif_positions, motif_window, s.shuffle_parameter)
         elif mutation_method == "randomise_motif":
             motif_positions = generate_spans_start_positions(
             wt_1hot, motif, s.ctcf_detection_threshold)
             motif_window = 2 ** (math.ceil(math.log2(len(motif) - 1)))
-            yield randomise_spans(wt_1hot, motif_positions, motif_window)
+            yield randomise_spans_from_start_positions(wt_1hot, motif_positions, motif_window)
         elif mutation_method == "permute_whole_seq":
             yield akita_utils.dna_utils.permute_seq_k(wt_1hot, k=s.shuffle_parameter)
         elif mutation_method == "randomise_whole_seq":
