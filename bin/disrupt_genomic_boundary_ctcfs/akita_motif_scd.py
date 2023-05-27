@@ -53,7 +53,9 @@ from akita_utils.seq_gens import disruption_seqs_gen
 
 import logging
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 log = logging.getLogger(__name__)
 
 """
@@ -62,6 +64,7 @@ akita_motif_scd.py
 Compute Squared Contact Difference (SCD) scores for motifs in TSV motif file.
 
 """
+
 
 ################################################################################
 # main
@@ -222,12 +225,16 @@ def main():
         batch_size = params_train["batch_size"]
     else:
         batch_size = options.batch_size
-    
-    mutation_method, motif_width, use_span = options.mutation_method, options.motif_width, True
-    
+
+    mutation_method, motif_width, use_span = (
+        options.mutation_method,
+        options.motif_width,
+        True,
+    )
+
     if not mutation_method in ["mask", "permute"]:
         raise ValueError("undefined mutation method:", mutation_method)
-        
+
     if options.use_span:
         log.info(f"using SPANS")
     if options.targets_file is not None:
@@ -252,25 +259,29 @@ def main():
 
     #################################################################
     # load motifs
-        
+
     # filter for worker motifs
-    if options.processes is not None:                    # multi-GPU option
+    if options.processes is not None:  # multi-GPU option
         # determine boundaries from motif file
         seq_coords_full = pd.read_csv(motif_file, sep="\t")
-        seq_coords_df = split_df_equally(seq_coords_full, options.processes, worker_index)
-        
+        seq_coords_df = split_df_equally(
+            seq_coords_full, options.processes, worker_index
+        )
+
     else:
         # read motif positions from csv
         seq_coords_df = pd.read_csv(motif_file, sep="\t")
 
     num_motifs = len(seq_coords_df)
-    
+
     log.info("====================================================")
-    log.info(f"This script is going to run {num_motifs} experiments, remember each experiment has two predictions i.e reference and alternate")
+    log.info(
+        f"This script is going to run {num_motifs} experiments, remember each experiment has two predictions i.e reference and alternate"
+    )
     log.info(f"Batch size to be used is {batch_size}")
     log.info(f"OPTIONS {options}")
     log.info("====================================================")
-    
+
     # open genome FASTA
     genome_open = pysam.Fastafile(options.genome_fasta)
 
@@ -285,7 +296,18 @@ def main():
     # predict SNP scores, write output
 
     # initialize predictions stream
-    preds_stream = stream.PredStreamGen(seqnn_model, disruption_seqs_gen(seq_coords_df, mutation_method, motif_width, seq_length, genome_open, use_span), batch_size)
+    preds_stream = stream.PredStreamGen(
+        seqnn_model,
+        disruption_seqs_gen(
+            seq_coords_df,
+            mutation_method,
+            motif_width,
+            seq_length,
+            genome_open,
+            use_span,
+        ),
+        batch_size,
+    )
 
     # predictions index
     pi = 0
@@ -366,7 +388,7 @@ def write_snp(
     plot_freq=100,
 ):
     """Write SNP predictions to HDF."""
-    
+
     log.info(f"Writing predictions for experiment {si}")
 
     # increase dtype

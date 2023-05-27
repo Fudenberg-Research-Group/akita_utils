@@ -167,7 +167,6 @@ def main():
 
 
 def _generate_boundary_mutation_df(df_overlap):
-
     """
     For each boundary generate the following set of mutations, specified as spans:
     - every individual CTCF site overlapping a boundary,

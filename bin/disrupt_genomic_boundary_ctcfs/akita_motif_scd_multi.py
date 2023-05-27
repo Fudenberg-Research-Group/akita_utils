@@ -28,7 +28,9 @@ import numpy as np
 import akita_utils.slurm_gf as slurm
 import logging
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 log = logging.getLogger(__name__)
 
 """
@@ -40,8 +42,9 @@ Relies on slurm_gf.py to auto-generate slurm jobs.
 
 """
 
+
 ################################################################################
-# main 
+# main
 ################################################################################
 def main():
     usage = "usage: %prog [options] <models_dir> <tsv_file>"
@@ -218,8 +221,7 @@ def main():
     else:
         models_dir = args[0]
         tsv_file = args[1]
-        
-        
+
         model_dir = models_dir + "/f" + str(options.model_index) + "c0/train/"
         model_file = model_dir + "model" + str(options.head_index) + "_best.h5"
         params_file = model_dir + "params.json"
@@ -231,7 +233,7 @@ def main():
 
     # output directory
     options.out_dir = f"{options.out_dir}/motif_expt_model{options.model_index}_head{options.head_index}"
-    
+
     if not options.restart:
         if os.path.isdir(options.out_dir):
             print("Please remove %s" % options.out_dir, file=sys.stderr)
