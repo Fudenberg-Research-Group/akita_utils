@@ -256,7 +256,7 @@ def permute_central_seq(seq_1hot, seq_length, motif_width=20):
 def mask_spans(seq_1hot, spans):
     seq_1hot_perm = seq_1hot.copy()
     for s in spans:
-        seq_1hot_perm[s[0] : s[1], :] = 0
+        seq_1hot_perm[s[0] : s[1]] = [[0] * len(seq_1hot_perm[0])] * (s[1] - s[0])
     return seq_1hot_perm
 
 def permute_spans(seq_1hot, spans):
