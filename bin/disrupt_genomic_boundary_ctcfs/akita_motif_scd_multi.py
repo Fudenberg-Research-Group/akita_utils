@@ -168,7 +168,7 @@ def main():
     parser.add_option(
         "--name",
         dest="name",
-        default="motif_scd",
+        default="motif_del_stats",
         help="SLURM name prefix [Default: %default]",
     )
     parser.add_option(

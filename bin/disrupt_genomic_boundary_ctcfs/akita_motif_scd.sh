@@ -5,16 +5,15 @@ genome_fasta="/project/fudenber_735/genomes/mm10/mm10.fa"
 models_dir="/project/fudenber_735/tensorflow_models/akita/v2/models"
 tsv_file="/scratch1/kamulege/boundaries.motifs.ctcf.mm10.tsv"
 # tsv_file="/project/fudenber_735/tensorflow_models/akita/v2/analysis/boundaries.motifs.ctcf.mm10.tsv"
-out_dir="/scratch1/kamulege/disruption_genomic_scds" 
-models="4 5 6 7" 
-scd_stats="SCD,SSD" 
+out_dir="/scratch1/kamulege/disruption_genomic_scds_v2" 
+models="4" 
+scd_stats="SCD,SSD,INS-16,INS-64" 
 batch_size=8 
 head_index=1 
 mutation_method="permute" 
-name="scd" 
 max_proc=7 
-processes=10 
-time="15:00:00" 
+processes=100
+time="02:30:00" 
 constraint="[xeon-6130|xeon-2640v4]" 
 
 

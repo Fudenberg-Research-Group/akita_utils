@@ -23,7 +23,7 @@ import pickle
 import random
 import sys
 import time
-
+import re
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
@@ -32,6 +32,7 @@ import pysam
 from skimage.measure import block_reduce
 import seaborn as sns
 from akita_utils.stats_utils import insul_diamonds_scores
+import akita_utils.h5_utils
 
 sns.set(style="ticks", font_scale=1.3)
 
@@ -153,7 +154,13 @@ def main():
         type="int",
         help="Specify head index (0=human 1=mus) ",
     )
-
+    parser.add_option(
+        "--model-index",
+        dest="model_index",
+        default=None,
+        type="int",
+        help="Specify head index (0=human 1=mus) ",
+    )
     parser.add_option(
         "--mut-method",
         dest="mutation_method",
@@ -180,7 +187,7 @@ def main():
         params_file = args[0]
         model_file = args[1]
         motif_file = args[2]
-
+        
     elif len(args) == 5:
         # multi worker
         options_pkl_file = args[0]
@@ -198,7 +205,16 @@ def main():
         options.out_dir = "%s/job%d" % (options.out_dir, worker_index)
 
     else:
-        parser.error("Must provide parameters and model files and TSV file")
+        parser.error("Must provide parameters and models file and TSV file")
+        
+    if options.model_index is None:
+        pattern = r"/f(\d+)c0/"  # pattern to match the model_index
+        match = re.search(pattern, model_dir) 
+        if match:
+            options.model_index = int(match.group(1))  # Extract the model_index from the matched group
+        else:
+            print("Could not extract model index from given model file, and the model index was not provided by user. please specify the model index i.e --model-index")
+            exit(1)
 
     if not os.path.isdir(options.out_dir):
         os.mkdir(options.out_dir)
@@ -276,9 +292,8 @@ def main():
 
     log.info("====================================================")
     log.info(
-        f"This script is going to run {num_motifs} experiments, remember each experiment has two predictions i.e reference and alternate"
+        f"This script will run {num_motifs} experiments, each experiment has two predictions i.e reference and alternate"
     )
-    log.info(f"Batch size to be used is {batch_size}")
     log.info(f"OPTIONS {options}")
     log.info("====================================================")
 
@@ -287,10 +302,15 @@ def main():
 
     #################################################################
     # setup output
-
-    scd_out = initialize_output_h5(
-        options.out_dir, options.scd_stats, seq_coords_df, target_ids, target_labels
-    )
+    scd_out = akita_utils.h5_utils.initialize_output_h5_v2(
+    options.out_dir,
+    options.scd_stats,
+    seq_coords_df,
+    target_ids,
+    target_labels,
+    options.head_index,
+    options.model_index,
+)
 
     #################################################################
     # predict SNP scores, write output
@@ -320,170 +340,23 @@ def main():
         pi += 1
 
         # process SNP
-        write_snp(
-            ref_preds,
-            alt_preds,
-            scd_out,
-            si,
-            seqnn_model.diagonal_offset,
-            options.scd_stats,
-            plot_dir,
-            options.plot_lim_min,
-            options.plot_freq,
+        akita_utils.h5_utils.write_snp_v2(
+        ref_preds,
+        alt_preds,
+        scd_out,
+        si,
+        options.head_index,
+        options.model_index,
+        seqnn_model.diagonal_offset,
+        options.scd_stats,
+        plot_dir,
+        options.plot_lim_min,
+        options.plot_freq,
         )
 
     genome_open.close()
     scd_out.close()
-
-
-def initialize_output_h5(out_dir, scd_stats, seq_coords_df, target_ids, target_labels):
-    log.info("Initialize an output HDF5 file for SCD stats.")
-
-    num_targets = len(target_ids)
-    num_motifs = len(seq_coords_df)
-
-    scd_out = h5py.File("%s/scd.h5" % out_dir, "w")
-    seq_coords_df_dtypes = seq_coords_df.dtypes
-    for key in seq_coords_df:
-        if seq_coords_df_dtypes[key] is np.dtype("O"):
-            scd_out.create_dataset(key, data=seq_coords_df[key].values.astype("S"))
-        else:
-            scd_out.create_dataset(key, data=seq_coords_df[key])
-
-    # initialize scd stats
-    for scd_stat in scd_stats:
-        if "INS" not in scd_stat:
-            scd_out.create_dataset(
-                scd_stat,
-                shape=(num_motifs, num_targets),
-                dtype="float16",
-                compression=None,
-            )
-        else:
-            scd_out.create_dataset(
-                "ref_" + scd_stat,
-                shape=(num_motifs, num_targets),
-                dtype="float16",
-                compression=None,
-            )
-            scd_out.create_dataset(
-                "alt_" + scd_stat,
-                shape=(num_motifs, num_targets),
-                dtype="float16",
-                compression=None,
-            )
-
-    return scd_out
-
-
-def write_snp(
-    ref_preds,
-    alt_preds,
-    scd_out,
-    si,
-    diagonal_offset,
-    scd_stats=["SSD", "SCD"],
-    plot_dir=None,
-    plot_lim_min=0.1,
-    plot_freq=100,
-):
-    """Write SNP predictions to HDF."""
-
-    log.info(f"Writing predictions for experiment {si}")
-
-    # increase dtype
-    ref_preds = ref_preds.astype("float32")
-    alt_preds = alt_preds.astype("float32")
-
-    # sum across length
-    ref_preds_sum = ref_preds.sum(axis=0)
-    alt_preds_sum = alt_preds.sum(axis=0)
-
-    # compare reference to alternative via mean subtraction
-    if "SCD" in scd_stats:
-        # sum of squared diffs
-        diff2_preds = (ref_preds - alt_preds) ** 2
-        sd2_preds = np.sqrt(diff2_preds.sum(axis=0))
-        scd_out["SCD"][si, :] = sd2_preds.astype("float16")
-
-    if "SSD" in scd_stats:
-        # sum of squared diffs
-        ref_ss = (ref_preds**2).sum(axis=0)
-        alt_ss = (alt_preds**2).sum(axis=0)
-        s2d_preds = np.sqrt(alt_ss) - np.sqrt(ref_ss)
-        scd_out["SSD"][si, :] = s2d_preds.astype("float16")
-
-    if np.any((["INS" in i for i in scd_stats])):
-        ref_map = ut_dense(ref_preds, diagonal_offset)
-        alt_map = ut_dense(alt_preds, diagonal_offset)
-        for stat in scd_stats:
-            if "INS" in stat:
-                insul_window = int(stat.split("-")[1])
-                scd_out["ref_" + stat][si, :] = insul_diamonds_scores(
-                    ref_map, window=insul_window
-                )
-                scd_out["alt_" + stat][si, :] = insul_diamonds_scores(
-                    alt_map, window=insul_window
-                )
-
-    if (plot_dir is not None) and (np.mod(si, plot_freq) == 0):
-        print("plotting ", si)
-        # TEMP: average across targets
-        ref_preds = ref_preds.mean(axis=-1, keepdims=True)
-        alt_preds = alt_preds.mean(axis=-1, keepdims=True)
-
-        # convert back to dense
-        ref_map = ut_dense(ref_preds, diagonal_offset)
-        alt_map = ut_dense(alt_preds, diagonal_offset)
-
-        for ti in range(1):  # ref_preds.shape[-1]):
-            ref_map_ti = ref_map[..., ti]
-            alt_map_ti = alt_map[..., ti]
-
-            # TEMP: reduce resolution
-            ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
-            alt_map_ti = block_reduce(alt_map_ti, (2, 2), np.mean)
-
-            vmin = min(ref_map_ti.min(), ref_map_ti.min())
-            vmax = max(alt_map_ti.max(), alt_map_ti.max())
-
-            vmin = min(-plot_lim_min, vmin)
-            vmax = max(plot_lim_min, vmax)
-
-            _, (ax_ref, ax_alt, ax_diff) = plt.subplots(1, 3, figsize=(21, 6))
-            sns.heatmap(
-                ref_map_ti,
-                ax=ax_ref,
-                center=0,
-                vmin=vmin,
-                vmax=vmax,
-                cmap="RdBu_r",
-                xticklabels=False,
-                yticklabels=False,
-            )
-            sns.heatmap(
-                alt_map_ti,
-                ax=ax_alt,
-                center=0,
-                vmin=vmin,
-                vmax=vmax,
-                cmap="RdBu_r",
-                xticklabels=False,
-                yticklabels=False,
-            )
-            sns.heatmap(
-                alt_map_ti - ref_map_ti,
-                ax=ax_diff,
-                center=0,
-                cmap="PRGn",
-                xticklabels=False,
-                yticklabels=False,
-            )
-            plt.tight_layout()
-            plt.savefig("%s/s%d_t%d.pdf" % (plot_dir, si, ti))
-            plt.close()
-
-
+    
 ################################################################################
 # __main__
 ################################################################################

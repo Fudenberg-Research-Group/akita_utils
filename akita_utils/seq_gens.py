@@ -285,6 +285,7 @@ def fetch_centered_padded_seq_and_new_start_position(chrom, start, end, seq_leng
     pad_downstream = "N" * max(end_centered - chromosome_length, 0)
     return start_centered, pad_upstream + seq_dna + pad_downstream
                 
+    
 def disruption_seqs_gen(seq_coords_df, mutation_method, motif_width, seq_length, genome_open, use_span):
     for s in seq_coords_df.itertuples():
         list_1hot = []
