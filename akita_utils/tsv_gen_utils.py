@@ -37,9 +37,9 @@ def filter_boundary_ctcfs_from_h5(
     ## load scores from boundary mutagenesis, average chosen score across models
     dfs = []
     for h5_file in glob.glob(h5_dirs):
-        dfs.append(akita_utils.format_io.h5_to_df(h5_file))
+        dfs.append(akita_utils.format_io.h5_to_df(h5_file, scd_stats=[score_key], verbose=True))
     df = dfs[0].copy()
-    # print([df[score_key] for df in dfs])
+    print([df.columns for df in dfs])
     df[score_key] = np.mean([df[score_key] for df in dfs], axis=0)
 
     # append scores for full mut and all ctcf mut to table

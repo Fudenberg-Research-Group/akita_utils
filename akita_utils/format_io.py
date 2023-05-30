@@ -37,6 +37,7 @@ def h5_to_df(
     hf = h5py.File(filename, "r")
     s = []
     for key in hf.keys():
+        print(key)
         if (
             key.replace("ref_", "").replace("alt_", "").split("-")[0]
             in scd_stats
