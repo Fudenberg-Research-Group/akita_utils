@@ -164,17 +164,9 @@ def main():
     parser.add_option(
         "--mut-method",
         dest="mutation_method",
-        default="mask",
+        default="permute_spans", # chose from mask_spans, permute_spans, mask_central_motif, permute_central_motif
         type="str",
         help="specify mutation method",
-    )
-
-    parser.add_option(
-        "--use-span",
-        dest="use_span",
-        default=False,
-        action="store_true",
-        help="specify if using spans",
     )
 
     parser.add_option(
@@ -242,17 +234,14 @@ def main():
     else:
         batch_size = options.batch_size
 
-    mutation_method, motif_width, use_span = (
+    mutation_method, motif_width = (
         options.mutation_method,
-        options.motif_width,
-        True,
+        options.motif_width
     )
 
     if not mutation_method in ["mask", "permute"]:
         raise ValueError("undefined mutation method:", mutation_method)
 
-    if options.use_span:
-        log.info(f"using SPANS")
     if options.targets_file is not None:
         targets_df = pd.read_csv(options.targets_file, sep="\t", index_col=0)
         target_ids = targets_df.identifier
@@ -324,7 +313,6 @@ def main():
             motif_width,
             seq_length,
             genome_open,
-            use_span,
         ),
         batch_size,
     )

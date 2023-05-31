@@ -45,7 +45,7 @@ for model in $models
 
 do 
     # run the command  
-    python akita_motif_scd_multi.py "${models_dir}" "${tsv_file}" -f "${genome_fasta}" -o "${out_dir}" --batch-size "${batch_size}" --head-index "${head_index}" --model-index "${model}" -p "${processes}" --time "${time}" --mut-method "${mutation_method}" --constraint "${constraint}" --stats "${scd_stats}" --use-span
+    python akita_motif_scd_multi.py "${models_dir}" "${tsv_file}" -f "${genome_fasta}" -o "${out_dir}" --batch-size "${batch_size}" --head-index "${head_index}" --model-index "${model}" -p "${processes}" --time "${time}" --mut-method "${mutation_method}" --constraint "${constraint}" --stats "${scd_stats}"
     sleep 15
 done
 

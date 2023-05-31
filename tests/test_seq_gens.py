@@ -3,6 +3,30 @@ from akita_utils.seq_gens import _insert_casette
 from akita_utils.seq_gens import *
 import pytest
 
+class ToyGenomeOpen:
+    def __init__(self, genome_data):
+        self.genome_data = genome_data
+
+    def fetch(self, chrom, start, end):
+        chromosome = self.genome_data.get(chrom)
+        if chromosome:
+            return chromosome[start:end]
+        else:
+            raise ValueError(f"Chromosome {chrom} not found")
+    def get_reference_length(self, chrom):
+        chromosome = self.genome_data.get(chrom)
+        if chromosome:
+            return len(chromosome)
+        else:
+            raise ValueError(f"Chromosome {chrom} not found")
+
+genome_data = {
+    "chr1": "AGCTCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG",
+    "chr2": "GATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGAT",
+}
+
+toy_genome = ToyGenomeOpen(genome_data)
+
 
 def test_insert_casette():
 
@@ -78,12 +102,16 @@ def test_mask_spans():
     seq_1hot = [[0, 1, 0, 0], 
                 [1, 0, 0, 0], 
                 [0, 0, 1, 0], 
+                [1, 0, 0, 0], 
+                [0, 0, 1, 0], 
                 [0, 0, 0, 1]]
     spans = [[1, 3]]
-    expected_output = [[0, 1, 0, 0], 
-                       [0, 0, 0, 0], 
-                       [0, 0, 0, 0], 
-                       [0, 0, 0, 1]]
+    expected_output = [ [0, 1, 0, 0], 
+                        [0, 0, 0, 0], 
+                        [0, 0, 0, 0], 
+                        [1, 0, 0, 0], 
+                        [0, 0, 1, 0], 
+                        [0, 0, 0, 1]]
     result = mask_spans(seq_1hot, spans)
     assert(result == expected_output)
 
@@ -94,7 +122,11 @@ def test_mask_spans():
         (
             np.array([
                 [1, 0, 0, 0], 
-                [0, 1, 0, 0], 
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
                 [0, 0, 1, 0], 
                 [0, 0, 0, 1]
             ]),
@@ -104,7 +136,11 @@ def test_mask_spans():
                 [0, 0, 0, 0], 
                 [0, 0, 0, 0], 
                 [0, 0, 0, 0], 
-                [0, 0, 0, 0]
+                [0, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0], 
+                [0, 0, 0, 1]
             ]),
         ),
         (
@@ -137,7 +173,7 @@ def test_mask_spans_from_start_positions(seq_1hot, spans, motif_window, expected
 
     
 @pytest.mark.parametrize(
-    "seq_1hot, seq_length, motif_width, expected_result",
+    "seq_1hot, motif_width, expected_result",
     [
         (
             np.array([
@@ -150,7 +186,6 @@ def test_mask_spans_from_start_positions(seq_1hot, spans, motif_window, expected
                 [0, 0, 1, 0],
                 [0, 0, 0, 1]
             ]),
-            8,
             2,
             np.array([
                 [1, 0, 0, 0],
@@ -174,7 +209,6 @@ def test_mask_spans_from_start_positions(seq_1hot, spans, motif_window, expected
                 [0, 0, 1, 0],
                 [0, 0, 0, 1]
             ]),
-            8,
             4,
             np.array([
                 [1, 0, 0, 0],
@@ -189,68 +223,57 @@ def test_mask_spans_from_start_positions(seq_1hot, spans, motif_window, expected
         ),
     ],
 )
-def test_mask_central_seq(seq_1hot, seq_length, motif_width, expected_result):
-    result = mask_central_seq(seq_1hot, seq_length, motif_width)
+def test_mask_central_seq(seq_1hot, motif_width, expected_result):
+    result = mask_central_seq(seq_1hot, motif_width)
     assert np.array_equal(result, expected_result)
-
-
-
-class ToyGenomeOpen:
-    def __init__(self, genome_data):
-        self.genome_data = genome_data
-
-    def fetch(self, chrom, start, end):
-        chromosome = self.genome_data.get(chrom)
-        if chromosome:
-            return chromosome[start:end]
-        else:
-            raise ValueError(f"Chromosome {chrom} not found")
-    def get_reference_length(self, chrom):
-        chromosome = self.genome_data.get(chrom)
-        if chromosome:
-            return len(chromosome)
-        else:
-            raise ValueError(f"Chromosome {chrom} not found")
-
-genome_data = {
-    "chr1": "AGCTCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG",
-    "chr2": "GATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGAT",
-}
-
-toy_genome = ToyGenomeOpen(genome_data)
 
 
 @pytest.mark.genome
 @pytest.mark.parametrize(
-    "seq_1hot, seq_length, motif_width",
+    "seq_1hot, motif_width, control",
     [
-        (dna_1hot(toy_genome.fetch("chr1", 0, 60).upper()),20,16),
-        (dna_1hot(toy_genome.fetch("chr2", 0, 60).upper()),32,10),
+        (dna_1hot(toy_genome.fetch("chr1", 0, 60).upper()),16,False),
+        (dna_1hot(toy_genome.fetch("chr2", 0, 60).upper()),10,False),
+        (dna_1hot("ATGC"),2,True),
     ],
 )
-def test_permute_central_seq(seq_1hot, seq_length, motif_width):
-    result = permute_central_seq(seq_1hot, seq_length, motif_width)
-    assert not np.array_equal(result[seq_length // 2 - motif_width // 2 : seq_length // 2 + motif_width // 2, :], seq_1hot[seq_length // 2 - motif_width // 2 : seq_length // 2 + motif_width // 2, :])
+def test_permute_central_seq(seq_1hot, motif_width, control):
+    if control:
+        result = permute_central_seq(seq_1hot, motif_width)
+        assert np.array_equal(result, dna_1hot("AGTC"))
+    else:
+        result = permute_central_seq(seq_1hot, motif_width)
+        seq_length = len(seq_1hot)
+        assert not np.array_equal(result[seq_length // 2 - motif_width // 2 : seq_length // 2 + motif_width // 2, :], seq_1hot[seq_length // 2 - motif_width // 2 : seq_length // 2 + motif_width // 2, :])
 
-    
+
 @pytest.mark.genome
-def test_permute_spans():
-    seq = toy_genome.fetch("chr2", 0, 60).upper()
-    seq_1hot = dna_1hot(seq)
-    spans = [(0, 20),(23, 51)]
-    result = permute_spans(seq_1hot, spans)
-    
-    # Expand the spans into individual indices
-    span_indices = np.concatenate([np.arange(start, end) for start, end in spans])
-    
-    # Check that the non-span regions remain the same
-    non_span_indices = np.setdiff1d(np.arange(seq_1hot.shape[0]), span_indices)    
-    assert np.array_equal(result[non_span_indices], seq_1hot[non_span_indices])
-    
-    # Check that the permuted spans are different from the original spans
-    # (if the seq_1hot and spans are very short this result might be same as original seq thus failing the following test)
-    for start, end in spans:
-        assert not np.array_equal(result[start:end], seq_1hot[start:end])
+@pytest.mark.parametrize(
+    "seq_1hot, spans, control",
+    [
+        (dna_1hot(toy_genome.fetch("chr2", 0, 60).upper()),[(0, 20),(23, 51)],False),
+        (dna_1hot(toy_genome.fetch("chr2", 0, 60).upper()),[(0, 10)],False),
+        (dna_1hot("ATGC"),[(1,3)],True),
+    ],
+)
+def test_permute_spans(seq_1hot, spans, control):
+    if control:
+        result = permute_spans(seq_1hot, spans)
+        assert np.array_equal(result, dna_1hot("AGTC"))
+    else:    
+        result = permute_spans(seq_1hot, spans)
+
+        # Expand the spans into individual indices
+        span_indices = np.concatenate([np.arange(start, end) for start, end in spans])
+
+        # Check that the non-span regions remain the same
+        non_span_indices = np.setdiff1d(np.arange(seq_1hot.shape[0]), span_indices)    
+        assert np.array_equal(result[non_span_indices], seq_1hot[non_span_indices])
+
+        # Check that the permuted spans are different from the original spans
+        # (if the seq_1hot and spans are very short this result might be same as original seq thus failing the following test)
+        for start, end in spans:
+            assert not np.array_equal(result[start:end], seq_1hot[start:end])
         
         
 @pytest.mark.genome
