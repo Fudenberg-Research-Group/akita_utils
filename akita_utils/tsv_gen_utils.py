@@ -25,6 +25,15 @@ def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
     else:
         return sites_spans_split
 
+    
+def calculate_mean(dataframe, stat):
+    filtered_df = pd.DataFrame()
+    if any(stat in col for col in dataframe.columns):
+        filtered_df = filtered_df.append(dataframe.loc[:, dataframe.columns.str.contains(stat)].copy())
+    else:
+        print(f"No columns matching '{stat}' found in the DataFrame.")
+    return filtered_df.mean(axis=1)
+
 
 def filter_boundary_ctcfs_from_h5(
     h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
@@ -37,11 +46,10 @@ def filter_boundary_ctcfs_from_h5(
     ## load scores from boundary mutagenesis, average chosen score across models
     dfs = []
     for h5_file in glob.glob(h5_dirs):
-        dfs.append(akita_utils.format_io.h5_to_df(h5_file, scd_stats=[score_key], verbose=True))
+        dfs.append(akita_utils.format_io.h5_to_df(h5_file, drop_duplicates_key=None))
     df = dfs[0].copy()
-    print([df.columns for df in dfs])
     df[score_key] = np.mean([df[score_key] for df in dfs], axis=0)
-
+    
     # append scores for full mut and all ctcf mut to table
     print("annotating each site with boundary-wide scores")
     score_10k = np.zeros((len(df),))

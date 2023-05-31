@@ -360,12 +360,10 @@ def collect_h5(file_name, out_dir, num_procs):
     job0_h5_file = "%s/job0/%s" % (out_dir, file_name)
     job0_h5_open = h5py.File(job0_h5_file, "r")
     for key in job0_h5_open.keys():
+        if key in ["target_ids", "target_labels"]:
+            # copy
+            final_h5_open.create_dataset(key, data=job0_h5_open[key])
 
-        if key in ["experiment_id", "chrom", "start", "end", "strand", "genomic_SCD", "orientation", "background_index", "flank_bp", "spacer_bp"]:
-            final_h5_open.create_dataset(
-                key, shape=(num_variants,), dtype=job0_h5_open[key].dtype
-            )
-            
         elif job0_h5_open[key].dtype.char == "S":
             final_strings[key] = []
 
@@ -385,23 +383,21 @@ def collect_h5(file_name, out_dir, num_procs):
     # set values
     vi = 0
     for pi in range(num_procs):
-        # print("collecting job", pi)
         # open job
         job_h5_file = "%s/job%d/%s" % (out_dir, pi, file_name)
         job_h5_open = h5py.File(job_h5_file, "r")
 
         # append to final
         for key in job_h5_open.keys():
-            
-            job_variants = job_h5_open[key].shape[0]
-            
-            if key in ["experiment_id", "chrom", "start", "end", "strand", "genomic_SCD", "orientation", "background_index", "flank_bp", "spacer_bp"]:
-                final_h5_open[key][vi : vi + job_variants] = job_h5_open[key]
+            if key in ["target_ids", "target_labels"]:
+                # once is enough
+                pass
 
             else:
                 if job_h5_open[key].dtype.char == "S":
-                    final_strings[key] = list(job_h5_open[key])
+                    final_strings[key] += list(job_h5_open[key])
                 else:
+                    job_variants = job_h5_open[key].shape[0]
                     final_h5_open[key][vi : vi + job_variants] = job_h5_open[key]
 
         vi += job_variants
