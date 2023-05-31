@@ -30,15 +30,15 @@ boundaries:
 
 multuGPU
 - dots
-```python multiGPU_virtual_symmetric_experiment_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 dots_10k.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /project/fudenber_735/data/dots_vs_boundaries/dots_10Kmotifs --stats diffSCD --head-index 1 --model-index 0 --batch-size 8 -p 10 --max_proc 10```
+```python multiGPU_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 dots_10k.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /project/fudenber_735/data/dots_vs_boundaries/dots_10Kmotifs --stats diffSCD --head-index 1 --model-index 0 --batch-size 8 -p 10 --max_proc 10```
 
 - boundaries
-```python multiGPU_virtual_symmetric_experiment_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 boundaries_10k.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o boundaries_10Kmotifs --stats diffSCD --head-index 1 --model-index 0 --batch-size 8 -p 10 --max_proc 10```
+```python multiGPU_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 boundaries_10k.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /project/fudenber_735/data/dots_vs_boundaries/boundaries_10Kmotifs --stats diffSCD --head-index 1 --model-index 0 --batch-size 8 -p 10 --max_proc 10```
 
 
 /project/fudenber_735/data/dots_vs_boundaries
 
 
+python multiGPU-results_collector.py -o 10K -p 10
 
-multi test 
-```python multiGPU_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 boundaries_25motifs.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o multi_TEST --stats diffSCD --head-index 1 --model-index 0 --batch-size 8 -p 2 --max_proc 2```
+python /home1/smaruj/akita_utils/bin/insert_virtual_dots_vs_boundaries/multiGPU-results_collector.py -o boundaries_10Kmotifs -p 10
