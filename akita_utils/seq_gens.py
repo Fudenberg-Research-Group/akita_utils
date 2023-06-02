@@ -137,36 +137,53 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
 def generate_spans_start_positions(seq_1hot, motif, threshold):
     index_scores_array = akita_utils.dna_utils.scan_motif(seq_1hot, motif)
     motif_window = len(motif)
-    spans = []
+    spans_start_positions = []
     for i in np.where(index_scores_array > threshold)[0]:
         if i < (len(seq_1hot) - motif_window):
-            spans.append(i)
-    return spans
+            spans_start_positions.append(i)
+    return spans_start_positions
 
-
-def permute_spans_from_start_positions(seq_1hot, spans, motif_window, shuffle_parameter):
+def permute_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window, shuffle_parameter):
+    assert motif_window > shuffle_parameter, "The motif window size must be greater than the shuffle parameter."
     seq_1hot_mut = seq_1hot.copy()
-    for s in spans:
-        start, end = s, s + motif_window
-        seq_1hot_mut[start:end] = akita_utils.dna_utils.permute_seq_k(
-            seq_1hot_mut[start:end], k=shuffle_parameter
-        )
+    for start in spans_start_positions:
+        end = start + motif_window
+        snippet = seq_1hot_mut[start:end]
+        count = 0
+        while count < 100:
+            permuted_snippet = akita_utils.dna_utils.permute_seq_k(seq_1hot_mut[start:end], k=shuffle_parameter)
+            if not np.array_equal(permuted_snippet, snippet):
+                break
+            count += 1
+        else:
+            raise ValueError(f"Unable to permute span starting at position {start} with window {motif_window} using {shuffle_parameter} because it is cyclical i.e produces similar arrangements")
+
+        seq_1hot_mut[start:end] = permuted_snippet
+
     return seq_1hot_mut
 
-
-def mask_spans_from_start_positions(seq_1hot, spans, motif_window):
+def mask_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window):
     seq_1hot_perm = seq_1hot.copy()
-    for s in spans:
+    for s in spans_start_positions:
         start, end = s, s + motif_window
         seq_1hot_perm[start:end, :] = 0
     return seq_1hot_perm
 
 
-def randomise_spans_from_start_positions(seq_1hot, spans, motif_window):
+def randomise_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window):
     seq_1hot_perm = seq_1hot.copy()
-    for s in spans:
-        start, end = s, s + motif_window
-        seq_1hot_perm[start:end] = random_seq_permutation(seq_1hot_perm[start:end])
+    for start in spans_start_positions:
+        end = start + motif_window
+        snippet = seq_1hot_perm[start:end]
+        count = 0
+        while count < 100:
+            random_snippet = random_seq_permutation(seq_1hot_perm[start:end])
+            if not np.array_equal(random_snippet, snippet):
+                break
+            count += 1
+        else:
+            raise ValueError(f"Unable to randomise span starting at position {start} with window {motif_window} because it is cyclical i.e produces similar arrangements")
+        seq_1hot_perm[start:end] = random_snippet
     return seq_1hot_perm
 
 
@@ -252,13 +269,10 @@ def permute_central_seq(seq_1hot, motif_width=20):
         seq_length // 2 - motif_width // 2, seq_length // 2 + motif_width // 2
     )
     mask_inds = np.random.permutation(central_inds)
-    
     while np.array_equal(mask_inds, central_inds):
         mask_inds = np.random.permutation(central_inds)
-    
     seq_1hot_perm[mask_inds, :] = seq_1hot[central_inds, :].copy()
     return seq_1hot_perm
-
 
 def mask_spans(seq_1hot, spans):
     seq_1hot_perm = seq_1hot.copy()

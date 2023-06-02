@@ -308,24 +308,35 @@ def test_fetch_centered_padded_seq_and_new_start_position():
     # TODO padded seqs
     
     
-@pytest.mark.genome
+@pytest.mark.genome_1
 @pytest.mark.parametrize(
-    "seq_1hot, spans_start_positions, motif_window, shuffle_parameter, is_control",
+    "seq_1hot, spans_start_positions, motif_window, shuffle_parameter, is_non_divisible, is_cyclical, is_less_than_shiffle_parameter",
     [
-        (dna_1hot(toy_genome.fetch("chr1", 0, 60).upper()), [0, 10, 20, 30], 10, 2, False),
-        (dna_1hot(toy_genome.fetch("chr1", 0, 60).upper()), [0, 10, 20, 30], 15, 3, False),
-        (dna_1hot(toy_genome.fetch("chr1", 0, 60).upper()), [0, 10, 20, 30], 20, 5, False),
-        (dna_1hot(toy_genome.fetch("chr1", 0, 60).upper()), [0, 10, 20, 30], 16, 4, False),
-        (dna_1hot(toy_genome.fetch("chr1", 0, 60).upper()), [0, 10, 20, 30], 15, 4, True), # window not divisible by shuffle parameter
+        (dna_1hot(toy_genome.fetch("chr1", 0, 60).upper()), [10], 15, 3, False, False, False),
+        (dna_1hot(toy_genome.fetch("chr1", 0, 60).upper()), [23], 10, 20, False, False, True), # window is_less_than_shiffle_parameter
+        (dna_1hot("AAGTC"), [0], 2, 1, False, True, False), # window is_cyclical
+        (dna_1hot("ACGTGACTAGACATA"), [0, 5], 4, 3, True, False, False), # window is_non_divisible
     ],
 )
-def test_permute_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window, shuffle_parameter, is_control):
+def test_permute_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window, shuffle_parameter, is_non_divisible, is_cyclical, is_less_than_shiffle_parameter):
     
-    # Check control experiment
-    if is_control:
+    # Check control experiment one, window is_non_divisible shuffle parameter
+    if is_non_divisible:
         with pytest.raises(ValueError):
             _ = akita_utils.seq_gens.permute_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window, shuffle_parameter)
         return
+    
+    # Check control experiment two, window is cyclical with shuffling 
+    if is_cyclical:
+        with pytest.raises(ValueError):
+            _ = akita_utils.seq_gens.permute_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window, shuffle_parameter)
+        return
+    
+    # Check control experiment three, window is_less_than_shiffle_parameter 
+    if is_less_than_shiffle_parameter:
+        with pytest.raises(AssertionError):
+            _ = akita_utils.seq_gens.permute_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window, shuffle_parameter)
+        return    
         
     result = akita_utils.seq_gens.permute_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window, shuffle_parameter)
     span_indicies = np.concatenate([np.arange(s, s+motif_window) for s in spans_start_positions])
@@ -334,29 +345,38 @@ def test_permute_spans_from_start_positions(seq_1hot, spans_start_positions, mot
     non_span_indices = np.setdiff1d(np.arange(seq_1hot.shape[0]), span_indicies)
     assert np.array_equal(result[non_span_indices], seq_1hot[non_span_indices])
     
-    # Check that the permuted spans have the same length as the original spans
+    # Check that the spans have been permuted  
     for s in spans_start_positions:
         start, end = s, s + motif_window
-        assert len(result[start:end]) == motif_window
+        assert not np.array_equal(result[start:end], seq_1hot[start:end])
         
 
-@pytest.mark.genome
+@pytest.mark.genome_1
 @pytest.mark.parametrize(
-    "seq_1hot, spans_start_positions, motif_window",
+    "seq_1hot, spans_start_positions, motif_window, is_control, is_cyclical",
     [
-        (dna_1hot(toy_genome.fetch("chr1", 0, 60).upper()), [0, 20, 39], 16),
-        (dna_1hot(toy_genome.fetch("chr2", 0, 60).upper()), [0, 20, 41], 13),
-        (dna_1hot(toy_genome.fetch("chr2", 0, 60).upper()), [0, 20], 20),
+        (dna_1hot(toy_genome.fetch("chr1", 0, 60).upper()), [0, 20, 39], 16, False, False),
+        (dna_1hot(toy_genome.fetch("chr2", 0, 60).upper()), [0, 20, 41], 13, False, False),
+        (dna_1hot(toy_genome.fetch("chr2", 0, 60).upper()), [0], 20, False, False),
+        (dna_1hot("ACT"), [0], 2, True, False), # control experiment
+        (dna_1hot("AAT"), [0], 2, False, True), # cyclical experiment
     ],
 )
-def test_randomise_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window):
-    result = randomise_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window)
+def test_randomise_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window, is_control, is_cyclical):
+    
+    # Check control experiment two, window is cyclical with shuffling 
+    if is_cyclical: 
+        with pytest.raises(ValueError):
+            _ = akita_utils.seq_gens.randomise_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window)
+        return
+    
+    result = randomise_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window)    
     span_indicies = np.concatenate([np.arange(s, s+motif_window) for s in spans_start_positions])
     
     # Check that the result has the same shape as the input
     assert result.shape == seq_1hot.shape
 
-    # Check that the spans have been randomized
+    # Check that the spans have been randomized for non cyclicalI'm 
     for s in spans_start_positions:
         start, end = s, s + motif_window
         assert not np.array_equal(result[start:end], seq_1hot[start:end])
@@ -364,3 +384,6 @@ def test_randomise_spans_from_start_positions(seq_1hot, spans_start_positions, m
     # Check that the non-span regions remain the same
     non_span_indices = np.setdiff1d(np.arange(seq_1hot.shape[0]), span_indicies)
     assert np.array_equal(result[non_span_indices], seq_1hot[non_span_indices])
+    
+    if is_control:
+        assert np.array_equal(result, dna_1hot("CAT"))
