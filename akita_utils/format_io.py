@@ -69,7 +69,7 @@ def h5_to_df(
     insulation_stats = ["INS-16", "INS-32", "INS-64", "INS-128", "INS-256"]
     for key in insulation_stats:
         if "ref_" + key in df_out.columns:
-            df_out[key] = df_out["ref_" + key] - df_out["alt_" + key]
+            df_out[key] = df_out["alt_" + key] - df_out["ref_" + key]
             
     for key, key_dtype in df_out.dtypes.items():
         if not pd.api.types.is_numeric_dtype(key_dtype):

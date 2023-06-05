@@ -1,24 +1,19 @@
-from akita_utils.dna_utils import dna_1hot, dna_1hot_to_seq, dna_seq_rc
-from akita_utils.seq_gens import _insert_casette
-from akita_utils.seq_gens import *
 import pytest
+import numpy as np
+from .Toy_genome import ToyGenomeOpen
+from akita_utils.dna_utils import dna_1hot, dna_1hot_to_seq, dna_seq_rc
+from akita_utils.seq_gens import (
+    _insert_casette,
+    mask_spans,
+    mask_spans_from_start_positions,
+    permute_spans,
+    mask_central_seq,
+    permute_central_seq,
+    fetch_centered_padded_seq_and_new_start_position,
+    randomise_spans_from_start_positions,
+    permute_spans_from_start_positions,
+)
 
-class ToyGenomeOpen:
-    def __init__(self, genome_data):
-        self.genome_data = genome_data
-
-    def fetch(self, chrom, start, end):
-        chromosome = self.genome_data.get(chrom)
-        if chromosome:
-            return chromosome[start:end]
-        else:
-            raise ValueError(f"Chromosome {chrom} not found")
-    def get_reference_length(self, chrom):
-        chromosome = self.genome_data.get(chrom)
-        if chromosome:
-            return len(chromosome)
-        else:
-            raise ValueError(f"Chromosome {chrom} not found")
 
 genome_data = {
     "chr1": "AGCTCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG",
@@ -29,7 +24,6 @@ toy_genome = ToyGenomeOpen(genome_data)
 
 
 def test_insert_casette():
-
     motif1 = "GTAC"
     motif2 = "CGTCG"
     toy_genome_open = dna_1hot("TT" + motif1 + "TT" + motif2 + "TT")
@@ -46,7 +40,7 @@ def test_insert_casette():
 
     assert (
         dna_1hot_to_seq(
-                _insert_casette(
+            _insert_casette(
                 background_1hot,
                 first_seq_1hot_insertion,
                 first_spacer_bp,
@@ -77,214 +71,238 @@ def test_insert_casette():
         )
         == "AAA" + dna_seq_rc(motif2) + "AA"
     )
-    
+
     # third test (two casettes)
     third_flank_bp = 0
     third_spacer_bp = 0
     third_orientation_string = "><"
-    third_seq_1hot_insertion = toy_genome_open[(2 - third_flank_bp) : (6 + third_flank_bp)]
+    third_seq_1hot_insertion = toy_genome_open[
+        (2 - third_flank_bp) : (6 + third_flank_bp)
+    ]
     # toy_genome_open[(2 - third_flank_bp) : (6 + third_flank_bp)] corresponds to motif1
-    
+
     assert (
-    dna_1hot_to_seq(
-        _insert_casette(
-            background_1hot,
-            third_seq_1hot_insertion,
-            third_spacer_bp,
-            third_orientation_string,
+        dna_1hot_to_seq(
+            _insert_casette(
+                background_1hot,
+                third_seq_1hot_insertion,
+                third_spacer_bp,
+                third_orientation_string,
+            )
         )
+        == "A" + motif1 + dna_seq_rc(motif1) + "A"
     )
-    == "A" + motif1 + dna_seq_rc(motif1) + "A"
-    )
-    
+
 
 def test_mask_spans():
-    seq_1hot = [[0, 1, 0, 0], 
-                [1, 0, 0, 0], 
-                [0, 0, 1, 0], 
-                [1, 0, 0, 0], 
-                [0, 0, 1, 0], 
-                [0, 0, 0, 1]]
+    seq_1hot = [
+        [0, 1, 0, 0],
+        [1, 0, 0, 0],
+        [0, 0, 1, 0],
+        [1, 0, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1],
+    ]
     spans = [[1, 3]]
-    expected_output = [ [0, 1, 0, 0], 
-                        [0, 0, 0, 0], 
-                        [0, 0, 0, 0], 
-                        [1, 0, 0, 0], 
-                        [0, 0, 1, 0], 
-                        [0, 0, 0, 1]]
+    expected_output = [
+        [0, 1, 0, 0],
+        [0, 0, 0, 0],  # this column should be masked
+        [0, 0, 0, 0],  # this column should be masked
+        [1, 0, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1],
+    ]
     result = mask_spans(seq_1hot, spans)
-    assert(result == expected_output)
+    assert result == expected_output
 
 
 @pytest.mark.parametrize(
-    "seq_1hot, spans, motif_window, expected_result",
+    "seq_1hot, spans, motif_window, expected_result",  # Order of the parameters being passed
     [
-        (
-            np.array([
-                [1, 0, 0, 0], 
-                [0, 1, 0, 0],
-                [0, 1, 0, 0],
-                [0, 1, 0, 0],
-                [0, 1, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 1, 0], 
-                [0, 0, 0, 1]
-            ]),
-            [0, 2],
-            2,
-            np.array([
-                [0, 0, 0, 0], 
-                [0, 0, 0, 0], 
-                [0, 0, 0, 0], 
-                [0, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 1, 0], 
-                [0, 0, 0, 1]
-            ]),
+        (  # Test case 1 (span start from start of seq)
+            np.array(  # Input sequence in one-hot encoding format
+                [
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1],
+                ]
+            ),
+            [0, 2],  # Indices of the spans to be masked
+            2,  # Size of the motif window
+            np.array(  # Expected output after masking the spans
+                [
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1],
+                ]
+            ),
         ),
-        (
-            np.array([
-                [1, 0, 0, 0], 
-                [0, 1, 0, 0], 
-                [0, 0, 1, 0], 
-                [0, 0, 0, 1], 
-                [0, 0, 0, 1], 
-                [0, 0, 0, 1], 
-                [0, 0, 0, 1]
-            ]),
-            [1, 3],
-            2,
-            np.array([
-                [1, 0, 0, 0], 
-                [0, 0, 0, 0], 
-                [0, 0, 0, 0], 
-                [0, 0, 0, 0], 
-                [0, 0, 0, 0], 
-                [0, 0, 0, 1], 
-                [0, 0, 0, 1]
-            ]),
+        (  # Test case 2 (span in middle of seq)
+            np.array(  # Input sequence in one-hot encoding format
+                [
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1],
+                    [0, 0, 0, 1],
+                    [0, 0, 0, 1],
+                    [0, 0, 0, 1],
+                ]
+            ),
+            [1, 3],  # Indices of the spans to be masked
+            2,  # Size of the motif window
+            np.array(  # Expected output after masking the spans
+                [
+                    [1, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 1],
+                    [0, 0, 0, 1],
+                ]
+            ),
         ),
     ],
 )
-def test_mask_spans_from_start_positions(seq_1hot, spans, motif_window, expected_result):
-    result = mask_spans_from_start_positions(seq_1hot, spans, motif_window)
-    assert np.array_equal(result, expected_result)
+def test_mask_spans_from_start_positions(
+    seq_1hot, spans, motif_window, expected_result
+):
+    result = mask_spans_from_start_positions(
+        seq_1hot, spans, motif_window
+    )  # Call the function being tested
+    assert np.array_equal(
+        result, expected_result
+    )  # Check if the result matches the expected output
 
-    
+
 @pytest.mark.parametrize(
-    "seq_1hot, motif_width, expected_result",
+    "seq_1hot, motif_width, expected_result",  # Order of the parameters being passed
     [
-        (
-            np.array([
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 1, 0],
-                [0, 0, 0, 1],
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 1, 0],
-                [0, 0, 0, 1]
-            ]),
-            2,
-            np.array([
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 1, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 1, 0],
-                [0, 0, 0, 1]
-            ]),
-        ),
-        (
-            np.array([
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 1, 0],
-                [0, 0, 0, 1],
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 1, 0],
-                [0, 0, 0, 1]
-            ]),
-            4,
-            np.array([
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 1, 0],
-                [0, 0, 0, 1]
-            ]),
-        ),
+        (  # Test case 1
+            np.array(  # Input sequence in one-hot encoding format
+                [
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1],
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1],
+                ]
+            ),
+            2,  # Width of the motif
+            np.array(  # Expected output after masking the central sequence
+                [
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1],
+                ]
+            ),
+        )
     ],
 )
 def test_mask_central_seq(seq_1hot, motif_width, expected_result):
-    result = mask_central_seq(seq_1hot, motif_width)
-    assert np.array_equal(result, expected_result)
+    result = mask_central_seq(seq_1hot, motif_width)  # Call the function being tested
+    assert np.array_equal(
+        result, expected_result
+    )  # Check if the result matches the expected output
 
 
 @pytest.mark.genome
 @pytest.mark.parametrize(
-    "seq_1hot, motif_width, control",
+    "seq_1hot, motif_width, expected_result",  # Order of the parameters being passed
     [
-        (dna_1hot(toy_genome.fetch("chr1", 0, 60).upper()),16,False),
-        (dna_1hot(toy_genome.fetch("chr2", 0, 60).upper()),10,False),
-        (dna_1hot("ATGC"),2,True),
+        (  # Test case 1
+            dna_1hot("ATGC"),  # Input DNA sequence in one-hot encoding format
+            2,  # Width of the motif
+            dna_1hot(
+                "AGTC"
+            ),  # Expected output after permuting the central sequence "TG" --> "GT"
+        ),
     ],
 )
-def test_permute_central_seq(seq_1hot, motif_width, control):
-    if control:
-        result = permute_central_seq(seq_1hot, motif_width)
-        assert np.array_equal(result, dna_1hot("AGTC"))
-    else:
-        result = permute_central_seq(seq_1hot, motif_width)
-        seq_length = len(seq_1hot)
-        assert not np.array_equal(result[seq_length // 2 - motif_width // 2 : seq_length // 2 + motif_width // 2, :], seq_1hot[seq_length // 2 - motif_width // 2 : seq_length // 2 + motif_width // 2, :])
+def test_permute_central_seq(seq_1hot, motif_width, expected_result):
+    result = permute_central_seq(
+        seq_1hot, motif_width
+    )  # Call the function being tested
+    assert np.array_equal(
+        result, expected_result
+    )  # Check if the result matches the expected output
 
 
 @pytest.mark.genome
 @pytest.mark.parametrize(
-    "seq_1hot, spans, control",
+    "seq_1hot, spans, control",  # Order of the parameters being passed
     [
-        (dna_1hot(toy_genome.fetch("chr2", 0, 60).upper()),[(0, 20),(23, 51)],False),
-        (dna_1hot(toy_genome.fetch("chr2", 0, 60).upper()),[(0, 10)],False),
-        (dna_1hot("ATGC"),[(1,3)],True),
+        (  # Test case 1
+            dna_1hot(
+                toy_genome.fetch("chr2", 0, 60).upper()
+            ),  # Input DNA sequence in one-hot encoding format
+            [(0, 20), (23, 51)],  # List of spans to permute
+            False,  # Control flag indicating whether to check for specific conditions
+        ),
+        (  # Test case 2
+            dna_1hot(
+                toy_genome.fetch("chr2", 0, 60).upper()
+            ),  # Input DNA sequence in one-hot encoding format
+            [(0, 10)],  # List of spans to permute
+            False,  # Control flag indicating whether to check for specific conditions
+        ),
+        (  # Test case 3
+            dna_1hot("ATGC"),  # Input DNA sequence in one-hot encoding format
+            [(1, 3)],  # List of spans to permute
+            True,  # Control flag indicating whether to check for specific conditions
+        ),
     ],
 )
 def test_permute_spans(seq_1hot, spans, control):
     if control:
-        result = permute_spans(seq_1hot, spans)
-        assert np.array_equal(result, dna_1hot("AGTC"))
-    else:    
-        result = permute_spans(seq_1hot, spans)
+        result = permute_spans(seq_1hot, spans)  # Call the function being tested
+        assert np.array_equal(
+            result, dna_1hot("AGTC")
+        )  # Check if the result matches the expected output (specific to test case 3)
+    else:
+        result = permute_spans(seq_1hot, spans)  # Call the function being tested
 
         # Expand the spans into individual indices
         span_indices = np.concatenate([np.arange(start, end) for start, end in spans])
 
         # Check that the non-span regions remain the same
-        non_span_indices = np.setdiff1d(np.arange(seq_1hot.shape[0]), span_indices)    
+        non_span_indices = np.setdiff1d(np.arange(seq_1hot.shape[0]), span_indices)
         assert np.array_equal(result[non_span_indices], seq_1hot[non_span_indices])
 
         # Check that the permuted spans are different from the original spans
-        # (if the seq_1hot and spans are very short this result might be same as original seq thus failing the following test)
         for start, end in spans:
             assert not np.array_equal(result[start:end], seq_1hot[start:end])
-        
-        
+
+
 @pytest.mark.genome
 def test_fetch_centered_padded_seq_and_new_start_position():
-
     chrom = "chr1"
     start = 5
     end = 15
     seq_length = 10
 
-    result = fetch_centered_padded_seq_and_new_start_position(chrom, start, end, seq_length, toy_genome)
+    result = fetch_centered_padded_seq_and_new_start_position(
+        chrom, start, end, seq_length, toy_genome
+    )
 
     assert isinstance(result, tuple), "Result should be a tuple"
     assert len(result) == 2, "Result tuple should contain two elements"
@@ -292,98 +310,185 @@ def test_fetch_centered_padded_seq_and_new_start_position():
     # Validate the start position
     start_centered = result[0]
     assert isinstance(start_centered, int), "Start position should be an integer"
-    assert start_centered == (start + end) // 2 - seq_length // 2, "Incorrect start position calculation"
+    assert (
+        start_centered == (start + end) // 2 - seq_length // 2
+    ), "Incorrect start position calculation"
 
     # Validate the padded sequence
     seq = result[1]
     assert isinstance(seq, str), "Sequence should be a string"
     assert len(seq) == seq_length, "Sequence length should match the specified length"
-    
-    # Check if the generated sequence matches the expected sequence from the genome data
-    genome_seq = toy_genome.fetch(chrom, start_centered, start_centered + seq_length).upper()
-    assert seq == genome_seq, "Generated sequence does not match genome data"
 
+    # Check if the generated sequence matches the expected sequence from the genome data
+    genome_seq = toy_genome.fetch(
+        chrom, start_centered, start_centered + seq_length
+    ).upper()
+    assert seq == genome_seq, "Generated sequence does not match genome data"
 
     # Additional assertions can be added to cover different scenarios
     # TODO padded seqs
-    
-    
-@pytest.mark.genome_1
+
+
+@pytest.mark.genome
 @pytest.mark.parametrize(
-    "seq_1hot, spans_start_positions, motif_window, shuffle_parameter, is_non_divisible, is_cyclical, is_less_than_shiffle_parameter",
+    "seq_1hot, spans_start_positions, motif_window, shuffle_parameter, is_non_divisible, is_cyclical, is_less_than_shuffle_parameter",
     [
-        (dna_1hot(toy_genome.fetch("chr1", 0, 60).upper()), [10], 15, 3, False, False, False),
-        (dna_1hot(toy_genome.fetch("chr1", 0, 60).upper()), [23], 10, 20, False, False, True), # window is_less_than_shiffle_parameter
-        (dna_1hot("AAGTC"), [0], 2, 1, False, True, False), # window is_cyclical
-        (dna_1hot("ACGTGACTAGACATA"), [0, 5], 4, 3, True, False, False), # window is_non_divisible
+        (  # Test case 1 (nothing special)
+            dna_1hot(
+                toy_genome.fetch("chr1", 0, 60).upper()
+            ),  # Input DNA sequence in one-hot encoding format
+            [10],  # List of start positions of spans
+            15,  # Width of the motif window
+            3,  # Shuffle parameter
+            False,  # Flag indicating whether the motif window is non-divisible by the shuffle parameter
+            False,  # Flag indicating whether the motif window is cyclical with shuffling
+            False,  # Flag indicating whether the motif window is less than the shuffle parameter
+        ),
+        (  # Test case 2 (motif window is less than the shuffle parameter)
+            dna_1hot(
+                toy_genome.fetch("chr1", 0, 60).upper()
+            ),  # Input DNA sequence in one-hot encoding format
+            [23],  # List of start positions of spans
+            10,  # Width of the motif window
+            20,  # Shuffle parameter
+            False,  # Flag indicating whether the motif window is non-divisible by the shuffle parameter
+            False,  # Flag indicating whether the motif window is cyclical with shuffling
+            True,  # Flag indicating whether the motif window is less than the shuffle parameter
+        ),
+        (  # Test case 3 (motif window is cyclical with shuffling)
+            dna_1hot("AAGTC"),  # Input DNA sequence in one-hot encoding format
+            [0],  # List of start positions of spans
+            2,  # Width of the motif window
+            1,  # Shuffle parameter
+            False,  # Flag indicating whether the motif window is non-divisible by the shuffle parameter
+            True,  # Flag indicating whether the motif window is cyclical with shuffling
+            False,  # Flag indicating whether the motif window is less than the shuffle parameter
+        ),
+        (  # Test case 4 (motif window is non-divisible by the shuffle parameter)
+            dna_1hot(
+                "ACGTGACTAGACATA"
+            ),  # Input DNA sequence in one-hot encoding format
+            [0, 5],  # List of start positions of spans
+            4,  # Width of the motif window
+            3,  # Shuffle parameter
+            True,  # Flag indicating whether the motif window is non-divisible by the shuffle parameter
+            False,  # Flag indicating whether the motif window is cyclical with shuffling
+            False,  # Flag indicating whether the motif window is less than the shuffle parameter
+        ),
     ],
 )
-def test_permute_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window, shuffle_parameter, is_non_divisible, is_cyclical, is_less_than_shiffle_parameter):
-    
-    # Check control experiment one, window is_non_divisible shuffle parameter
+def test_permute_spans_from_start_positions(
+    seq_1hot,
+    spans_start_positions,
+    motif_window,
+    shuffle_parameter,
+    is_non_divisible,
+    is_cyclical,
+    is_less_than_shuffle_parameter,
+):
+    # Check control experiment one, window is non-divisible by shuffle parameter
     if is_non_divisible:
         with pytest.raises(ValueError):
-            _ = akita_utils.seq_gens.permute_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window, shuffle_parameter)
+            _ = permute_spans_from_start_positions(
+                seq_1hot, spans_start_positions, motif_window, shuffle_parameter
+            )
         return
-    
-    # Check control experiment two, window is cyclical with shuffling 
+
+    # Check control experiment two, window is cyclical with shuffling
     if is_cyclical:
         with pytest.raises(ValueError):
-            _ = akita_utils.seq_gens.permute_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window, shuffle_parameter)
+            _ = permute_spans_from_start_positions(
+                seq_1hot, spans_start_positions, motif_window, shuffle_parameter
+            )
         return
-    
-    # Check control experiment three, window is_less_than_shiffle_parameter 
-    if is_less_than_shiffle_parameter:
+
+    # Check control experiment three, window is less than the shuffle parameter
+    if is_less_than_shuffle_parameter:
         with pytest.raises(AssertionError):
-            _ = akita_utils.seq_gens.permute_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window, shuffle_parameter)
-        return    
-        
-    result = akita_utils.seq_gens.permute_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window, shuffle_parameter)
-    span_indicies = np.concatenate([np.arange(s, s+motif_window) for s in spans_start_positions])
-    
+            _ = permute_spans_from_start_positions(
+                seq_1hot, spans_start_positions, motif_window, shuffle_parameter
+            )
+        return
+
+    result = permute_spans_from_start_positions(
+        seq_1hot, spans_start_positions, motif_window, shuffle_parameter
+    )
+    span_indices = np.concatenate(
+        [np.arange(s, s + motif_window) for s in spans_start_positions]
+    )
+
     # Check that the non-span regions remain the same
-    non_span_indices = np.setdiff1d(np.arange(seq_1hot.shape[0]), span_indicies)
+    non_span_indices = np.setdiff1d(np.arange(seq_1hot.shape[0]), span_indices)
     assert np.array_equal(result[non_span_indices], seq_1hot[non_span_indices])
-    
-    # Check that the spans have been permuted  
+
+    # Check that the spans have been permuted
     for s in spans_start_positions:
         start, end = s, s + motif_window
         assert not np.array_equal(result[start:end], seq_1hot[start:end])
-        
 
-@pytest.mark.genome_1
+
+@pytest.mark.genome
 @pytest.mark.parametrize(
     "seq_1hot, spans_start_positions, motif_window, is_control, is_cyclical",
     [
-        (dna_1hot(toy_genome.fetch("chr1", 0, 60).upper()), [0, 20, 39], 16, False, False),
-        (dna_1hot(toy_genome.fetch("chr2", 0, 60).upper()), [0, 20, 41], 13, False, False),
-        (dna_1hot(toy_genome.fetch("chr2", 0, 60).upper()), [0], 20, False, False),
-        (dna_1hot("ACT"), [0], 2, True, False), # control experiment
-        (dna_1hot("AAT"), [0], 2, False, True), # cyclical experiment
+        (   # Test case 1 (nothing special)
+            dna_1hot(
+                toy_genome.fetch("chr1", 0, 60).upper()
+            ),  # Input sequence in one-hot encoding
+            [0, 20, 39],  # Starting positions of the spans
+            16,  # Width of the motif window
+            False,  # Flag indicating if it's a control experiment
+            False,  # Flag indicating if the window is cyclical
+        ),
+        (   # Test case 2 (test randomisation of non cyclical snippets)
+            dna_1hot("ACT"),  # Input sequence in one-hot encoding
+            [0],  # Starting positions of the spans
+            2,  # Width of the motif window
+            True,  # Flag indicating if it's a control experiment
+            False,  # Flag indicating if the window is cyclical
+        ),
+        (   # Test case 3 (test randomisation of cyclical snippets)
+            dna_1hot("AAT"),  # Input sequence in one-hot encoding
+            [0],  # Starting positions of the spans
+            2,  # Width of the motif window
+            False,  # Flag indicating if it's a control experiment
+            True,  # Flag indicating if the window is cyclical
+        ),
     ],
 )
-def test_randomise_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window, is_control, is_cyclical):
-    
-    # Check control experiment two, window is cyclical with shuffling 
-    if is_cyclical: 
+def test_randomise_spans_from_start_positions(
+    seq_1hot, spans_start_positions, motif_window, is_control, is_cyclical
+):
+    # Check control experiment two, window is cyclical with shuffling
+    if is_cyclical:
         with pytest.raises(ValueError):
-            _ = akita_utils.seq_gens.randomise_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window)
+            _ = randomise_spans_from_start_positions(
+                seq_1hot, spans_start_positions, motif_window
+            )
         return
-    
-    result = randomise_spans_from_start_positions(seq_1hot, spans_start_positions, motif_window)    
-    span_indicies = np.concatenate([np.arange(s, s+motif_window) for s in spans_start_positions])
-    
+
+    # Randomize the spans
+    result = randomise_spans_from_start_positions(
+        seq_1hot, spans_start_positions, motif_window
+    )
+
+    # Create an array of indices for the spans
+    span_indices = np.concatenate(
+        [np.arange(s, s + motif_window) for s in spans_start_positions]
+    )
+
     # Check that the result has the same shape as the input
     assert result.shape == seq_1hot.shape
 
-    # Check that the spans have been randomized for non cyclicalI'm 
+    # Check that the spans have been randomized for non-cyclical case
     for s in spans_start_positions:
         start, end = s, s + motif_window
         assert not np.array_equal(result[start:end], seq_1hot[start:end])
 
     # Check that the non-span regions remain the same
-    non_span_indices = np.setdiff1d(np.arange(seq_1hot.shape[0]), span_indicies)
+    non_span_indices = np.setdiff1d(np.arange(seq_1hot.shape[0]), span_indices)
     assert np.array_equal(result[non_span_indices], seq_1hot[non_span_indices])
-    
+
+    # Check that the result of control experiment(second last) is as expected ie first two nucleotides randomised "AC" --> "CA"
     if is_control:
         assert np.array_equal(result, dna_1hot("CAT"))
