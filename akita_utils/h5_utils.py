@@ -220,22 +220,19 @@ def initialize_output_h5_v2(
     return stats_out
 
 
-def write_snp_v2(
+def write_stats(
     ref_preds,
     alt_preds,
     stats_out,
-    si,
+    experiment_ID,
     head_index,
     model_index,
     diagonal_offset,
-    stats=["SCD"],
-    plot_dir=None,
-    plot_lim=4,
-    plot_freq=100,
+    stats=["SCD"]
 ):
-    """Write SNP predictions to HDF. fahad's version"""
+    """Write stats to HDF. fahad's version"""
 
-    log.info(f"writting SNP predictions for experiment {si}")
+    log.info(f"writting scores for experiment {experiment_ID}")
 
     # increase dtype
     ref_preds = ref_preds.astype("float32")
@@ -243,10 +240,10 @@ def write_snp_v2(
             
     if "SCD" in stats:
         # sum of squared diffs
-        diff2_preds = (ref_preds - alt_preds) ** 2
+        diff2_preds = (alt_preds - ref_preds) ** 2
         sd2_preds = np.sqrt(diff2_preds.sum(axis=0))
         for target_ind in range(ref_preds.shape[1]):
-            stats_out[f"SCD_h{head_index}_m{model_index}_t{target_ind}"][si] = sd2_preds[
+            stats_out[f"SCD_h{head_index}_m{model_index}_t{target_ind}"][experiment_ID] = sd2_preds[
                 target_ind
             ].astype("float16")
         
@@ -256,7 +253,7 @@ def write_snp_v2(
         alt_ss = (alt_preds**2).sum(axis=0)
         s2d_preds = np.sqrt(alt_ss) - np.sqrt(ref_ss)
         for target_ind in range(ref_preds.shape[1]):
-            stats_out[f"SSD_h{head_index}_m{model_index}_t{target_ind}"][si] = sd2_preds[
+            stats_out[f"SSD_h{head_index}_m{model_index}_t{target_ind}"][experiment_ID] = sd2_preds[
                 target_ind
             ].astype("float16")
             
@@ -269,7 +266,7 @@ def write_snp_v2(
     
                 for target_ind in range(ref_preds.shape[1]):
                     stats_out["ref_" + f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][
-                        si
+                        experiment_ID
                     ] = akita_utils.stats_utils.insul_diamonds_scores(
                         ref_map, window=insul_window
                     )[
@@ -279,7 +276,7 @@ def write_snp_v2(
                     )
                     
                     stats_out["alt_" + f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][
-                        si
+                        experiment_ID
                     ] = akita_utils.stats_utils.insul_diamonds_scores(
                         alt_map, window=insul_window
                     )[
@@ -288,57 +285,67 @@ def write_snp_v2(
                         "float16"
                     )
     
+def plot_maps(
+    ref_preds,
+    alt_preds,
+    experiment_ID,
+    diagonal_offset,
+    plot_dir,
+    plot_lim=4,
+    plot_freq=100,
+):
+    if np.mod(experiment_index, plot_freq) == 0:
+        log.info(f"plotting map for experiment {experiment_ID}")
+
+    # convert back to dense
+    ref_map = ut_dense(ref_preds, diagonal_offset)
+    alt_map = ut_dense(alt_preds, diagonal_offset)
+
+    _, (ax_ref, ax_alt, ax_diff) = plt.subplots(3, ref_preds.shape[-1], figsize=(21, 6))
+
+    for ti in range(ref_preds.shape[-1]):
+        ref_map_ti = ref_map[..., ti]
+        alt_map_ti = alt_map[..., ti]
+
+        # TEMP: reduce resolution
+        ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
+        alt_map_ti = block_reduce(alt_map_ti, (2, 2), np.mean)
+        vmin, vmax = (-plot_lim, plot_lim)
+
+
+        sns.heatmap(
+            ref_map_ti,
+            ax=ax_ref[ti],
+            center=0,
+            vmin=vmin,
+            vmax=vmax,
+            cmap="RdBu_r",
+            xticklabels=False,
+            yticklabels=False,
+        )
+        sns.heatmap(
+            alt_map_ti,
+            ax=ax_alt[ti],
+            center=0,
+            vmin=vmin,
+            vmax=vmax,
+            cmap="RdBu_r",
+            xticklabels=False,
+            yticklabels=False,
+        )
+        sns.heatmap(
+            alt_map_ti - ref_map_ti,
+            ax=ax_diff[ti],
+            center=0,
+            cmap="PRGn",
+            xticklabels=False,
+            yticklabels=False,
+        )
+    plt.tight_layout()
+    plt.savefig(f"{plot_dir}/experiment_{experiment_ID}.pdf")
+    plt.close()
+
         
-    if (plot_dir is not None) and (np.mod(si, plot_freq) == 0):
-        log.info(f"plotting map for experiment {si}")
-
-        # convert back to dense
-        ref_map = ut_dense(ref_preds, diagonal_offset)
-        alt_map = ut_dense(alt_preds, diagonal_offset)
-        
-        _, (ax_ref, ax_alt, ax_diff) = plt.subplots(3, ref_preds.shape[-1], figsize=(21, 6))
-
-        for ti in range(ref_preds.shape[-1]):
-            ref_map_ti = ref_map[..., ti]
-            alt_map_ti = alt_map[..., ti]
-    
-            # TEMP: reduce resolution
-            ref_map_ti = block_reduce(ref_map_ti, (2, 2), np.mean)
-            alt_map_ti = block_reduce(alt_map_ti, (2, 2), np.mean)
-            vmin, vmax = (-plot_lim, plot_lim)
-
-            
-            sns.heatmap(
-                ref_map_ti,
-                ax=ax_ref[ti],
-                center=0,
-                vmin=vmin,
-                vmax=vmax,
-                cmap="RdBu_r",
-                xticklabels=False,
-                yticklabels=False,
-            )
-            sns.heatmap(
-                alt_map_ti,
-                ax=ax_alt[ti],
-                center=0,
-                vmin=vmin,
-                vmax=vmax,
-                cmap="RdBu_r",
-                xticklabels=False,
-                yticklabels=False,
-            )
-            sns.heatmap(
-                alt_map_ti - ref_map_ti,
-                ax=ax_diff[ti],
-                center=0,
-                cmap="PRGn",
-                xticklabels=False,
-                yticklabels=False,
-            )
-        plt.tight_layout()
-        plt.savefig(f"{plot_dir}/experiment_{si}.pdf")
-        plt.close()
         
 def collect_h5(file_name, out_dir, num_procs):
     # count variants

@@ -291,7 +291,7 @@ def main():
 
     #################################################################
     # setup output
-    scd_out = akita_utils.h5_utils.initialize_output_h5_v2(
+    stats_out = akita_utils.h5_utils.initialize_output_h5_v2(
     options.out_dir,
     options.scd_stats,
     seq_coords_df,
@@ -328,22 +328,30 @@ def main():
         pi += 1
 
         # process SNP
-        akita_utils.h5_utils.write_snp_v2(
-        ref_preds,
-        alt_preds,
-        scd_out,
-        si,
-        options.head_index,
-        options.model_index,
-        seqnn_model.diagonal_offset,
-        options.scd_stats,
-        plot_dir,
-        options.plot_lim_min,
-        options.plot_freq,
-        )
+        akita_utils.h5_utils.write_stats(
+                                        ref_preds,
+                                        alt_preds,
+                                        stats_out,
+                                        si,
+                                        options.head_index,
+                                        options.model_index,
+                                        seqnn_model.diagonal_offset,
+                                        options.scd_stats,
+                                        )
+        
+        if (plot_dir is not None):
+            akita_utils.h5_utils.plot_maps(
+                                            ref_preds,
+                                            alt_preds,
+                                            si,
+                                            diagonal_offset,
+                                            plot_dir,
+                                            options.plot_lim_min,
+                                            options.plot_freq,
+                                            )
 
     genome_open.close()
-    scd_out.close()
+    stats_out.close()
     
 ################################################################################
 # __main__
