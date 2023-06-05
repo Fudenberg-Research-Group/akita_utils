@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from akita_utils.utils import ut_dense
-import akita_utils.stats_utils
 from akita_utils.stats_utils import insul_diamonds_scores
 import logging
 
@@ -267,7 +266,7 @@ def write_stats(
                 for target_ind in range(ref_preds.shape[1]):
                     stats_out["ref_" + f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][
                         experiment_ID
-                    ] = akita_utils.stats_utils.insul_diamonds_scores(
+                    ] = insul_diamonds_scores(
                         ref_map, window=insul_window
                     )[
                         target_ind
@@ -277,7 +276,7 @@ def write_stats(
                     
                     stats_out["alt_" + f"{stat}_h{head_index}_m{model_index}_t{target_ind}"][
                         experiment_ID
-                    ] = akita_utils.stats_utils.insul_diamonds_scores(
+                    ] = insul_diamonds_scores(
                         alt_map, window=insul_window
                     )[
                         target_ind
