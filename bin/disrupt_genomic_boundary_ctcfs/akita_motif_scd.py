@@ -170,7 +170,7 @@ def main():
     )
 
     parser.add_option(
-        "--motif-width", dest="motif_width", default=18, type="int", help="motif width"
+        "--motif-width", dest="motif_width", default=None, type="int", help="motif width"
     )
     (options, args) = parser.parse_args()
 
@@ -310,9 +310,9 @@ def main():
         disruption_seqs_gen(
             seq_coords_df,
             mutation_method,
-            motif_width,
             seq_length,
             genome_open,
+            motif_width
         ),
         batch_size,
     )

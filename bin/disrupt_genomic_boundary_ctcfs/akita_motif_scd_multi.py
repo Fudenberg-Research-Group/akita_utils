@@ -140,7 +140,7 @@ def main():
         help="Specify mutation method, [Default: %default]",
     )
     parser.add_option(
-        "--motif-width", dest="motif_width", default=18, type="int", help="motif width"
+        "--motif-width", dest="motif_width", default=None, type="int", help="motif width"
     )
     parser.add_option(
         "--use-span",
@@ -205,6 +205,12 @@ def main():
         help="time to run job. [Default: %default]",
     )
     parser.add_option(
+        "--conda_env",
+        dest="conda_env",
+        default="basenji-gpu",
+        help="name of conda environment to run the script",
+    )
+    parser.add_option(
         "--gres", dest="gres", default="gpu", help="gpu resources. [Default: %default]"
     )
     parser.add_option(
@@ -253,11 +259,11 @@ def main():
         if not options.restart or not job_completed(options, pi):
             if options.cpu:
                 cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += "conda activate basenji-gpu;"
+                cmd += f"conda activate {options.conda_env};"
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
             else:
                 cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += "conda activate basenji-gpu;"
+                cmd += f"conda activate {options.conda_env};"
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
 
             cmd += " ${SLURM_SUBMIT_DIR}/akita_motif_scd.py %s %s %d" % (
