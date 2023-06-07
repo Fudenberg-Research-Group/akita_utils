@@ -133,9 +133,10 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
 
 
 def reference_seqs_gen(background_seqs):
-    """sequence generator for making insertions from tsvs
-    construct an iterator that yields a one-hot encoded sequence
+    """an iterator that yields one-hot encoded reference sequences
     that can be used as input to akita via PredStreamGen
+    
+    Note, background_seqs is a list of DNA sequences (strings)
     """
 
     for background_index in range(len(background_seqs)):
