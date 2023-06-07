@@ -17,7 +17,7 @@
 
 """
 multiGPU-virtual_symmetric_experiment_flanks.py
-Derived from akita_motif_scd_multi.py (https://github.com/Fudenberg-Research-Group/akita_utils/blob/main/bin/disrupt_genomic_boundary_ctcfs/akita_motif_scd_multi.py)
+Derived from multiGPU-virtual_symmetric_experiment_flanks.py
 
 Compute scores for motifs in a TSV file, using multiple processes.
 
@@ -27,7 +27,8 @@ Relies on slurm_gf.py to auto-generate slurm jobs.
 
 from optparse import OptionParser
 import os
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
+
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 import pickle
 import subprocess
@@ -190,7 +191,10 @@ def main():
         help="time to run job. [Default: %default]",
     )
     parser.add_option(
-        "--gres", dest="gres", default="gpu", help="gpu resources. [Default: %default]"
+        "--gres",
+        dest="gres",
+        default="gpu",
+        help="gpu resources. [Default: %default]",
     )
     parser.add_option(
         "--constraint",
@@ -210,7 +214,7 @@ def main():
 
     #######################################################
     # prep work
-    
+
     # output directory
     if not options.restart:
         if os.path.isdir(options.out_dir):
@@ -223,7 +227,7 @@ def main():
     options_pkl = open(options_pkl_file, "wb")
     pickle.dump(options, options_pkl)
     options_pkl.close()
-    
+
     #######################################################
     # launch worker threads
     jobs = []
@@ -232,17 +236,24 @@ def main():
             if options.cpu:
                 cmd = 'eval "$(conda shell.bash hook)";'
                 cmd += "conda activate basenji;"
-                cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
+                cmd += (
+                    "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
+                )
             else:
                 cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += "conda activate basenji-numba2;"      #changed
+                cmd += "conda activate basenji-numba2;"  # changed
                 # cmd += "conda activate basenji;"      #changed
-                cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
+                cmd += (
+                    "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
+                )
 
-            cmd += " ${SLURM_SUBMIT_DIR}/virtual_symmetric_experiment_compare_SCD.py %s %s %d" % (
-                options_pkl_file,
-                " ".join(args),
-                pi,
+            cmd += (
+                " ${SLURM_SUBMIT_DIR}/virtual_symmetric_experiment_compare_SCD.py %s %s %d"
+                % (
+                    options_pkl_file,
+                    " ".join(args),
+                    pi,
+                )
             )
 
             name = "%s_p%d" % (options.name, pi)
@@ -265,22 +276,28 @@ def main():
                 constraint=options.constraint,
             )
             jobs.append(j)
-    
+
     slurm.multi_run(
-        jobs, max_proc=options.max_proc, verbose=False, launch_sleep=10, update_sleep=60
+        jobs,
+        max_proc=options.max_proc,
+        verbose=False,
+        launch_sleep=10,
+        update_sleep=60,
     )
 
     #######################################################
     # collect output
 
     collect_h5("scd.h5", options.out_dir, options.processes)
-    
+
     # for pi in range(options.processes):
     #     shutil.rmtree('%s/job%d' % (options.out_dir,pi))
 
 
 def collect_table(file_name, out_dir, num_procs):
-    os.rename("%s/job0/%s" % (out_dir, file_name), "%s/%s" % (out_dir, file_name))
+    os.rename(
+        "%s/job0/%s" % (out_dir, file_name), "%s/%s" % (out_dir, file_name)
+    )
     for pi in range(1, num_procs):
         subprocess.call(
             "tail -n +2 %s/job%d/%s >> %s/%s"
@@ -310,11 +327,22 @@ def collect_h5(file_name, out_dir, num_procs):
     job0_h5_open = h5py.File(job0_h5_file, "r")
     for key in job0_h5_open.keys():
 
-        if key in ["experiment_id", "chrom", "start", "end", "strand", "genomic_SCD", "orientation", "background_index", "flank_bp", "spacer_bp"]:
+        if key in [
+            "experiment_id",
+            "chrom",
+            "start",
+            "end",
+            "strand",
+            "genomic_SCD",
+            "orientation",
+            "background_index",
+            "flank_bp",
+            "spacer_bp",
+        ]:
             final_h5_open.create_dataset(
                 key, shape=(num_variants,), dtype=job0_h5_open[key].dtype
             )
-            
+
         elif job0_h5_open[key].dtype.char == "S":
             final_strings[key] = []
 
@@ -326,7 +354,9 @@ def collect_h5(file_name, out_dir, num_procs):
         else:
             num_targets = job0_h5_open[key].shape[1]
             final_h5_open.create_dataset(
-                key, shape=(num_variants, num_targets), dtype=job0_h5_open[key].dtype
+                key,
+                shape=(num_variants, num_targets),
+                dtype=job0_h5_open[key].dtype,
             )
 
     job0_h5_open.close()
@@ -341,24 +371,39 @@ def collect_h5(file_name, out_dir, num_procs):
 
         # append to final
         for key in job_h5_open.keys():
-            
+
             job_variants = job_h5_open[key].shape[0]
-            
-            if key in ["experiment_id", "chrom", "start", "end", "strand", "genomic_SCD", "orientation", "background_index", "flank_bp", "spacer_bp"]:
+
+            if key in [
+                "experiment_id",
+                "chrom",
+                "start",
+                "end",
+                "strand",
+                "genomic_SCD",
+                "orientation",
+                "background_index",
+                "flank_bp",
+                "spacer_bp",
+            ]:
                 final_h5_open[key][vi : vi + job_variants] = job_h5_open[key]
 
             else:
                 if job_h5_open[key].dtype.char == "S":
                     final_strings[key] = list(job_h5_open[key])
                 else:
-                    final_h5_open[key][vi : vi + job_variants] = job_h5_open[key]
+                    final_h5_open[key][vi : vi + job_variants] = job_h5_open[
+                        key
+                    ]
 
         vi += job_variants
         job_h5_open.close()
 
     # create final string datasets
     for key in final_strings:
-        final_h5_open.create_dataset(key, data=np.array(final_strings[key], dtype="S"))
+        final_h5_open.create_dataset(
+            key, data=np.array(final_strings[key], dtype="S")
+        )
 
     final_h5_open.close()
 

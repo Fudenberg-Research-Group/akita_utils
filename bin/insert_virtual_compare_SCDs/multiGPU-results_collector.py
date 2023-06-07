@@ -26,9 +26,6 @@ Relies on slurm_gf.py to auto-generate slurm jobs.
 """
 
 from optparse import OptionParser
-import os
-
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 import h5py
 import numpy as np

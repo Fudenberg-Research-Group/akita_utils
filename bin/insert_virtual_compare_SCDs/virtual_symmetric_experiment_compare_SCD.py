@@ -39,7 +39,7 @@ Options:
 -----------
 - path to the mouse or human genome in the fasta format
 - comma-separated list of statistic scores (stats, e.g. --stats SCD,INS-16)
-- head index (depending if predictions are to be made in the mouse (--head_index 0) or human genome-context (--head_index 1))
+- head index (depending if predictions are to be made in the human (--head_index 0) or mouse genome-context (--head_index 1))
 - model index (same as specified one by the model_file)
 - batch size 
 - path to the background file (in the fasta format)
@@ -326,11 +326,11 @@ def main():
 
     scd_out = initialize_output_h5(
         options.out_dir,
-        seq_coords_df,
+        params["model"],
+        options.genome_fasta,
+        seqnn_model,
         options.scd_stats,
-        target_ids,
-        head_index,
-        model_index,
+        seq_coords_df,
     )
 
     print("initialized")
