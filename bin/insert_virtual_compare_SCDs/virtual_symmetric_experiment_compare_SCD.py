@@ -63,9 +63,6 @@ from optparse import OptionParser
 import json
 import os
 
-# import os
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-
 import pickle
 import random
 
