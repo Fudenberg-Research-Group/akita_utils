@@ -317,14 +317,14 @@ def main():
         
     #################################################################
     # setup output
-
+    
     scd_out = initialize_output_h5(
         options.out_dir,
-        seq_coords_df,
+        params["model"],
+        options.genome_fasta,
+        seqnn_model,
         options.scd_stats,
-        target_ids,
-        head_index,
-        model_index
+        seq_coords_df
     )
 
     print("initialized")
