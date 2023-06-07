@@ -163,7 +163,7 @@ def write_maps_to_h5(
             
 # TODO: this function should be moved somewhere else - where?
             
-def save_maps(
+def save_map_plots(
     prediction_matrix,
     experiment_index,
     head_index,
