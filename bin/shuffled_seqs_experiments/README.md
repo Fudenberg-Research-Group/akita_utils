@@ -2,7 +2,11 @@
 
    - (1) create a table specifying how shuffled sequences should be generated. Includes: mutation method, shuffle parameter, score thresholds (MPS_thresh, SCD_thresh) and ctcf_detection_threshold. Can be used with either human or mouse genomes.
    
+<<<<<<< HEAD
             python generate_shuffled_seqs_df.py -f /project/fudenber_735/genomes/mm10/mm10.fa -seq_bed_file /project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed --output_filename data/shuffled_seqs_test.tsv --num_seqs 100 --mutation_method permute_whole_seq
+=======
+            python generate_shuffled_seqs_df.py -f /project/fudenber_735/genomes/mm10/mm10.fa -seq_bed_file /project/fudenber_735/tensorflow_models/akita/v2/data/mm10/sequences.bed --output_filename data/shuffled_seqs_test.tsv --num_seqs 100
+>>>>>>> main
                 
    - (2) generating scores for each of the shuffled seqs created using the provided tsv which can have as many parameters as specified. With these score, further analysis is done as shown in the analysis notebook to decide which particular parameters as best suited to create a flat seq
    

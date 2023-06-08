@@ -1,5 +1,6 @@
 import pandas as pd
 import h5py
+from io import StringIO
 
 
 def h5_to_df(
@@ -103,3 +104,36 @@ def read_jaspar_to_numpy(
     if motif.shape[1] != 4:
         raise ValueError("motif returned should be have n_positions x 4 bases")
     return motif
+
+
+def read_rmsk(rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz"):
+    
+    """reads a data frame containing repeatable elements and renames columns specifying genomic intervals to standard: chrom, start, end, used in thie repo."""
+    
+    rmsk_cols = list(
+        pd.read_csv(
+            StringIO(
+                """bin swScore milliDiv milliDel milliIns genoName genoStart genoEnd genoLeft strand repName repClass repFamily repStart repEnd repLeft id"""
+            ),
+            sep=" ",
+        )
+    )
+
+    rmsk = pd.read_table(
+        rmsk_file,
+        names=rmsk_cols,
+    )
+    
+    rmsk.rename(
+        columns={"genoName": "chrom", "genoStart": "start", "genoEnd": "end"},
+        inplace=True,
+    )
+    
+    return rmsk
+
+def read_ctcf(ctcf_file="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz"):
+    ctcf_cols = list(pd.read_csv(StringIO("""chrom start end name score pval strand"""), sep=" ",))
+
+    ctcf_motifs = pd.read_table(ctcf_file, names=ctcf_cols,)
+    
+    return ctcf_motifs

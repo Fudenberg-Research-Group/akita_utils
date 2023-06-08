@@ -75,21 +75,33 @@ def main():
     )
     parser.add_argument(
         "--mode",
+<<<<<<< HEAD
         default="tail",
+=======
+        default="uniform",
+>>>>>>> main
         help="loci selection criteria",
     )
     parser.add_argument(
         "--map_score_threshold",
         type=int,
         nargs="+",
+<<<<<<< HEAD
         default=[50],
+=======
+        default=[60],
+>>>>>>> main
         help="maximum allowable map score, SCD",
     )
     parser.add_argument(
         "--scores_pixelwise_thresh",
         type=int,
         nargs="+",
+<<<<<<< HEAD
         default=[0.3],
+=======
+        default=[0.2],
+>>>>>>> main
         help="maximum allowable intensity of a single pixel in a map",
     )
     args = parser.parse_args()
@@ -110,6 +122,7 @@ def main():
         "map_score_threshold": args.map_score_threshold, 
         "scores_pixelwise_thresh": args.scores_pixelwise_thresh,
     }
+<<<<<<< HEAD
 
     # sampling seq_df dataframe respecting GC content
     seq_gc_df = akita_utils.tsv_gen_utils.filter_sites_by_score(
@@ -119,6 +132,17 @@ def main():
         lower_threshold=1,
         mode=args.mode,
         num_sites=args.num_backgrounds,
+=======
+    
+    # sampling seq_df dataframe respecting GC content
+    seq_gc_df = akita_utils.tsv_gen_utils.filter_dataframe_by_column(
+        general_seq_gc_df,
+        column_name="GC",
+        upper_threshold=99,
+        lower_threshold=1,
+        filter_mode=args.mode,
+        num_rows=args.num_backgrounds,
+>>>>>>> main
     )
 
     # fixing locus specific variables together before grid creation

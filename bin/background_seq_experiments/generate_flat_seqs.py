@@ -34,9 +34,12 @@ import pandas as pd
 from skimage.measure import block_reduce
 import seaborn as sns
 
+<<<<<<< HEAD
 
 pid = os.getpid()
 
+=======
+>>>>>>> main
 sns.set(style="ticks", font_scale=1.3)
 
 import tensorflow as tf
@@ -138,7 +141,11 @@ def main():
 
     parser.add_option("-s", dest="save_seqs", default=True, help="Save the final seqs in fasta format")
 
+<<<<<<< HEAD
     parser.add_option("--max_iters", dest="max_iters", default=10, type=int, help="maximum iterations")
+=======
+    parser.add_option("--max_iters", dest="max_iters", default=10, help="maximum iterations")
+>>>>>>> main
 
     (options, args) = parser.parse_args()
 
@@ -225,14 +232,22 @@ def main():
         seqnn_model,
         options.genome_fasta,
         seq_coords_df,
+<<<<<<< HEAD
         max_iters=int(options.max_iters),
+=======
+        max_iters=options.max_iters,
+>>>>>>> main
         batch_size=batch_size,
     )
 
     # save flat sequences in fasta format if requested
 
     if options.save_seqs is not None:
+<<<<<<< HEAD
         with open(f"{options.out_dir}/{pid}_background_seqs.fa", "w") as f:
+=======
+        with open(f"{options.out_dir}/background_seqs.fa", "w") as f:
+>>>>>>> main
             for i in range(len(flat_seqs)):
                 f.write(
                     ">shuffled_chr"
@@ -241,12 +256,19 @@ def main():
                     + str(int(flat_seqs[i][2]))
                     + "_pixelwise"
                     + str(int(flat_seqs[i][3]))
+<<<<<<< HEAD
                     + "_custom"
                     + str(int(flat_seqs[i][4]))
                     + "\n"
                 )
                 f.write(akita_utils.dna_utils.dna_1hot_to_seq(flat_seqs[i][0]) + "\n")
         log.info(f"finished saving!")
+=======
+                    + "\n"
+                )
+                f.write(akita_utils.dna_utils.dna_1hot_to_seq(flat_seqs[i][0]) + "\n")
+        log.info(f"finished saving! \n plotting next if requested")
+>>>>>>> main
 
     # plot flat sequences
     if options.plot_map is not None:

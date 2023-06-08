@@ -54,10 +54,15 @@ def _multi_insert_offsets_casette(
     The function inserts each of the given sequences into the given sequence at specified locations, according to the given orientation and offset.
     The function then returns the modified DNA sequence in one-hot encoding format.
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
     If any of the inserted sequences overlap with each other, the function raises a `ValueError` with a message indicating which pairs of sequences overlap.
 >>>>>>> background_first_merge
+=======
+
+    If any of the inserted sequences overlap with each other, the function raises a `ValueError` with a message indicating which pairs of sequences overlap.
+>>>>>>> main
     """
     assert (
         len(seq_1hot_insertions) == len(orientation_string) == len(offsets_bp)
@@ -84,7 +89,6 @@ def _multi_insert_offsets_casette(
                 + insertion_offset
                 + insert_bp
             ] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[insertion_index])
-
     return output_seq
 
 
@@ -161,7 +165,6 @@ def random_seq_permutation(seq_1hot):
     return seq_1hot_perm
 
 
-
 def background_exploration_seqs_gen(seq_coords_df, genome_open, jasper_motif_file=None):
     """
     Generates mutated DNA sequences from genomic coordinates following given parameters like mutation method, shuffle parameter, ctcf detection threshold etc. if a mutation method provided is about motifs then make sure corresponding parameters are provided as well i.e if mask_motif method is used, then ctcf detection threshold is needed.
@@ -199,7 +202,6 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open, jasper_motif_fil
         seq_dna = genome_open.fetch(chrom, int(start), int(end))
         wt_1hot = akita_utils.dna_utils.dna_1hot(seq_dna)
         mutation_method = s.mutation_method
-
         if mutation_method == "mask_motif":
             motif_positions = generate_spans_start_positions(
             wt_1hot, motif, s.ctcf_detection_threshold)
