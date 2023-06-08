@@ -14,17 +14,15 @@
 # limitations under the License.
 # =========================================================================
 
+"""
+This script launches multiple worker threads to perform motif-specific SNP scoring and analysis. It takes a model directory and a TSV file as input. The script prepares the necessary directories and files, launches worker threads, and checks if a job has completed by verifying the existence of the output file. The worker threads execute the "akita_motif_scd.py" script with the provided options and arguments. The script utilizes SLURM for job management and uses GPU resources if available.
+
+"""
+
 from optparse import OptionParser
-import glob
 import os
 import pickle
-import shutil
-import subprocess
 import sys
-
-import h5py
-import numpy as np
-
 import akita_utils.slurm_gf as slurm
 import logging
 
@@ -33,19 +31,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-"""
-Derived from akita_scd_multi.py
 
-Compute scores for motifs in a TSV file, using multiple processes.
-
-Relies on slurm_gf.py to auto-generate slurm jobs.
-
-"""
-
-
-################################################################################
-# main
-################################################################################
 def main():
     usage = "usage: %prog [options] <models_dir> <tsv_file>"
     parser = OptionParser(usage)
@@ -135,12 +121,16 @@ def main():
     parser.add_option(
         "--mut-method",
         dest="mutation_method",
-        default="mask",
+        default="mask_spans",
         type="str",
         help="Specify mutation method, [Default: %default]",
     )
     parser.add_option(
-        "--motif-width", dest="motif_width", default=None, type="int", help="motif width"
+        "--motif-width",
+        dest="motif_width",
+        default=None,
+        type="int",
+        help="motif width",
     )
     parser.add_option(
         "--use-span",
@@ -234,8 +224,6 @@ def main():
 
         new_args = [params_file, model_file, tsv_file]
         options.name = f"{options.name}_m{options.model_index}_h{options.head_index}"
-    #######################################################
-    # prep work
 
     # output directory
     options.out_dir = f"{options.out_dir}/motif_expt_model{options.model_index}_head{options.head_index}"
@@ -243,6 +231,7 @@ def main():
     if not options.restart:
         if os.path.isdir(options.out_dir):
             print("Please remove %s" % options.out_dir, file=sys.stderr)
+            log.info(f"Please remove {options.out_dir}")
             exit(1)
         os.mkdir(options.out_dir)
 
@@ -252,7 +241,6 @@ def main():
     pickle.dump(options, options_pkl)
     options_pkl.close()
 
-    #######################################################
     # launch worker threads
     jobs = []
     for pi in range(options.processes):
@@ -305,8 +293,5 @@ def job_completed(options, pi):
     return os.path.isfile(out_file) or os.path.isdir(out_file)
 
 
-################################################################################
-# __main__
-################################################################################
 if __name__ == "__main__":
     main()

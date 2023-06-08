@@ -12,4 +12,4 @@
 
    - (2) generate deletion scores that correspond to the created tsv in step (1)
    
-   - there is a script to help generate these scores called `akita_motif_scd.sh` so you could feed it your custom arguments but it was designed for multiple processes. In case you want a single process then you could just set `processes=1` or you can use the `akita_motif_scd.py` fed with your custom arguments.
+   - there is a script to help generate these scores called `akita_motif_scd.sh` so you could feed it your custom arguments and run it by `sbatch akita_motif_scd.sh`, but it was designed for multiple processes. In case you want a single process then you could just set `processes=1` or you can use the `akita_motif_scd.py` fed with your custom arguments.

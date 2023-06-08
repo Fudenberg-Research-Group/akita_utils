@@ -32,7 +32,7 @@ import bioframe
 import numpy as np
 import pandas as pd
 import os
-from akita_utils import filter_by_chrmlen
+from akita_utils.tsv_gen_utils import filter_by_chrmlen
 
 
 ################################################################################
