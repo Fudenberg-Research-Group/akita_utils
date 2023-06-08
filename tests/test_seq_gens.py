@@ -185,7 +185,7 @@ def test_mask_central_seq():
     )  # Check if the result matches the expected output
 
 
-@pytest.mark.gen
+@pytest.mark.genome
 def test_permute_central_seq():
     seq_1hot = dna_1hot("ATGC")  # Input DNA sequence in one-hot encoding format
     motif_width = 2  # Width of the motif
@@ -201,7 +201,7 @@ def test_permute_central_seq():
     )  # Check if the result matches the expected output
 
 
-@pytest.mark.gen
+@pytest.mark.genome
 def test_permute_spans():
     seq_1hot = dna_1hot("ATGC")  # Input DNA sequence in one-hot encoding format
     spans = [(1, 3)]  # List of spans to permute
@@ -260,7 +260,7 @@ def test_fetch_centered_padded_seq_and_new_start_position():
     # TODO padded seqs
 
 
-@pytest.mark.gen
+@pytest.mark.genome
 def test_permute_spans_from_start_positions():
     # Test case 2 (motif window is less than the shuffle parameter)
     seq_1hot = dna_1hot(toy_genome.fetch("chr1", 0, 60).upper())
@@ -323,7 +323,7 @@ def test_permute_spans_from_start_positions():
     assert np.array_equal(result, expected_result)
 
 
-@pytest.mark.gen
+@pytest.mark.genome
 def test_randomise_spans_from_start_positions():
     # Test case 1 (test randomisation of repeated snippets)
     seq_1hot = dna_1hot("AAT")
