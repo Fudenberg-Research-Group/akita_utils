@@ -105,13 +105,13 @@ def test_mask_spans():
             [0, 0, 0, 1],
         ]
     )
-    spans = [[1, 3]]
+    spans = [(1,3), (4,5)]
     expected_output = [
         [0, 1, 0, 0],
         [0, 0, 0, 0],  # this should be masked
         [0, 0, 0, 0],  # this should be masked
         [1, 0, 0, 0],
-        [0, 0, 1, 0],
+        [0, 0, 0, 0],  # this should be masked
         [0, 0, 0, 1],
     ]
     result = mask_spans(seq_1hot, spans)

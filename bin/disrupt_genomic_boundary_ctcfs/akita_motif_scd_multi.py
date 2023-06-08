@@ -245,21 +245,14 @@ def main():
     jobs = []
     for pi in range(options.processes):
         if not options.restart or not job_completed(options, pi):
-            if options.cpu:
-                cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += f"conda activate {options.conda_env};"
-                cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
-            else:
-                cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += f"conda activate {options.conda_env};"
-                cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
-
+            cmd = 'eval "$(conda shell.bash hook)";'
+            cmd += f"conda activate {options.conda_env};"
+            cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
             cmd += " ${SLURM_SUBMIT_DIR}/akita_motif_scd.py %s %s %d" % (
                 options_pkl_file,
                 " ".join(new_args),
                 pi,
             )
-
             name = "%s_p%d" % (options.name, pi)
             outf = "%s/job%d.out" % (options.out_dir, pi)
             errf = "%s/job%d.err" % (options.out_dir, pi)
