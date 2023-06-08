@@ -28,7 +28,6 @@ def _single_map_insulation(target_map, window=10):
     score = np.nanmean(target_map[lo : (mid + 1), mid:hi])
     return score
 
-
 def calculate_INS(map_matrix, window=10):
     """
     Calculate insulation in a window-size diamond around the central pixel
@@ -46,7 +45,7 @@ def calculate_INS(map_matrix, window=10):
     scores : num_targets-long vector with INS-window scores
     """
     
-    num_targets = mats.shape[-1]
+    num_targets = map_matrix.shape[-1]
     scores = np.zeros((num_targets,))
     for target_index in range(num_targets):
         scores[target_index] = _single_map_insulation(map_matrix[:, :, target_index], window=window)
@@ -148,4 +147,3 @@ def calculate_scores(stat_metrics, map_matrix, reference_map_matrix=None):
     # new scores will be added soon...
     
     return scores
-
