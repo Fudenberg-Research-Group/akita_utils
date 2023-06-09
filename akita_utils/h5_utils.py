@@ -7,9 +7,14 @@ from akita_utils.utils import ut_dense
 from akita_utils.stats_utils import calculate_scores
 
 
-def initialize_output_h5(
-    out_dir, seq_coords_df, stat_metrics, target_ids, head_index, model_index
-):
+def initialize_output_h5(out_dir, 
+                         model_file, 
+                         genome_fasta,
+                         seqnn_model,
+                         stat_metrics,
+                         seq_coords_df,
+                        save_maps=False,
+                        map_size=512):
     """
     Initializes an h5 file to save statistical metrics calculated from Akita's predicftions.
 
@@ -17,27 +22,53 @@ def initialize_output_h5(
     ------------
     out_dir : str
         Path to the desired location of the output h5 file.
-    seq_coords_df : dataFrame
-        Pandas dataframe where each row represents one experiment (so one set of prediction).
+    model_file : str
+        Path to the model file.
+    genome_fasta : str
+        Path to the genome file (mouse or human).
+    seqnn_model : object
+        Loaded model.
     stat_metrics : list
         List of stratistical metrics that are supposed to be calculated.
-    target_ids : list
-        List of target indices.
-    head_index : int
-        Head index used to get a prediction (Mouse: head_index=1; Human: head_index=0).
-    model_index : int
-        Index of one of 8 models that has been used to make predictions (an index between 0 and 7).
-
+    seq_coords_df : dataFrame
+        Pandas dataframe where each row represents one experiment (so one set of prediction).
+    save_maps : Boolean
+        Stores True, if maps are supposed to be saved.
+    map_size : int
+        Size of a predicted (obs/exp) map matrix.
+        
     Returns
     ---------
     h5_outfile : h5py object
         An initialized h5 file.
     """
-
-    num_experiments = len(seq_coords_df)
-
+    
     h5_outfile = h5py.File(f"%s/OUT.h5" % out_dir, "w")
     seq_coords_df_dtypes = seq_coords_df.dtypes
+    
+    head_index = int(model_file.split("model")[-1][0])
+    model_index = int(model_file.split("c0")[0][-1]) 
+    
+    h5_outfile.attrs["date"] = str(date.today())
+    
+    num_backgrounds = len(seq_coords_df.background_index.unique())
+    
+    metadata_dict = {
+        "model_index" : model_index,
+        "head_index" : head_index,
+        "genome" : genome_fasta.split("/")[-1],
+        "seq_length" : seqnn_model.seq_length,
+        "diagonal_offset" : seqnn_model.diagonal_offset,             
+        "prediction_vector_length" : seqnn_model.target_lengths[0],
+        "target_crops" : seqnn_model.target_crops,
+        "num_targets" : seqnn_model.num_targets()}
+    
+    h5_outfile.attrs.update(metadata_dict)
+    
+    num_targets = seqnn_model.num_targets()
+    target_ids = [ti for ti in range(num_targets)]   
+                                   
+    num_experiments = len(seq_coords_df)
 
     for key in seq_coords_df:
         if seq_coords_df_dtypes[key] is np.dtype("O"):
@@ -46,7 +77,20 @@ def initialize_output_h5(
             )
         else:
             h5_outfile.create_dataset(key, data=seq_coords_df[key])
-
+    
+    if save_maps:
+        h5_outfile.create_dataset(
+                f"map_h{head_index}_m{model_index}",
+                shape=(num_experiments, map_size, map_size, num_targets),
+                dtype="float16"
+            )
+        
+        h5_outfile.create_dataset(
+                f"refmap_h{head_index}_m{model_index}",
+                shape=(num_backgrounds, map_size, map_size, num_targets),
+                dtype="float16"
+            )
+    
     # initialize keys for statistical metrics collection
     for stat_metric in stat_metrics:
 
@@ -61,7 +105,7 @@ def initialize_output_h5(
                 compression=None,
             )
 
-    return h5_outfile
+    return h5_outfile 
 
 
 def write_stat_metrics_to_h5(
@@ -102,6 +146,11 @@ def write_stat_metrics_to_h5(
         Negative minimum and positive maximum values that will be used to plot maps.
     plot_freq : int
         A plot of one out of plot_freq number of predictions is saved.
+    
+    Returns
+    ---------
+    h5_outfile : h5py object
+        An overwritten h5 file.    
     """
         
     # increase dtype
@@ -111,31 +160,29 @@ def write_stat_metrics_to_h5(
     map_matrix = ut_dense(prediction_matrix, diagonal_offset)
     
     # getting desired scores
-    # TODO: reference_map_matrix may not be None if the experiments are done in the genomic context,
-    # it should be adjusted in the future
     scores = calculate_scores(stat_metrics, map_matrix, reference_map_matrix)
     
     for key in scores:
         for target_index in range(prediction_matrix.shape[1]):
             h5_outfile[f"{key}_h{head_index}_m{model_index}_t{target_index}"][experiment_index] = scores[key][target_index].astype("float16")
-
-
+            
+    
 def write_maps_to_h5(
-    prediction_matrix,
+    map_matrix,
     h5_outfile,
     experiment_index,
     head_index,
     model_index,
     diagonal_offset=2,
-    plot_dir=None
+    reference=False
 ):
     """
     Writes entire maps to an h5 file.
 
     Parameters
     ------------
-    prediction_matrix : numpy matrix
-        Matrix collecting Akita's predictions.
+    map_matrix : numpy matrix
+        Matrix collecting Akita's prediction maps. Shape: (map_size, map_size, num_targets).
     h5_outfile : h5py object
         An initialized h5 file.
     experiment_index : int
@@ -147,22 +194,25 @@ def write_maps_to_h5(
     diagonal_offset : int
         Number of diagonals that are added as zeros in the conversion.
         Typically 2 diagonals are ignored in Hi-C data processing.
-    plot_dir : str
-        Path to the desired location of the output plots (plots will not be saved if plot_dir == None).
+    save_maps : Boolean
+        Stores True, if maps are supposed to be saved.
+    
+    Returns
+    ---------
+    h5_outfile : h5py object
+        An overwritten h5 file.    
     """
+    prefix = "map"
+    if reference:
+        prefix = "refmap"
+
+    for target_index in range(map_matrix.shape[-1]):
+        h5_outfile[f"{prefix}_h{head_index}_m{model_index}"][experiment_index, :, :, target_index] += map_matrix[:, :, target_index]
     
-    # increase dtype
-    prediction_matrix = prediction_matrix.astype("float32")
-    
-    # convert prediction vectors to maps
-    map_matrix = ut_dense(prediction_matrix, diagonal_offset)
-    
-    for target_index in range(prediction_matrix.shape[1]):
-        h5_outfile[f"e{experiment_index}_h{head_index}_m{model_index}_t{target_index}"] = map_matrix[:, :, target_index]
-        
             
 # TODO: this function should be moved somewhere else - where?
             
+    
 def save_map_plots(
     prediction_matrix,
     experiment_index,
