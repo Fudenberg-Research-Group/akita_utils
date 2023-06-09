@@ -2,7 +2,7 @@ import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+from skimage.measure import block_reduce
 from akita_utils.utils import ut_dense
 from akita_utils.stats_utils import insul_diamonds_scores
 

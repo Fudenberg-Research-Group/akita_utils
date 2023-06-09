@@ -123,7 +123,7 @@ def permute_seq_k(seq_1hot, k=2):
     """
 
     if np.mod(k, 2) != 0:
-        raise ValueError("current implementation only works for multiples of 2")
+        raise ValueError("current implementation only works for multiples of 2") # not true: TODO remove this?!!!
     seq_1hot_perm = np.zeros(np.shape(seq_1hot)).astype(int)
     perm_inds = k * np.random.permutation(np.arange(len(seq_1hot) // k))
     for i in range(k):

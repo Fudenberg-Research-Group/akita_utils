@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import pysam
 from .dna_utils import dna_1hot, permute_seq_k
 import logging

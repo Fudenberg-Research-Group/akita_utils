@@ -1,10 +1,8 @@
 import pandas as pd
 import numpy as np
-import akita_utils
 import glob
 import bioframe
 import itertools
-from io import StringIO
 from akita_utils.format_io import read_rmsk, read_ctcf, h5_to_df
 
 
@@ -70,7 +68,7 @@ def filter_boundary_ctcfs_from_h5(
         raise ValueError("no duplicates allowed")
         
     sites.rename(
-    columns={"start_2": "start","end_2": "end", "strand_2": "strand"},
+    columns={"start_2": "start_site","end_2": "end_site", "strand_2": "strand_site"},
     inplace=True,)
 
     return sites
@@ -230,7 +228,7 @@ def filter_by_overlap_num(
     
     filter_df = bioframe.expand(filter_df, pad=expand_window)
     
-    working_df = bioframe.count_overlaps(working_df, filter_df[filter_df_cols], cols1=working_df_cols)
+    working_df = bioframe.count_overlaps(working_df, filter_df, cols1=working_df_cols, cols2=filter_df_cols)
     
     working_df = working_df.iloc[working_df["count"].values <= max_overlap_num]
     working_df.reset_index(inplace=True, drop=True)
@@ -502,8 +500,8 @@ def generate_ctcf_motifs_list(
     h5_dirs,
     rmsk_file,
     ctcf_jaspar_file,
-    score_key,
-    mode,
+    filter_score,
+    filter_mode,
     num_sites,
     weak_thresh_pct=1,
     strong_thresh_pct=99,
@@ -516,7 +514,7 @@ def generate_ctcf_motifs_list(
     - h5_dirs: A list of directories containing input .h5 files.
     - rmsk_file: The path to a .bed file containing repeat-masker annotations.
     - jaspar_file: The path to a JASPAR-formatted CTCF motif database.
-    - score_key: The key to extract score values of putative binding sites from input .h5 files.
+    - filter_score: The key to extract score values of putative binding sites from input .h5 files.
     - mode: One of "head", "tail", "uniform", or "random"; specifies which percentiles of CTCF sites ranked by score should be selected.
     - num_sites: The number of sites to select per mode.
     - weak_thresh_pct: The percentile below which putative binding sites are considered weak (default 1).
@@ -524,39 +522,34 @@ def generate_ctcf_motifs_list(
     - unique_identifier: An optional string that can be used to add a unique identifier to the output.
 
     Returns:
-    - A list of strings representing genomic coordinates of putative CTCF binding sites in the following format: "chrom,start,end,strand#score_key=score_value".
+    - A list of strings representing genomic coordinates of putative CTCF binding sites in the following format: "chrom,start,end,strand#filter_score=score_value".
     """
     sites = filter_boundary_ctcfs_from_h5(
-        h5_dirs=h5_dirs, score_key=score_key, threshold_all_ctcf=5,
+        h5_dirs=h5_dirs, score_key=filter_score, threshold_all_ctcf=5,
     )
     
     rmsk_df = read_rmsk(rmsk_file) 
-    rmsk.rename(
-    columns={"chrom": "chrom_rmsk", "start": "start_rmsk", "end": "end_rmsk","strand":"strand_rmsk"},
-    inplace=True,)
-    sites = filter_by_overlap_num(working_df=sites, filter_df=rmsk_df, working_df_cols=["chrom", "start", "end"], filter_df_cols=["chrom_rmsk", "start_rmsk", "end_rmsk"])
+    sites = filter_by_overlap_num(working_df=sites, filter_df=rmsk_df, working_df_cols=["chrom", "start_site", "end_site"], filter_df_cols=["chrom", "start", "end"])
 
     ctcf_motifs_df = read_ctcf(ctcf_jaspar_file)
-    ctcf_motifs_df.rename(
-    columns={"chrom": "chrom_ctcf", "start": "start_ctcf", "end": "end_ctcf","strand":"strand_ctcf"},
-    inplace=True,)
-    sites = filter_by_overlap_num(working_df=sites, filter_df=ctcf_motifs_df, working_df_cols==["chrom", "start", "end"], filter_df_cols=["chrom_ctcf", "start_ctcf", "end_ctcf"])
+    sites = filter_by_overlap_num(working_df=sites, filter_df=ctcf_motifs_df, working_df_cols=["chrom", "start_site", "end_site"], filter_df_cols=["chrom", "start", "end"])
 
     site_df = filter_dataframe_by_column(
-            sites,
-            column_name=score_key,
+            df=sites,
+            column_name=filter_score,
             upper_threshold=strong_thresh_pct,
             lower_threshold=weak_thresh_pct,
-            filter_mode=mode,
+            filter_mode=filter_mode,
             num_rows=num_sites,
             )
-
+    
     seq_coords_df = (
-        site_df[["chrom", "start", "end", "strand", score_key]]
+        site_df[["chrom", "start", "end", "strand_site", filter_score]]
         .copy()
         .rename(
             columns={
-                score_key: "genomic_" + score_key,
+                "strand_site":"strand",
+                filter_score: "genomic_" + filter_score,
             }
         )
     )
@@ -566,7 +559,7 @@ def generate_ctcf_motifs_list(
 
 
 def generate_locus_specification_list(
-    dataframe, filter_out_ctcf_motifs=False, specification_list=None, unique_identifier="",
+    dataframe, filter_out_ctcf_motifs=False, specification_list=None, unique_identifier="", ctcf_jaspar_file=None
 ):
     """
     Generate a list of locus specifications from a dataframe of genomic features.
@@ -585,12 +578,10 @@ def generate_locus_specification_list(
     """
 
     if filter_out_ctcf_motifs is True:
+        assert ctcf_jaspar_file is not None, "Please provie path to ctcf jaspar motif to use while filtering out loci with ctcf"
         ctcf_motifs_df = read_ctcf(ctcf_jaspar_file)
-        ctcf_motifs_df.rename(
-        columns={"chrom": "chrom_ctcf", "start": "start_ctcf", "end": "end_ctcf","strand":"strand_ctcf"},
-        inplace=True,)
-        sites = filter_by_overlap_num(working_df=sites, filter_df=ctcf_motifs_df, working_df_cols==["chrom", "start", "end"], filter_df_cols=["chrom_ctcf", "start_ctcf", "end_ctcf"])
-    
+        dataframe = filter_by_overlap_num(working_df=dataframe, filter_df=ctcf_motifs_df, working_df_cols=["chrom", "start", "end"], filter_df_cols=["chrom", "start", "end"])
+        
     if "strand" not in dataframe.columns:  # some inserts dont have this column
         dataframe["strand"] = "+"
 

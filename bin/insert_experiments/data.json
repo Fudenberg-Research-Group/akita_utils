@@ -1,14 +1,31 @@
 [    
     {  "feature_name": "CTCF_1",
         "path": "/scratch1/kamulege/disruption_genomic_scds/motif_expt_model0_head1/scd.h5",
-        "offset": [0],        
+        "offset": [-100000],        
         "flank_bp": [0],        
         "orientation": [">"],
         "rmsk_file": "/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz", 
-        "jaspar_file": "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
-        "num_sites": 100,
-        "score_key": "SCD",
-        "mode": "uniform" 
+        "ctcf_jaspar_file": "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
+        "num_sites": 10,
+        "filter_score": "SCD",
+        "filter_mode": "uniform" 
+    },
+    {   "feature_name": "enhancer",
+        "path": "/home1/kamulege/akita_utils/bin/insert_experiments/data/experimental_data/enhancer_score_sample.csv",        
+        "offset": [0],        
+        "flank_bp": [0],        
+        "orientation": [">"],
+        "filter_out_inserts_with_ctcf_motifs": true,
+        "ctcf_jaspar_file": "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz"
+    },
+    {   "feature_name": "promoter",
+        "path": "/home1/kamulege/akita_utils/bin/insert_experiments/data/experimental_data/promoter_score_sample_upstream_bp_20000.csv",        
+        "offset": [100000],        
+        "flank_bp": [0],        
+        "orientation": [">"],
+        "filter_out_inserts_with_ctcf_motifs": true,
+        "ctcf_jaspar_file": "/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
+        "specification_list": [0,2,4,5,6,10,12,13,14,15]
     }
 ]
 

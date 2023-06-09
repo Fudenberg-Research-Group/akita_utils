@@ -1,7 +1,22 @@
 #!/bin/bash
 
-# Load configuration file
-source config.ini
+#[paths]
+models_dir="/project/fudenber_735/tensorflow_models/akita/v2/models"
+tsv_file="/home1/kamulege/akita_utils/bin/insert_experiments/data/7_uniformly_selcted_model6_motifs.tsv"
+genome_fasta="/project/fudenber_735/genomes/mm10/mm10.fa"
+output="/scratch1/kamulege/insert_experiments/test"
+background_seqs="/scratch1/kamulege/flat_seqs_mouse_100/flat_seqs_model0_head1/merged_background_file.fa"
+
+
+#[settings]
+models="0"
+batch_size=4
+max_proc=7
+processes=1
+head=1
+stats="SCD,SSD"
+time=00:30:00
+
 
 # Check if required files exist
 if [ ! -d "$models_dir" ]; then

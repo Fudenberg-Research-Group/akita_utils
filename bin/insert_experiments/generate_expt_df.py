@@ -10,7 +10,7 @@ import itertools
 import os
 import pandas as pd
 import akita_utils
-import akita_utils.tsv_gen_utils
+from akita_utils.tsv_gen_utils import generate_locus_specification_list, generate_locus_specification_list, generate_ctcf_motifs_list, parameter_dataframe_reorganisation
 import argparse
 import json
 import logging
@@ -34,6 +34,11 @@ def main():
     parser.add_argument(
         "--json-file", help="Path to JSON file with insert(s) dataframe(s)"
     )
+    parser.add_argument(
+        "--dont-search-overlaps",
+        help="Use this flag to skip searching for overlaps (if unnecessary) between inserts since it can be time consuming depending on the number of inserts",
+        action="store_true"
+    )
 
     args = parser.parse_args()
 
@@ -42,7 +47,6 @@ def main():
         "background_seqs": args.background_seqs,
     }
 
-    # ---------------importing inserts from json file if given----------------------------
     if args.json_file:
         with open(args.json_file) as f:
             inserts = json.load(f)
@@ -57,40 +61,42 @@ def main():
             if ext == ".csv":
                 grid_params[
                     f"{insert_identifier}_locus_specification"
-                ] = akita_utils.tsv_gen_utils.generate_locus_specification_list(
+                ] = generate_locus_specification_list(
                     dataframe=pd.read_csv(df_path),
                     filter_out_ctcf_motifs=insert_specs.get(
                         "filter_out_inserts_with_ctcf_motifs", False
                     ),
                     specification_list=insert_specs.get("specification_list", None),
                     unique_identifier=insert_identifier,
+                    ctcf_jaspar_file=insert_specs.get("ctcf_jaspar_file", None),
                 )
             elif ext == ".tsv":
                 grid_params[
                     f"{insert_identifier}_locus_specification"
-                ] = akita_utils.tsv_gen_utils.generate_locus_specification_list(
+                ] = generate_locus_specification_list(
                     dataframe=pd.read_csv(df_path, delimiter="\t"),
                     filter_out_ctcf_motifs=insert_specs.get(
                         "filter_out_inserts_with_ctcf_motifs", False
                     ),
                     specification_list=insert_specs.get("specification_list", None),
                     unique_identifier=insert_identifier,
+                    ctcf_jaspar_file=insert_specs.get("ctcf_jaspar_file", None),
                 )                
             elif ext == ".h5":
                 grid_params[
                     f"{insert_identifier}_locus_specification"
-                ] = akita_utils.tsv_gen_utils.generate_ctcf_motifs_list(
+                ] = generate_ctcf_motifs_list(
                     h5_dirs=df_path,
                     rmsk_file=insert_specs["rmsk_file"],
-                    jaspar_file=insert_specs["jaspar_file"],
-                    score_key=insert_specs["score_key"],
-                    mode=insert_specs["mode"],
+                    ctcf_jaspar_file=insert_specs["ctcf_jaspar_file"],
+                    filter_score=insert_specs["filter_score"],
+                    filter_mode=insert_specs["filter_mode"],
                     num_sites=insert_specs["num_sites"],
                     unique_identifier=insert_identifier,
                 )
 
             else:
-                raise ValueError("File must be a CSV or HDF5 file.")
+                raise ValueError("Input file must be a TSV, CSV or HDF5 file.")
             
             grid_params[f"{insert_identifier}_flank_bp"] = insert_specs.get(
                 "flank_bp", DEFAULT_FLANK_BP
@@ -109,13 +115,18 @@ def main():
     grid_params_dataframe = pd.DataFrame(
         grid_params_set, columns=grid_params.keys()
     )
+    
     grid_params_dataframe = (
-        akita_utils.tsv_gen_utils.parameter_dataframe_reorganisation(
+        parameter_dataframe_reorganisation(
             grid_params_dataframe, insert_names_list
         )
     )
     
-    akita_utils.seq_gens._inserts_overlap_check_pre_simulation(grid_params_dataframe)
+    search_overlaps = not args.dont_search_overlaps
+    
+    if search_overlaps:
+        log.info("Searching for overlaps between inserts, it might take time depending on the number of inserts and parameters ...")
+        akita_utils.seq_gens._inserts_overlap_check_pre_simulation(grid_params_dataframe)
     
     grid_params_dataframe.to_csv(f"{args.out_dir}", sep="\t", index=False)
 

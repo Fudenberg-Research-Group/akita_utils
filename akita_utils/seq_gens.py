@@ -341,7 +341,7 @@ def _check_overlaps_pre_simulation(insertions_length_list, offsets_bp, insertion
         _check_overlaps(insert_limits, insertions_name_list)
             
             
-def _check_overlaps(insert_limits, insertions_name_list=None):
+def _check_overlaps(insert_limits, insertions_name_list):
     sorted_insert_limits = sorted(zip(insert_limits, insertions_name_list))
     sorted_insertions_name_list = [name for _, name in sorted_insert_limits]
     sorted_insert_limits = [limits for limits, _ in sorted_insert_limits]
