@@ -10,7 +10,11 @@ import itertools
 import os
 import pandas as pd
 import akita_utils
-from akita_utils.tsv_gen_utils import generate_locus_specification_list, generate_locus_specification_list, generate_ctcf_motifs_list, parameter_dataframe_reorganisation
+from akita_utils.tsv_gen_utils import (
+    generate_locus_specification_list,
+    generate_ctcf_motifs_list,
+    parameter_dataframe_reorganisation,
+)
 import argparse
 import json
 import logging
@@ -26,7 +30,12 @@ DEFAULT_FLANK_BP = [0]
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--background_seqs", nargs="+", dest="background_seqs", default=[0], type=int, help="list of which background seqs to pick, from the given set of background fasta seqs"
+        "--background_seqs",
+        nargs="+",
+        dest="background_seqs",
+        default=[0],
+        type=int,
+        help="list of which background seqs to pick, from the given set of background fasta seqs",
     )
     parser.add_argument(
         "-o", dest="out_dir", default="default_exp_data", help="where to store output"
@@ -37,7 +46,7 @@ def main():
     parser.add_argument(
         "--dont-search-overlaps",
         help="Use this flag to skip searching for overlaps (if unnecessary) between inserts since it can be time consuming depending on the number of inserts",
-        action="store_true"
+        action="store_true",
     )
 
     args = parser.parse_args()
@@ -52,7 +61,9 @@ def main():
             inserts = json.load(f)
 
         for insert_identification_number, insert_specs in enumerate(inserts):
-            insert_identifier = insert_specs.get("feature_name", f"{insert_identification_number}")
+            insert_identifier = insert_specs.get(
+                "feature_name", f"{insert_identification_number}"
+            )
             insert_names_list += [insert_identifier]
             df_path = insert_specs["path"]
             root, ext = os.path.splitext(df_path)
@@ -81,7 +92,7 @@ def main():
                     specification_list=insert_specs.get("specification_list", None),
                     unique_identifier=insert_identifier,
                     ctcf_jaspar_file=insert_specs.get("ctcf_jaspar_file", None),
-                )                
+                )
             elif ext == ".h5":
                 grid_params[
                     f"{insert_identifier}_locus_specification"
@@ -97,7 +108,7 @@ def main():
 
             else:
                 raise ValueError("Input file must be a TSV, CSV or HDF5 file.")
-            
+
             grid_params[f"{insert_identifier}_flank_bp"] = insert_specs.get(
                 "flank_bp", DEFAULT_FLANK_BP
             )
@@ -105,32 +116,31 @@ def main():
             grid_params[f"{insert_identifier}_orientation"] = insert_specs[
                 "orientation"
             ]
-                
+
             log.info(f"finished processing {insert_identifier} dataset")
-    
+
     # --------------- create a grid over all provided parameters ---------------------
-    grid_params_set = list(
-        itertools.product(*[v for v in grid_params.values()])
+    grid_params_set = list(itertools.product(*[v for v in grid_params.values()]))
+    grid_params_dataframe = pd.DataFrame(grid_params_set, columns=grid_params.keys())
+
+    grid_params_dataframe = parameter_dataframe_reorganisation(
+        grid_params_dataframe, insert_names_list
     )
-    grid_params_dataframe = pd.DataFrame(
-        grid_params_set, columns=grid_params.keys()
-    )
-    
-    grid_params_dataframe = (
-        parameter_dataframe_reorganisation(
-            grid_params_dataframe, insert_names_list
-        )
-    )
-    
+
     search_overlaps = not args.dont_search_overlaps
-    
+
     if search_overlaps:
-        log.info("Searching for overlaps between inserts, it might take time depending on the number of inserts and parameters ...")
-        akita_utils.seq_gens._inserts_overlap_check_pre_simulation(grid_params_dataframe)
-    
+        log.info(
+            "Searching for overlaps between inserts, it might take time depending on the number of inserts and parameters ..."
+        )
+        akita_utils.seq_gens._inserts_overlap_check_pre_simulation(
+            grid_params_dataframe
+        )
+
     grid_params_dataframe.to_csv(f"{args.out_dir}", sep="\t", index=False)
 
     log.info("Done preprocessing")
-    
+
+
 if __name__ == "__main__":
     main()

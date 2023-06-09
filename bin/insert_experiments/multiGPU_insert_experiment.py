@@ -29,10 +29,7 @@ Relies on slurm_gf.py to auto-generate slurm jobs.
 from optparse import OptionParser
 import os
 import pickle
-import subprocess
 import sys
-import h5py
-import numpy as np
 import akita_utils.slurm_gf as slurm
 
 
@@ -193,6 +190,12 @@ def main():
         default="[xeon-6130|xeon-2640v4]",
         help="cpu constraints to avoid the a40 gpus. [Default: %default]",
     )
+    parser.add_option(
+        "--conda_env",
+        dest="conda_env",
+        default="basenji-gpu",
+        help="conda environment with necessary dependencies",
+    )
 
     (options, args) = parser.parse_args()
 
@@ -208,10 +211,10 @@ def main():
         params_file = model_dir + "params.json"
         new_args = [params_file, model_file, tsv_file]
         options.name = f"{options.name}_m{options.model_index}_h{options.head_index}"
-        
+
     # output directory
     options.out_dir = f"{options.out_dir}/insert_expt_model{options.model_index}_head{options.head_index}"
-    
+
     if not options.restart:
         if os.path.isdir(options.out_dir):
             print("Please remove %s" % options.out_dir, file=sys.stderr)
@@ -228,15 +231,9 @@ def main():
     jobs = []
     for pi in range(options.processes):
         if not options.restart or not job_completed(options, pi):
-            if options.cpu:
-                cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += "conda activate basenji-gpu;"
-                cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
-            else:
-                cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += "conda activate basenji-gpu;"  # change to your env
-                cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
-
+            cmd = 'eval "$(conda shell.bash hook)";'
+            cmd += f"conda activate {options.conda_env};"
+            cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
             cmd += " ${SLURM_SUBMIT_DIR}/insert_experiment.py %s %s %d" % (
                 options_pkl_file,
                 " ".join(new_args),
@@ -248,7 +245,6 @@ def main():
             errf = "%s/job%d.err" % (options.out_dir, pi)
 
             num_gpu = 1 * (not options.cpu)
-
             j = slurm.Job(
                 cmd,
                 name,

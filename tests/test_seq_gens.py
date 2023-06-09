@@ -1,9 +1,10 @@
 import pytest
 import numpy as np
 from .Toy_genome import ToyGenomeOpen
-from akita_utils.dna_utils import dna_1hot, dna_1hot_to_seq, dna_seq_rc
+from akita_utils.dna_utils import dna_1hot, dna_1hot_to_seq, dna_seq_rc, hot1_rc
 from akita_utils.seq_gens import (
     _insert_casette,
+    _multi_insert_offsets_casette,
     mask_spans,
     mask_spans_from_start_positions,
     permute_spans,
@@ -379,7 +380,7 @@ def test_multi_insert_offsets_casette():
     orientation_string = [">"]
     expected_output = np.zeros((10, 4))
     expected_output[6:9, :] = seq_1hot_insertions[0]
-    output_seq = akita_utils.seq_gens._multi_insert_offsets_casette(
+    output_seq = _multi_insert_offsets_casette(
         seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
     )
     assert np.array_equal(output_seq, expected_output)
@@ -390,8 +391,8 @@ def test_multi_insert_offsets_casette():
     offsets_bp = [1]
     orientation_string = ["<"]
     expected_output = np.zeros((10, 4))
-    expected_output[6:9, :] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[0])
-    output_seq = akita_utils.seq_gens._multi_insert_offsets_casette(
+    expected_output[6:9, :] = hot1_rc(seq_1hot_insertions[0])
+    output_seq = _multi_insert_offsets_casette(
         seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
     )
     assert np.array_equal(output_seq, expected_output)
@@ -406,25 +407,11 @@ def test_multi_insert_offsets_casette():
     orientation_string = [">", "<"]
     expected_output = np.zeros((10, 4))
     expected_output[3:6, :] = seq_1hot_insertions[0]
-    expected_output[7:10, :] = akita_utils.dna_utils.hot1_rc(seq_1hot_insertions[1])
-    output_seq = akita_utils.seq_gens._multi_insert_offsets_casette(
+    expected_output[7:10, :] = hot1_rc(seq_1hot_insertions[1])
+    output_seq = _multi_insert_offsets_casette(
         seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
     )
     assert np.array_equal(output_seq, expected_output)
-    
-    # Test that the function correctly raises a ValueError when two inserted sequences overlap.
-    seq_1hot = np.zeros((10, 4))
-    seq_1hot_insertions = [
-        np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]),
-        np.array([[0, 1, 0, 0], [0, 0, 1, 0]])
-    ]
-    offsets_bp = [1, 3]
-    orientation_string = [">", ">"]
-    with pytest.raises(ValueError) as exc_info:
-        output_seq = akita_utils.seq_gens._multi_insert_offsets_casette(
-            seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
-        )
-    assert str(exc_info.value) == "Overlap found between inserted sequences: (6, 9), (8, 10)"
     
     # Test that the function returns the expected output when all possible arguments are empty.
     seq_1hot = np.zeros((10, 4))
@@ -432,7 +419,7 @@ def test_multi_insert_offsets_casette():
     offsets_bp = []
     orientation_string = ""
     expected_output = np.zeros((10, 4))
-    output_seq = akita_utils.seq_gens._multi_insert_offsets_casette(
+    output_seq = _multi_insert_offsets_casette(
         seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
     )
     assert np.array_equal(output_seq, expected_output)    

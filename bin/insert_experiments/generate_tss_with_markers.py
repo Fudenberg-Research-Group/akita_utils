@@ -7,16 +7,11 @@ up_stream_bps (int): the number of upstream basepairs that should be considered 
 """
 
 import pandas as pd
-import numpy as np
 import bbi
 from gtfparse import read_gtf
 import argparse
 import bioframe
-from akita_utils.dna_utils import scan_motif
-from akita_utils.seq_gens import generate_spans_start_positions
-
 import json
-import pandas as pd
 
 with open("file_paths.json", "r") as f:
     file_paths = json.load(f)
@@ -33,7 +28,7 @@ def main():
     )
 
     args = parser.parse_args()
-    
+
     NBINS = 1
 
     df = generate_expt_feature_df(file_paths)
@@ -50,8 +45,6 @@ def main():
     tss_df = label_DE_status(tss_df)
     tss_df = tss_df.query("avg_counts> 5").copy()
     tss_df.to_csv(f"./data/tss_dataframe.tsv", sep="\t", index=False)
-
-    
 
     enhancer_path = file_paths["enhancer_files"]["enh_chen_s1"]
     enhancer_df = bioframe.read_table(enhancer_path, schema="bed3", header=1)
@@ -87,7 +80,9 @@ def main():
         ],
         axis=1,
     )
-    promoter_merged_df.to_csv(f"./data/experimental_data/promoter_score_sample_upstream_bp_{args.up_stream_bps}.csv")
+    promoter_merged_df.to_csv(
+        f"./data/experimental_data/promoter_score_sample_upstream_bp_{args.up_stream_bps}.csv"
+    )
 
 
 # -------------------------------------------------------------------------------------------------
@@ -209,7 +204,9 @@ def generate_signal_matrix(
         intervals = bioframe.expand(intervals, pad=window_size)
 
     if window_type == "centered":
-        intervals = bioframe.expand(bioframe.expand(expanded, scale=0), pad=1000)
+        intervals = bioframe.expand(
+            bioframe.expand(expanded, scale=0), pad=1000
+        )  # undefine name expanded TODO: solve mystry
 
     with bbi.open(chip_seq_file) as f:
         matrix = f.stackup(
@@ -251,7 +248,9 @@ def get_tss_gene_intervals(
     if chrom_keep == "autosomes":
         tss_df = bioframe_clean_autosomes(tss_df)
     elif chrom_keep == "chromosomes":
-        tss_df = bioframe_clean_chromosomes(tss_df)
+        tss_df = bioframe_clean_chromosomes(
+            tss_df
+        )  # undefined bioframe_clean_chromosomes
 
     # drop duplicate TSSes
     return tss_df[return_cols].drop_duplicates(["gene_id"])
