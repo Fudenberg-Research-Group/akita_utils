@@ -121,13 +121,19 @@ def permute_seq_k(seq_1hot, k=2):
     k : int
         number of bases kept together in permutations.
     """
+    seq_length = len(seq_1hot)
+    if seq_length % k != 0:
+        raise ValueError("Sequence length must be divisible by k")
 
-    if np.mod(k, 2) != 0:
-        raise ValueError("current implementation only works for multiples of 2") # not true: TODO remove this?!!!
-    seq_1hot_perm = np.zeros(np.shape(seq_1hot)).astype(int)
-    perm_inds = k * np.random.permutation(np.arange(len(seq_1hot) // k))
+    seq_1hot_perm = np.zeros_like(seq_1hot)
+
+    num_permutations = seq_length // k
+    perm_inds = np.arange(num_permutations) * k
+    np.random.shuffle(perm_inds)
+
     for i in range(k):
         seq_1hot_perm[i::k] = seq_1hot[perm_inds + i, :].copy()
+
     return seq_1hot_perm
 
 

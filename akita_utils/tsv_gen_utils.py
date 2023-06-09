@@ -23,6 +23,15 @@ def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
     else:
         return sites_spans_split
 
+    
+def calculate_mean(dataframe, stat):
+    filtered_df = pd.DataFrame()
+    if any(stat in col for col in dataframe.columns):
+        filtered_df = filtered_df.append(dataframe.loc[:, dataframe.columns.str.contains(stat)].copy())
+    else:
+        print(f"No columns matching '{stat}' found in the DataFrame.")
+    return filtered_df.mean(axis=1)
+
 
 def filter_boundary_ctcfs_from_h5(
     h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
@@ -38,7 +47,7 @@ def filter_boundary_ctcfs_from_h5(
         dfs.append(h5_to_df(h5_file))
     df = dfs[0].copy()
     df[score_key] = np.mean([df[score_key] for df in dfs], axis=0)
-
+    
     # append scores for full mut and all ctcf mut to table
     print("annotating each site with boundary-wide scores")
     score_10k = np.zeros((len(df),))
@@ -142,6 +151,7 @@ def filter_dataframe_by_column(
 
     """
 
+
     if filter_mode not in ("head", "tail", "uniform", "random"):
         raise ValueError("a filter_mode has to be one from: head, tail, uniform, random")
 
@@ -221,9 +231,9 @@ def filter_by_overlap_num(
         
     Returns
     --------
+
     working_df : dataFrame
         Subset of working_df that do not have overlaps with filter_df above given threshold.
-
     """
     
     filter_df = bioframe.expand(filter_df, pad=expand_window)
@@ -581,7 +591,6 @@ def generate_locus_specification_list(
         assert ctcf_jaspar_file is not None, "Please provie path to ctcf jaspar motif to use while filtering out loci with ctcf"
         ctcf_motifs_df = read_ctcf(ctcf_jaspar_file)
         dataframe = filter_by_overlap_num(working_df=dataframe, filter_df=ctcf_motifs_df, working_df_cols=["chrom", "start", "end"], filter_df_cols=["chrom", "start", "end"])
-        
     if "strand" not in dataframe.columns:  # some inserts dont have this column
         dataframe["strand"] = "+"
 
