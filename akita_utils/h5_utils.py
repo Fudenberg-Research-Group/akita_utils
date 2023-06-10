@@ -321,3 +321,78 @@ def save_map_plots(
         
         plt.savefig(f"e{experiment_index}_h{head_index}_m{model_index}_t{target_index}.pdf")
         plt.close()
+
+        
+def collect_h5(file_name, out_dir, num_procs):
+    """collects data from multiple h5 files, works for higher-dimensional h5 keys as well"""
+    # count variants
+    num_variants = 0
+    for pi in range(num_procs):
+        # open job
+        job_h5_file = "%s/job%d/%s" % (out_dir, pi, file_name)
+        job_h5_open = h5py.File(job_h5_file, "r")
+        num_variants += len(job_h5_open["chrom"])
+        job_h5_open.close()
+    
+    print("num_variants: ", num_variants)
+    
+    # initialize final h5
+    final_h5_file = "%s/%s" % (out_dir, file_name)
+    final_h5_open = h5py.File(final_h5_file, "w")
+
+    job0_h5_file = "%s/job0/%s" % (out_dir, file_name)
+    job0_h5_open = h5py.File(job0_h5_file, "r")
+    for key in job0_h5_open.keys():
+        
+        if job0_h5_open[key].ndim == 1:
+            final_h5_open.create_dataset(
+                key, shape=(num_variants,), dtype=job0_h5_open[key].dtype
+            )
+            
+        elif job0_h5_open[key].ndim == 3:
+            
+            if key.split("_")[0] == "map":
+                _, prediction_vector_length, num_targets = job0_h5_open[key].shape
+
+                final_h5_open.create_dataset(
+                    key, shape=(num_variants, prediction_vector_length, num_targets), dtype=job0_h5_open[key].dtype
+                )
+            else:
+                num_backgrounds, prediction_vector_length, num_targets = job0_h5_open[key].shape
+
+                final_h5_open.create_dataset(
+                    key, shape=(num_backgrounds, prediction_vector_length, num_targets), dtype=job0_h5_open[key].dtype
+                )
+
+    job0_h5_open.close()
+
+    # set values
+    vi = 0
+    for pi in range(num_procs):
+        print("collecting job", pi)
+        # open job
+        job_h5_file = "%s/job%d/%s" % (out_dir, pi, file_name)
+        job_h5_open = h5py.File(job_h5_file, "r")
+
+        # append to final
+        for key in job_h5_open.keys():
+
+            job_variants = job_h5_open[key].shape[0]
+            
+            if job_h5_open[key].ndim == 1:
+                final_h5_open[key][vi : vi + job_variants] = job_h5_open[key]
+
+            elif job_h5_open[key].ndim == 3:
+            
+                if key.split("_")[0] == "map":
+                    final_h5_open[key][vi : vi + job_variants, :, :] = job_h5_open[key]
+
+                else:
+                    num_backgrounds, _, _ = job_h5_open[key].shape
+                    final_h5_open[key][:num_backgrounds, :, :] = job_h5_open[key]
+            
+        vi += job_variants
+        job_h5_open.close()
+            
+    final_h5_open.close()
+        
