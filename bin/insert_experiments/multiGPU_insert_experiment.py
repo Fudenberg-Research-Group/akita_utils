@@ -87,7 +87,7 @@ def main():
     )
     parser.add_option(
         "--stats",
-        dest="scd_stats",
+        dest="stats",
         default="SCD,SSD",
         help="Comma-separated list of stats to save. [Default: %default]",
     )

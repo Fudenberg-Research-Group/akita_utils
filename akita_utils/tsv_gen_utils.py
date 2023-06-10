@@ -3,7 +3,7 @@ import numpy as np
 import glob
 import bioframe
 import itertools
-from akita_utils.format_io import read_rmsk, read_ctcf, h5_to_df
+from akita_utils.format_io import read_rmsk, read_ctcf, h5_to_df, multi_h5_to_df, calculate_mean_stats_across_models
 
 
 def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
@@ -41,33 +41,32 @@ def filter_boundary_ctcfs_from_h5(
     """Takes a set of boundary mutagenesis dataframes as input, where individual sites are saved in the 'span' column,
     extracts sites greater than a threshold, and filters out sites that overlap with repeatmasker elements.
     """
-    ## load scores from boundary mutagenesis, average chosen score across models
-    dfs = []
-    for h5_file in glob.glob(h5_dirs):
-        dfs.append(h5_to_df(h5_file))
-    df = dfs[0].copy()
-    df[score_key] = np.mean([df[score_key] for df in dfs], axis=0)
+    # load multiple models' scores from boundary mutagenesis, 
+    multi_model_df = multi_h5_to_df(h5_dirs)
+    
+    # average chosen score across models, mouse --> head=1
+    averaged_scores_multi_model_df = calculate_mean_stats_across_models(multi_model_df, stats=[score_key], heads=[1])
     
     # append scores for full mut and all ctcf mut to table
     print("annotating each site with boundary-wide scores")
-    score_10k = np.zeros((len(df),))
-    score_all_ctcf = np.zeros((len(df),))
-    for i in np.unique(df["boundary_index"].values):
-        inds = df["boundary_index"].values == i
-        df_boundary = df.iloc[inds]
+    score_10k = np.zeros((len(averaged_scores_multi_model_df),))
+    score_all_ctcf = np.zeros((len(averaged_scores_multi_model_df),))
+    for i in np.unique(averaged_scores_multi_model_df["boundary_index"].values):
+        inds = averaged_scores_multi_model_df["boundary_index"].values == i
+        df_boundary = averaged_scores_multi_model_df.iloc[inds]
         score_10k[inds] = df_boundary.iloc[-1][score_key]
         if len(df_boundary) > 2:
             score_all_ctcf[inds] = df_boundary.iloc[-2][score_key]
-    df["score_all_ctcf"] = score_all_ctcf
-    df["score_10k"] = score_10k
+    averaged_scores_multi_model_df["score_all_ctcf"] = score_all_ctcf
+    averaged_scores_multi_model_df["score_10k"] = score_10k
 
     # considering only single ctcf mutations
     # require that they fall in an overall boundary that has some saliency
     # TODO: maybe also require that the neighboring bins don't have a more salient boundary?
     # suffix _2 means _motif
-    sites = df.iloc[
-        (df["strand_2"].values != "nan")
-        * (df["score_all_ctcf"].values > threshold_all_ctcf)
+    sites = averaged_scores_multi_model_df.iloc[
+        (averaged_scores_multi_model_df["strand_2"].values != "nan")
+        * (averaged_scores_multi_model_df["score_all_ctcf"].values > threshold_all_ctcf)
     ].copy()
 
     # extracting start/end of motif from span
@@ -506,16 +505,18 @@ def add_background(seq_coords_df, background_indices_list):
 # functions below under review
 
 
-def generate_ctcf_motifs_list(
+def generate_ctcf_motifs_df(
     h5_dirs,
-    rmsk_file,
-    ctcf_jaspar_file,
+    num_sites,
     filter_score,
     filter_mode,
-    num_sites,
     weak_thresh_pct=1,
     strong_thresh_pct=99,
-    unique_identifier="",
+    filter_out_inserts_with_ctcf_motifs=False,
+    ctcf_jaspar_file=None,
+    filter_out_inserts_with_repeat_masker_annotations=False,
+    rmsk_file=None,
+    out_tsv_name=None
 ):
     """
     Generates a list of genomic coordinates for potential CTCF binding sites in DNA sequences.
@@ -529,20 +530,23 @@ def generate_ctcf_motifs_list(
     - num_sites: The number of sites to select per mode.
     - weak_thresh_pct: The percentile below which putative binding sites are considered weak (default 1).
     - strong_thresh_pct: The percentile above which putative binding sites are considered strong (default 99).
-    - unique_identifier: An optional string that can be used to add a unique identifier to the output.
 
     Returns:
-    - A list of strings representing genomic coordinates of putative CTCF binding sites in the following format: "chrom,start,end,strand#filter_score=score_value".
+    - A df of strings representing genomic coordinates of putative CTCF binding sites in the following format: "chrom,start,end,strand,filter_score=score_value".
     """
     sites = filter_boundary_ctcfs_from_h5(
         h5_dirs=h5_dirs, score_key=filter_score, threshold_all_ctcf=5,
     )
     
-    rmsk_df = read_rmsk(rmsk_file) 
-    sites = filter_by_overlap_num(working_df=sites, filter_df=rmsk_df, working_df_cols=["chrom", "start_site", "end_site"], filter_df_cols=["chrom", "start", "end"])
-
-    ctcf_motifs_df = read_ctcf(ctcf_jaspar_file)
-    sites = filter_by_overlap_num(working_df=sites, filter_df=ctcf_motifs_df, working_df_cols=["chrom", "start_site", "end_site"], filter_df_cols=["chrom", "start", "end"])
+    if filter_out_inserts_with_ctcf_motifs is True:
+        assert ctcf_jaspar_file is not None, "Please provie path to ctcf jaspar motif to use while filtering out loci with ctcf"
+        ctcf_motifs_df = read_ctcf(ctcf_jaspar_file)
+        sites = filter_by_overlap_num(working_df=sites, filter_df=ctcf_motifs_df, working_df_cols=["chrom", "start_site", "end_site"], filter_df_cols=["chrom", "start", "end"])
+       
+    if filter_out_inserts_with_repeat_masker_annotations is True:
+        assert rmsk_file is not None, "Please provie path to rmsk file to use while filtering out loci with repeat masker annotations"
+        rmsk_df = read_rmsk(rmsk_file) 
+        sites = filter_by_overlap_num(working_df=sites, filter_df=rmsk_df, working_df_cols=["chrom", "start_site", "end_site"], filter_df_cols=["chrom", "start", "end"])
 
     site_df = filter_dataframe_by_column(
             df=sites,
@@ -565,11 +569,15 @@ def generate_ctcf_motifs_list(
     )
 
     seq_coords_df.reset_index(drop=True, inplace=True)
-    return generate_locus_specification_list(dataframe=seq_coords_df, unique_identifier=unique_identifier)
+    
+    if out_tsv_name is not None:
+        seq_coords_df.to_csv(file_path, sep='\t', index=False)
+    
+    return seq_coords_df
 
 
 def generate_locus_specification_list(
-    dataframe, filter_out_ctcf_motifs=False, specification_list=None, unique_identifier="", ctcf_jaspar_file=None
+    dataframe, specification_list=None, unique_identifier="", filter_out_inserts_with_ctcf_motifs=False, ctcf_jaspar_file=None, filter_out_inserts_with_repeat_masker_annotations=False, rmsk_file=None
 ):
     """
     Generate a list of locus specifications from a dataframe of genomic features.
@@ -587,10 +595,16 @@ def generate_locus_specification_list(
 
     """
 
-    if filter_out_ctcf_motifs is True:
+    if filter_out_inserts_with_ctcf_motifs is True:
         assert ctcf_jaspar_file is not None, "Please provie path to ctcf jaspar motif to use while filtering out loci with ctcf"
         ctcf_motifs_df = read_ctcf(ctcf_jaspar_file)
         dataframe = filter_by_overlap_num(working_df=dataframe, filter_df=ctcf_motifs_df, working_df_cols=["chrom", "start", "end"], filter_df_cols=["chrom", "start", "end"])
+       
+    if filter_out_inserts_with_repeat_masker_annotations is True:
+        assert rmsk_file is not None, "Please provie path to rmsk file to use while filtering out loci with repeat masker annotations"
+        rmsk_df = read_rmsk(rmsk_file) 
+        dataframe = filter_by_overlap_num(working_df=dataframe, filter_df=ctcf_motifs_df, working_df_cols=["chrom", "start", "end"], filter_df_cols=["chrom", "start", "end"])
+        
     if "strand" not in dataframe.columns:  # some inserts dont have this column
         dataframe["strand"] = "+"
 

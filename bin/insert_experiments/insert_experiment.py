@@ -142,7 +142,7 @@ def main():
     )
     parser.add_option(
         "--stats",
-        dest="scd_stats",
+        dest="stats",
         default="SCD",
         help="Comma-separated list of stats to save. [Default: %default]",
     )
@@ -229,7 +229,7 @@ def main():
         plot_dir = None
 
     options.shifts = [int(shift) for shift in options.shifts.split(",")]
-    options.scd_stats = options.scd_stats.split(",")
+    options.stats = options.stats.split(",")
 
     random.seed(44)
 
@@ -303,7 +303,7 @@ def main():
     # setup output
     stats_out = initialize_output_h5_v2(
         options.out_dir,
-        options.scd_stats,
+        options.stats,
         seq_coords_df,
         target_ids,
         target_labels,
@@ -337,7 +337,7 @@ def main():
             head_index,
             model_index,
             seqnn_model.diagonal_offset,
-            stats=options.scd_stats,
+            stats=options.stats,
         )
 
         if plot_dir is not None:
