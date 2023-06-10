@@ -83,13 +83,13 @@ print(gpus)
 
 from basenji import seqnn, stream, dna_io
 
-from akita_utils.utils import ut_dense
+from akita_utils.utils import ut_dense, split_df_equally
 from akita_utils.seq_gens import (
     symmertic_insertion_seqs_gen,
     reference_seqs_gen,
 )
-from akita_utils.utils import split_df_equally
-from akita_utils.h5_utils import initialize_output_h5, write_stat_metrics_to_h5
+
+from akita_utils.h5_utils import (initialize_stat_output_h5, initialize_maps_output_h5, write_stat_metrics_to_h5, write_maps_to_h5)
 
 
 ################################################################################
@@ -103,6 +103,13 @@ def main():
         dest="genome_fasta",
         default=None,
         help="Genome FASTA for sequences [Default: %default]",
+    )
+    parser.add_option(
+        "-s",
+        dest="save_map_matrices",
+        default=False,
+        action="store_true",
+        help="Save map matrices in the h5 file [Default: %default]",
     )
     parser.add_option(
         "-l",
@@ -266,6 +273,8 @@ def main():
 
     #################################################################
     # setup model
+    
+    # TODO: can be implied from the model file name
     head_index = options.head_index
     model_index = options.model_index
 
@@ -274,7 +283,8 @@ def main():
     seqnn_model.restore(model_file, head_i=head_index)
     seqnn_model.build_ensemble(options.rc, options.shifts)
     seq_length = int(params_model["seq_length"])
-
+    prediction_vector_length = seqnn_model.target_lengths[0]
+    
     # dummy target info
     if options.targets_file is None:
         num_targets = seqnn_model.num_targets()
@@ -299,7 +309,8 @@ def main():
         seq_coords_df = pd.read_csv(motif_file, sep="\t")
 
     num_experiments = len(seq_coords_df)
-
+    num_backgrounds = len(seq_coords_df.background_index.unique())
+    
     print("===================================")
     print(
         "Number of experiements = ", num_experiments
@@ -326,42 +337,47 @@ def main():
 
     #################################################################
     # setup output
-
-    scd_out = initialize_output_h5(
-        options.out_dir,
+    
+    stat_h5_outfile = initialize_stat_output_h5(options.out_dir,
         model_file,
         options.genome_fasta,
         seqnn_model,
         options.scd_stats,
-        seq_coords_df,
-        options.plot_map
-    )
+        seq_coords_df)
+    
+    print("STATS_OUT initialized")
+    
+    if options.save_map_matrices:
+        maps_h5_outfile = initialize_maps_output_h5(
+            options.out_dir,
+            model_file,
+            options.genome_fasta,
+            seqnn_model,
+            seq_coords_df
+        )
 
-    print("initialized")
+        print("MAPS_OUT initialized")
 
     #################################################################
     # predict SCD scores
-
-    num_backgrounds = len(background_seqs)
 
     # initialize predictions stream for reference (background) sequences
     refs_stream = stream.PredStreamGen(
         seqnn_model, reference_seqs_gen(background_seqs), batch_size
     )
 
-    background_preds_maps = np.zeros((num_backgrounds, 512, 512, num_targets))
+    background_preds_vectors = np.zeros((num_backgrounds, prediction_vector_length, num_targets))
 
     for background_index in range(num_backgrounds):
         
         bg_preds_matrix = refs_stream[background_index]
-        bg_map_matrix = ut_dense(bg_preds_matrix, seqnn_model.diagonal_offset)
         
-        background_preds_maps[background_index, :, :, :] = bg_map_matrix
+        background_preds_vectors[background_index, :, :] = bg_preds_matrix
         
-        if options.plot_map:
+        if options.save_map_matrices:
             write_maps_to_h5(
-                bg_map_matrix,
-                scd_out,
+                bg_preds_matrix,
+                maps_h5_outfile,
                 background_index,
                 head_index,
                 model_index,
@@ -380,14 +396,13 @@ def main():
     for exp in range(num_experiments):
         # get predictions
         preds_matrix = preds_stream[exp]
-        map_matrix = ut_dense(preds_matrix, seqnn_model.diagonal_offset)
         background_index = seq_coords_df.iloc[exp].background_index
-    
+        
         # save stat metrics for each prediction
         write_stat_metrics_to_h5(
             preds_matrix,
-            background_preds_maps[background_index, :, :, :],
-            scd_out,
+            background_preds_vectors[background_index, :, :],
+            stat_h5_outfile,
             exp,
             head_index,
             model_index,
@@ -395,154 +410,21 @@ def main():
             options.scd_stats,
         )
         
-        if options.plot_map:
+        if options.save_map_matrices:
             write_maps_to_h5(
-                map_matrix,
-                scd_out,
+                preds_matrix,
+                maps_h5_outfile,
                 exp,
                 head_index,
-                model_index
+                model_index,
+                reference=False
             )
         
     genome_open.close()
-    scd_out.close()
+    stat_h5_outfile.close()
     
-    
-def initialize_output_h5(out_dir, 
-                         model_file, 
-                         genome_fasta,
-                         seqnn_model,
-                         stat_metrics,
-                         seq_coords_df,
-                        save_maps=False,
-                        map_size=512):
-    """
-    Initializes an h5 file to save statistical metrics calculated from Akita's predicftions.
-
-    Parameters
-    ------------
-    out_dir : str
-        Path to the desired location of the output h5 file.
-    model_file : str
-        Path to the model file.
-    genome_fasta : str
-        Path to the genome file (mouse or human).
-    seqnn_model : object
-        Loaded model.
-    stat_metrics : list
-        List of stratistical metrics that are supposed to be calculated.
-    seq_coords_df : dataFrame
-        Pandas dataframe where each row represents one experiment (so one set of prediction).
-    save_maps : Boolean
-        Stores True, if maps are supposed to be saved.
-    map_size : int
-        Size of a predicted (obs/exp) map matrix.
-        
-    Returns
-    ---------
-    h5_outfile : h5py object
-        An initialized h5 file.
-    """
-    
-    h5_outfile = h5py.File(f"%s/OUT.h5" % out_dir, "w")
-    seq_coords_df_dtypes = seq_coords_df.dtypes
-    
-    head_index = int(model_file.split("model")[-1][0])
-    model_index = int(model_file.split("c0")[0][-1]) 
-    
-    h5_outfile.attrs["date"] = str(date.today())
-    
-    num_backgrounds = len(seq_coords_df.background_index.unique())
-    
-    metadata_dict = {
-        "model_index" : model_index,
-        "head_index" : head_index,
-        "genome" : genome_fasta.split("/")[-1],
-        "seq_length" : seqnn_model.seq_length,
-        "diagonal_offset" : seqnn_model.diagonal_offset,             
-        "prediction_vector_length" : seqnn_model.target_lengths[0],
-        "target_crops" : seqnn_model.target_crops,
-        "num_targets" : seqnn_model.num_targets()}
-    
-    h5_outfile.attrs.update(metadata_dict)
-    
-    num_targets = seqnn_model.num_targets()
-    target_ids = [ti for ti in range(num_targets)]   
-                                   
-    num_experiments = len(seq_coords_df)
-
-    for key in seq_coords_df:
-        if seq_coords_df_dtypes[key] is np.dtype("O"):
-            h5_outfile.create_dataset(
-                key, data=seq_coords_df[key].values.astype("S")
-            )
-        else:
-            h5_outfile.create_dataset(key, data=seq_coords_df[key])
-    
-    if save_maps:
-        h5_outfile.create_dataset(
-                f"map_h{head_index}_m{model_index}",
-                shape=(num_experiments, map_size, map_size, num_targets),
-                dtype="float16"
-            )
-        
-        h5_outfile.create_dataset(
-                f"refmap_h{head_index}_m{model_index}",
-                shape=(num_backgrounds, map_size, map_size, num_targets),
-                dtype="float16"
-            )
-    
-    # initialize keys for statistical metrics collection
-    for stat_metric in stat_metrics:
-
-        if stat_metric in seq_coords_df.keys():
-            raise KeyError("check input tsv for clashing score name")
-
-        for target_index in target_ids:
-            h5_outfile.create_dataset(
-                f"{stat_metric}_h{head_index}_m{model_index}_t{target_index}",
-                shape=(num_experiments,),
-                dtype="float16",
-                compression=None,
-            )
-
-    return h5_outfile  
-
-   
-def write_maps_to_h5(
-    map_matrix,
-    h5_outfile,
-    experiment_index,
-    head_index,
-    model_index,
-    diagonal_offset=2,
-    reference=False
-):
-    """
-    Writes entire maps to an h5 file.
-
-    Parameters
-    ------------
-    map_matrix : numpy matrix
-        Matrix collecting Akita's prediction maps. Shape: (map_size, map_size, num_targets).
-    h5_outfile : h5py object
-        An initialized h5 file.
-    experiment_index : int
-        Index identifying one experiment.
-    head_index : int
-        Head index used to get a prediction (Mouse: head_index=1; Human: head_index=0).
-    model_index : int
-        Index of one of 8 models that has been used to make predictions (an index between 0 and 7).
-    diagonal_offset : int
-        Number of diagonals that are added as zeros in the conversion.
-        Typically 2 diagonals are ignored in Hi-C data processing.
-    """
-    prefix = "map"
-    if reference:
-        prefix = "refmap"
-
-    for target_index in range(map_matrix.shape[-1]):
-        h5_outfile[f"{prefix}_h{head_index}_m{model_index}"][experiment_index, :, :, target_index] += map_matrix[:, :, target_index]
+    if options.save_map_matrices:
+        maps_h5_outfile.close()
 
 
 ################################################################################

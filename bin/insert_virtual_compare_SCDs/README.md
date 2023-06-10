@@ -13,3 +13,16 @@
 4. Collecting results into one h5 file     
 `python multiGPU-results_collector.py -o 10K -p 10`
 
+
+
+
+
+
+
+`python multiGPU-virtual_symmetric_compare_SCD.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 /home1/smaruj/akita_utils/bin/insert_virtual_compare_SCDs/test20.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o TEST --head-index 1 --model-index 0 --batch-size 8 -p 2 --max_proc 2`
+
+
+
+with maps:
+
+`python multiGPU-virtual_symmetric_compare_SCD.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 /home1/smaruj/akita_utils/bin/insert_virtual_compare_SCDs/test20.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o TEST --head-index 1 --model-index 0 --batch-size 8 -p 2 --max_proc 2 -s`

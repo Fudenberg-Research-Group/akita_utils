@@ -54,6 +54,13 @@ def main():
         help="Genome FASTA for sequences [Default: %default]",
     )
     parser.add_option(
+        "-s",
+        dest="save_map_matrices",
+        default=False,
+        action="store_true",
+        help="Save map matrices in the h5 file [Default: %default]",
+    )
+    parser.add_option(
         "-m",
         dest="plot_map",
         default=False,
@@ -288,7 +295,7 @@ def main():
     #######################################################
     # collect output
 
-    collect_h5("scd.h5", options.out_dir, options.processes)
+    # collect_h5("scd.h5", options.out_dir, options.processes)
 
     # for pi in range(options.processes):
     #     shutil.rmtree('%s/job%d' % (options.out_dir,pi))
