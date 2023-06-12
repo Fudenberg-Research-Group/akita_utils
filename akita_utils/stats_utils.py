@@ -97,12 +97,8 @@ def calculate_scores(stat_metrics, map_matrix, reference_map_matrix=None):
     scores = {}
     
     if "SCD" in stat_metrics:
-        SCDs = calculate_SCD(map_matrix, None)
+        SCDs = calculate_SCD(map_matrix, reference_map_matrix)
         scores["SCD"] = SCDs
-    
-    if "diffSCD" in stat_metrics:
-        diffSCDs = calculate_SCD(map_matrix, reference_map_matrix)
-        scores["diffSCD"] = diffSCDs
     
     if np.any((["INS" in i.split("-")[0] for i in stat_metrics])):
         for stat in stat_metrics:
