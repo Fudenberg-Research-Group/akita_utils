@@ -105,8 +105,10 @@ def calculate_scores(stat_metrics, map_matrix, reference_map_matrix=None):
             if stat.split("-")[0] == "INS":
                 window = stat.split("-")[1]
                 INS = calculate_INS(map_matrix, window)
+                refINS = calculate_INS(reference_map_matrix, window)
                 scores[stat] = INS
-    
+                scores[f"ref_{stat}"] = refINS
+                
     # new scores will be added soon...
     
     return scores

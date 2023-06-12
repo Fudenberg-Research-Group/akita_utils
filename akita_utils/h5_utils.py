@@ -80,12 +80,26 @@ def initialize_stat_output_h5(out_dir,
             raise KeyError("check input tsv for clashing score name")
 
         for target_index in target_ids:
-            h5_outfile.create_dataset(
-                f"{stat_metric}_h{head_index}_m{model_index}_t{target_index}",
-                shape=(num_experiments,),
-                dtype="float16",
-                compression=None,
-            )
+            if "INS" not in stat:
+                h5_outfile.create_dataset(
+                    f"{stat_metric}_h{head_index}_m{model_index}_t{target_index}",
+                    shape=(num_experiments,),
+                    dtype="float16",
+                    compression=None,
+                )
+            else:
+                h5_outfile.create_dataset(
+                    "ref_" + f"{stat_metric}_h{head_index}_m{model_index}_t{target_ind}",
+                    shape=(num_experiments,),
+                    dtype="float16",
+                    compression=None,
+                )
+                h5_outfile.create_dataset(
+                    "alt_" + f"{stat_metric}_h{head_index}_m{model_index}_t{target_ind}",
+                    shape=(num_experiments,),
+                    dtype="float16",
+                    compression=None,
+                )
 
     return h5_outfile 
 
@@ -244,8 +258,8 @@ def write_maps_to_h5(
 
     for target_index in range(vector_matrix.shape[-1]):
         h5_outfile[f"{prefix}_h{head_index}_m{model_index}"][experiment_index, :, target_index] += vector_matrix[:, target_index]
-    
-            
+        
+
 # TODO: this function should be moved somewhere else - where?
             
     
