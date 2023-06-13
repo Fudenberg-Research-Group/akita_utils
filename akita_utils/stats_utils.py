@@ -3,7 +3,6 @@ import numpy as np
 # SCORES
 # 1) Insulation score
 
-
 def _single_map_insulation(target_map, window=10):
     """
     Calculate insulation in a window-size diamond around the central pixel.
@@ -19,7 +18,7 @@ def _single_map_insulation(target_map, window=10):
     ---------
     score : ISN-window score for a given target
     """
-
+    
     map_size = target_map.shape[0]
     if window > map_size // 2:
         raise ValueError("window cannot be larger than map")
@@ -57,7 +56,6 @@ def calculate_INS(map_matrix, window=10):
 
 
 # 2) SCD (Square Contact Differences)
-
 
 def calculate_SCD(map_matrix, reference_map_matrix=None):
     """
@@ -100,7 +98,6 @@ def calculate_flames_score(map_matrix):
 
 
 # calculating all desired scores for a set of maps
-
 
 def calculate_scores(stat_metrics, map_matrix, reference_map_matrix=None):
 

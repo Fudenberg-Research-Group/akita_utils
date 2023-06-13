@@ -9,7 +9,6 @@ from akita_utils.stats_utils import calculate_scores
 
 
 def prepare_metadata_dir(model_file, genome_fasta, seqnn_model):
-
     """
     Creates a metadata dictionary, optional in h5 file initializing.
 
@@ -58,7 +57,6 @@ def initialize_stat_output_h5(
 
     Parameters
     ------------
-
     out_dir : str
         Path to the desired location of the output h5 file.
     model_file : str
@@ -74,13 +72,13 @@ def initialize_stat_output_h5(
                 Path to the genome file (mouse or human).
             seqnn_model : object
                 Loaded model.
-
+                
     Returns
     ---------
     h5_outfile : h5py object
         An initialized h5 file.
     """
-
+  
     h5_outfile = h5py.File(f"%s/STATS_OUT.h5" % out_dir, "w")
     seq_coords_df_dtypes = seq_coords_df.dtypes
 
@@ -89,11 +87,12 @@ def initialize_stat_output_h5(
 
     num_targets = seqnn_model.num_targets()
     target_ids = [ti for ti in range(num_targets)]
+
     num_experiments = len(seq_coords_df)
 
     if add_metadata:
         h5_outfile.attrs["date"] = str(date.today())
-
+        
         metadata_dict = prepare_metadata_dir(
             model_file, genome_fasta, seqnn_model
         )
@@ -136,7 +135,7 @@ def initialize_stat_output_h5(
                     dtype="float16",
                     compression=None,
                 )
-
+                
     return h5_outfile
 
 
@@ -164,7 +163,6 @@ def initialize_maps_output_h5(
     h5_outfile : h5py object
         An initialized h5 file.
     """
-
     h5_outfile = h5py.File(f"%s/MAPS_OUT.h5" % out_dir, "w")
     seq_coords_df_dtypes = seq_coords_df.dtypes
 
@@ -388,8 +386,6 @@ def collect_h5(file_name, out_dir, num_procs):
         job_h5_open = h5py.File(job_h5_file, "r")
         num_variants += len(job_h5_open["chrom"])
         job_h5_open.close()
-
-    print("num_variants: ", num_variants)
 
     # initialize final h5
     final_h5_file = "%s/%s" % (out_dir, file_name)
