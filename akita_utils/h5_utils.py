@@ -8,29 +8,71 @@ from akita_utils.utils import ut_dense
 from akita_utils.stats_utils import calculate_scores
 
 
-def initialize_stat_output_h5(out_dir, 
-                                     model_file, 
-                                     genome_fasta,
-                                     seqnn_model,
-                                     stat_metrics,
-                                     seq_coords_df):
+def prepare_metadata_dir(model_file, 
+                        genome_fasta,
+                        seqnn_model):
+    
     """
-    Initializes an h5 file to save statistical metrics calculated from Akita's predicftions.
+    Creates a metadata dictionary, optional in h5 file initializing.
 
     Parameters
     ------------
-    out_dir : str
-        Path to the desired location of the output h5 file.
     model_file : str
         Path to the model file.
     genome_fasta : str
         Path to the genome file (mouse or human).
     seqnn_model : object
         Loaded model.
+        
+    Returns
+    ---------
+    metadata_dict : dir
+        A dictionary with additional metadata.
+    """
+    
+    head_index = int(model_file.split("model")[-1][0])
+    model_index = int(model_file.split("c0")[0][-1]) 
+    
+    metadata_dict = {
+        "model_index" : model_index,
+        "head_index" : head_index,
+        "genome" : genome_fasta.split("/")[-1],
+        "seq_length" : seqnn_model.seq_length,
+        "diagonal_offset" : seqnn_model.diagonal_offset,             
+        "prediction_vector_length" : seqnn_model.target_lengths[0],
+        "target_crops" : seqnn_model.target_crops,
+        "num_targets" : seqnn_model.num_targets()}
+    
+    return metadata_dict
+
+
+def initialize_stat_output_h5(out_dir, 
+                             model_file, 
+                              stat_metrics,
+                              seq_coords_df,
+                              add_metadata=False,
+                              **kwargs):
+    """
+    Initializes an h5 file to save statistical metrics calculated from Akita's predicftions.
+
+    Parameters
+    ------------
+    
+    out_dir : str
+        Path to the desired location of the output h5 file.
+    model_file : str
+        Path to the model file.
     stat_metrics : list
         List of stratistical metrics that are supposed to be calculated.
     seq_coords_df : dataFrame
         Pandas dataframe where each row represents one experiment (so one set of prediction).
+    add_metadata : Boolean
+        True if metadata is supposed to be added.
+        If so, two additional arguments have to be provided:
+            genome_fasta : str
+                Path to the genome file (mouse or human).
+            seqnn_model : object
+                Loaded model.
         
     Returns
     ---------
@@ -44,26 +86,16 @@ def initialize_stat_output_h5(out_dir,
     head_index = int(model_file.split("model")[-1][0])
     model_index = int(model_file.split("c0")[0][-1]) 
     
-    h5_outfile.attrs["date"] = str(date.today())
-    
     num_backgrounds = len(seq_coords_df.background_index.unique())
-    
-    metadata_dict = {
-        "model_index" : model_index,
-        "head_index" : head_index,
-        "genome" : genome_fasta.split("/")[-1],
-        "seq_length" : seqnn_model.seq_length,
-        "diagonal_offset" : seqnn_model.diagonal_offset,             
-        "prediction_vector_length" : seqnn_model.target_lengths[0],
-        "target_crops" : seqnn_model.target_crops,
-        "num_targets" : seqnn_model.num_targets()}
-    
-    h5_outfile.attrs.update(metadata_dict)
-    
     num_targets = seqnn_model.num_targets()
-    target_ids = [ti for ti in range(num_targets)]   
-                                   
+    target_ids = [ti for ti in range(num_targets)]  
     num_experiments = len(seq_coords_df)
+
+    if add_metadata:
+        h5_outfile.attrs["date"] = str(date.today())
+    
+        metadata_dict = prepare_metadata_dir(model_file, genome_fasta, seqnn_model)
+        h5_outfile.attrs.update(metadata_dict)
 
     for key in seq_coords_df:
         if seq_coords_df_dtypes[key] is np.dtype("O"):
