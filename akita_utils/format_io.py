@@ -142,32 +142,6 @@ def multi_h5_to_df(h5_dirs):
     return dfs
 
 
-def calculate_mean_stats_across_targets(df, stats, models, heads):
-    """
-    Calculate mean statistics across target columns based on specified models and heads.
-
-    Parameters:
-    df (pd.DataFrame): Input DataFrame.
-    stats (list): List of statistics to calculate mean for.
-    models (list): List of model numbers.
-    heads (list): List of head numbers. [0,1] 0=human, 1=mouse
-
-    Returns:
-    new_df (pd.DataFrame): DataFrame with added columns for mean statistics.
-    """
-    new_df = df.copy()
-    for head in heads:
-        for model in models:
-            for stat in stats:
-                new_col_name = f"{stat}_h{head}_m{model}_targets_mean"
-                filtered_cols = [col for col in df.columns if f"{stat}_h{head}_m{model}_" in col]
-                if not df[filtered_cols].empty:
-                    new_df[new_col_name] = df[filtered_cols].mean(axis=1)
-                else:
-                    print(f"No data for {stat}_h{head}_m{model} targets")
-    return new_df
-
-
 def calculate_mean_stats_across_models(df, stats, heads):
     """
     Calculate mean statistics across models based on specified heads.

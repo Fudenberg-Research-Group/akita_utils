@@ -3,7 +3,7 @@ import numpy as np
 import glob
 import bioframe
 import itertools
-from akita_utils.format_io import read_rmsk, read_ctcf, h5_to_df, multi_h5_to_df, calculate_mean_stats_across_models
+from akita_utils.format_io import read_rmsk, h5_to_df
 
 
 def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
@@ -25,12 +25,21 @@ def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
 
     
 def calculate_mean(dataframe, stat):
-    filtered_df = pd.DataFrame()
-    if any(stat in col for col in dataframe.columns):
-        filtered_df = filtered_df.append(dataframe.loc[:, dataframe.columns.str.contains(stat)].copy())
-    else:
-        print(f"No columns matching '{stat}' found in the DataFrame.")
-    return filtered_df.mean(axis=1)
+    if stat in ["INS-16", "INS-32", "INS-64", "INS-128", "INS-256"]:
+        reference_columns = [col for col in dataframe.columns if "ref_" + stat in col]
+        alternate_columns = [col for col in dataframe.columns if "alt_" + stat in col]
+        # print(reference_columns, alternate_columns)
+        return dataframe[alternate_columns].mean(axis=1) - dataframe[reference_columns].mean(axis=1)
+    
+    matching_columns = [col for col in dataframe.columns if stat in col and "genomic" not in col]
+    # print(matching_columns)
+    if matching_columns:
+        filtered_df = dataframe[matching_columns].copy()
+        return filtered_df.mean(axis=1)
+    
+    print(f"No columns matching '{stat}' found in the DataFrame.")
+    return pd.Series()  # Return an empty Series if no matching columns were found
+
 
 
 def filter_boundary_ctcfs_from_h5(
@@ -41,24 +50,32 @@ def filter_boundary_ctcfs_from_h5(
     """Takes a set of boundary mutagenesis dataframes as input, where individual sites are saved in the 'span' column,
     extracts sites greater than a threshold, and filters out sites that overlap with repeatmasker elements.
     """
-    # load multiple models' scores from boundary mutagenesis, 
-    multi_model_df = multi_h5_to_df(h5_dirs)
+    ## load scores from boundary mutagenesis, average chosen score across models
+    dfs = []
+    for h5_file in glob.glob(h5_dirs):
+        df_mini = h5_to_df(h5_file, drop_duplicates_key=None)
+        df_mini[score_key] = calculate_mean(df_mini, score_key)
+        dfs.append(df_mini)
+    df = dfs[0].copy()
+    df[score_key] = np.mean([df[score_key] for df in dfs], axis=0)
     
-    # average chosen score across models, mouse --> head=1
-    averaged_scores_multi_model_df = calculate_mean_stats_across_models(multi_model_df, stats=[score_key], heads=[1])
+    averaged_scores_multi_model_df = df
     
     # append scores for full mut and all ctcf mut to table
     print("annotating each site with boundary-wide scores")
     score_10k = np.zeros((len(averaged_scores_multi_model_df),))
+    averaged_scores_multi_model_df['score10k'] = score_10k
     score_all_ctcf = np.zeros((len(averaged_scores_multi_model_df),))
+    averaged_scores_multi_model_df['score_all_ctcf'] = score_all_ctcf
     for i in np.unique(averaged_scores_multi_model_df["boundary_index"].values):
         inds = averaged_scores_multi_model_df["boundary_index"].values == i
         df_boundary = averaged_scores_multi_model_df.iloc[inds]
-        score_10k[inds] = df_boundary.iloc[-1][score_key]
+        # print(df_boundary.iloc[-1][score_key])
+        averaged_scores_multi_model_df.loc[inds, "score_10k"] = df_boundary.iloc[-1][score_key]
+        # score_10k[inds] = df_boundary.iloc[-1][score_key]
         if len(df_boundary) > 2:
-            score_all_ctcf[inds] = df_boundary.iloc[-2][score_key]
-    averaged_scores_multi_model_df["score_all_ctcf"] = score_all_ctcf
-    averaged_scores_multi_model_df["score_10k"] = score_10k
+            # score_all_ctcf[inds] = df_boundary.iloc[-2][score_key]
+            averaged_scores_multi_model_df.loc[inds, "score_all_ctcf"] = df_boundary.iloc[-2][score_key]
 
     # considering only single ctcf mutations
     # require that they fall in an overall boundary that has some saliency
@@ -80,7 +97,6 @@ def filter_boundary_ctcfs_from_h5(
     inplace=True,)
 
     return sites
-
 
 def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
     """
@@ -558,11 +574,13 @@ def generate_ctcf_motifs_df(
             )
     
     seq_coords_df = (
-        site_df[["chrom", "start", "end", "strand_site", filter_score]]
+        site_df[["chrom", "start_site", "end_site", "strand_site", filter_score]]
         .copy()
         .rename(
             columns={
                 "strand_site":"strand",
+                "start_site":"start",
+                "end_site":"end",
                 filter_score: "genomic_" + filter_score,
             }
         )
@@ -595,15 +613,16 @@ def generate_locus_specification_list(
 
     """
 
-    if filter_out_inserts_with_ctcf_motifs is True:
-        assert ctcf_jaspar_file is not None, "Please provie path to ctcf jaspar motif to use while filtering out loci with ctcf"
-        ctcf_motifs_df = read_ctcf(ctcf_jaspar_file)
+    if filter_out_inserts_with_ctcf_motifs:
+        assert ctcf_jaspar_file is not None, "Please provide the path to the CTCF JASPAR motif file to use while filtering out loci with CTCF motifs"
+        ctcf_motifs_df = bioframe.read_table(ctcf_jaspar_file, schema="jaspar", skiprows=1)
         dataframe = filter_by_overlap_num(working_df=dataframe, filter_df=ctcf_motifs_df, working_df_cols=["chrom", "start", "end"], filter_df_cols=["chrom", "start", "end"])
-       
-    if filter_out_inserts_with_repeat_masker_annotations is True:
-        assert rmsk_file is not None, "Please provie path to rmsk file to use while filtering out loci with repeat masker annotations"
-        rmsk_df = read_rmsk(rmsk_file) 
-        dataframe = filter_by_overlap_num(working_df=dataframe, filter_df=ctcf_motifs_df, working_df_cols=["chrom", "start", "end"], filter_df_cols=["chrom", "start", "end"])
+
+    if filter_out_inserts_with_repeat_masker_annotations:
+        assert rmsk_file is not None, "Please provide the path to the RMSK file to use while filtering out loci with RepeatMasker annotations"
+        rmsk_df = read_rmsk(rmsk_file)
+        dataframe = filter_by_overlap_num(working_df=dataframe, filter_df=rmsk_df, working_df_cols=["chrom", "start", "end"], filter_df_cols=["chrom", "start", "end"])
+
         
     if "strand" not in dataframe.columns:  # some inserts dont have this column
         dataframe["strand"] = "+"
