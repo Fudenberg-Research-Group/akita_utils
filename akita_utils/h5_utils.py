@@ -1,6 +1,11 @@
 import h5py
 import numpy as np
+from datetime import date
 import matplotlib.pyplot as plt
+from akita_utils.utils import ut_dense
+from skimage.measure import block_reduce
+from akita_utils.stats_utils import calculate_scores, calculate_INS
+import logging
 import seaborn as sns
 from datetime import date
 
@@ -51,7 +56,7 @@ def initialize_stat_output_h5(
     stat_metrics,
     seq_coords_df,
     add_metadata=False,
-    **kwargs,
+    **kwargs
 ):
     """
     Initializes an h5 file to save statistical metrics calculated from Akita's predicftions.
@@ -80,7 +85,7 @@ def initialize_stat_output_h5(
     h5_outfile : h5py object
         An initialized h5 file.
     """
-
+    
     h5_outfile = h5py.File(f"%s/STATS_OUT.h5" % out_dir, "w")
     seq_coords_df_dtypes = seq_coords_df.dtypes
 
@@ -109,7 +114,6 @@ def initialize_stat_output_h5(
 
     # initialize keys for statistical metrics collection
     for stat_metric in stat_metrics:
-
         if stat_metric in seq_coords_df.keys():
             raise KeyError("check input tsv for clashing score name")
 
@@ -190,7 +194,7 @@ def initialize_maps_output_h5(
         shape=(num_experiments, prediction_vector_length, num_targets),
         dtype="float16",
     )
-
+    
     h5_outfile.create_dataset(
         f"refmap_h{head_index}_m{model_index}",
         shape=(num_backgrounds, prediction_vector_length, num_targets),
@@ -337,6 +341,102 @@ def save_map_plots(
         A plot of one out of plot_freq number of predictions is saved.
     """
 
+    # increase dtype
+    prediction_matrix = prediction_matrix.astype("float32")
+
+    # convert prediction vectors to maps
+    map_matrix = ut_dense(prediction_matrix, diagonal_offset)
+
+    # getting desired scores
+    scores = calculate_scores(stat_metrics, map_matrix, reference_map_matrix)
+
+    for key in scores:
+        for target_index in range(prediction_matrix.shape[1]):
+            h5_outfile[f"{key}_h{head_index}_m{model_index}_t{target_index}"][
+                experiment_index
+            ] = scores[key][target_index].astype("float16")
+
+
+def write_maps_to_h5(
+    prediction_matrix,
+    h5_outfile,
+    experiment_index,
+    head_index,
+    model_index,
+    diagonal_offset=2,
+    plot_dir=None,
+):
+    """
+    Writes entire maps to an h5 file.
+
+    Parameters
+    ------------
+    prediction_matrix : numpy matrix
+        Matrix collecting Akita's predictions.
+    h5_outfile : h5py object
+        An initialized h5 file.
+    experiment_index : int
+        Index identifying one experiment.
+    head_index : int
+        Head index used to get a prediction (Mouse: head_index=1; Human: head_index=0).
+    model_index : int
+        Index of one of 8 models that has been used to make predictions (an index between 0 and 7).
+    diagonal_offset : int
+        Number of diagonals that are added as zeros in the conversion.
+        Typically 2 diagonals are ignored in Hi-C data processing.
+    plot_dir : str
+        Path to the desired location of the output plots (plots will not be saved if plot_dir == None).
+    """
+
+    # increase dtype
+    prediction_matrix = prediction_matrix.astype("float32")
+
+    # convert prediction vectors to maps
+    map_matrix = ut_dense(prediction_matrix, diagonal_offset)
+
+    for target_index in range(prediction_matrix.shape[1]):
+        h5_outfile[
+            f"e{experiment_index}_h{head_index}_m{model_index}_t{target_index}"
+        ] = map_matrix[:, :, target_index]
+
+
+# TODO: this function should be moved somewhere else - where?
+
+
+def save_maps(
+    prediction_matrix,
+    experiment_index,
+    head_index,
+    model_index,
+    diagonal_offset=2,
+    plot_dir=None,
+    plot_lim_min=0.1,
+    plot_freq=100,
+):
+    """
+    Writes to an h5 file saving statistical metrics calculated from Akita's predicftions.
+
+    Parameters
+    ------------
+    prediction_matrix : numpy matrix
+        Matrix collecting Akita's predictions.
+    experiment_index : int
+        Index identifying one experiment.
+    head_index : int
+        Head index used to get a prediction (Mouse: head_index=1; Human: head_index=0).
+    model_index : int
+        Index of one of 8 models that has been used to make predictions (an index between 0 and 7).
+    diagonal_offset : int
+        Number of diagonals that are added as zeros in the conversion.
+        Typically 2 diagonals are ignored in Hi-C data processing.
+    plot_dir : str
+        Path to the desired location of the output plots (plots will not be saved if plot_dir == None).
+    plot_lim_min : float
+        Negative minimum and positive maximum values that will be used to plot maps.
+    plot_freq : int
+        A plot of one out of plot_freq number of predictions is saved.
+    """
+
     if (plot_dir is not None) and (np.mod(experiment_index, plot_freq) == 0):
         print("plotting prediction: ", experiment_index)
 
@@ -389,16 +489,14 @@ def collect_h5(file_name, out_dir, num_procs):
         num_variants += len(job_h5_open["chrom"])
         job_h5_open.close()
 
-    print("num_variants: ", num_variants)
-
     # initialize final h5
     final_h5_file = "%s/%s" % (out_dir, file_name)
     final_h5_open = h5py.File(final_h5_file, "w")
 
     job0_h5_file = "%s/job0/%s" % (out_dir, file_name)
     job0_h5_open = h5py.File(job0_h5_file, "r")
+    
     for key in job0_h5_open.keys():
-
         if job0_h5_open[key].ndim == 1:
             final_h5_open.create_dataset(
                 key, shape=(num_variants,), dtype=job0_h5_open[key].dtype
@@ -449,7 +547,6 @@ def collect_h5(file_name, out_dir, num_procs):
 
         # append to final
         for key in job_h5_open.keys():
-
             job_variants = job_h5_open[key].shape[0]
 
             if job_h5_open[key].ndim == 1:
