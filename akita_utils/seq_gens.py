@@ -133,6 +133,18 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
         yield seq_1hot
 
 
+def reference_seqs_gen(background_seqs):
+    """an iterator that yields one-hot encoded reference sequences
+    that can be used as input to akita via PredStreamGen
+    
+    Note, background_seqs is a list of DNA sequences (strings)
+    """
+
+    for background_index in range(len(background_seqs)):
+        seq_1hot = background_seqs[background_index].copy()
+        yield seq_1hot
+        
+       
 # define sequence generator
 def generate_spans_start_positions(seq_1hot, motif, threshold):
     index_scores_array = akita_utils.dna_utils.scan_motif(seq_1hot, motif)

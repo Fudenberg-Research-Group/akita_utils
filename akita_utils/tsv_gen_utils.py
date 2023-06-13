@@ -150,7 +150,9 @@ def filter_dataframe_by_column(
 
 
     if filter_mode not in ("head", "tail", "uniform", "random"):
-        raise ValueError("a filter_mode has to be one from: head, tail, uniform, random")
+        raise ValueError(
+            "a filter_mode has to be one from: head, tail, uniform, random"
+        )
 
     upper_thresh = np.percentile(df[column_name].values, upper_threshold)
     lower_thresh = np.percentile(df[column_name].values, lower_threshold)
@@ -160,7 +162,10 @@ def filter_dataframe_by_column(
             (df[column_name] >= lower_thresh)
             & (df[column_name] <= upper_thresh)
         ]
-        .copy().drop_duplicates(subset=[column_name]).sort_values(column_name, ascending=False))
+        .copy()
+        .drop_duplicates(subset=[column_name])
+        .sort_values(column_name, ascending=False)
+    )
     
     if num_rows != None:
         assert num_rows <= len(
@@ -172,11 +177,15 @@ def filter_dataframe_by_column(
         elif filter_mode == "tail":
             filtered_df = filtered_df[-num_rows:]
         elif filter_mode == "uniform":
-            filtered_df['binned'] = pd.cut(filtered_df[column_name], bins=num_rows)
-            filtered_df = filtered_df.groupby("binned").apply(lambda x: x.head(1))
+            filtered_df["binned"] = pd.cut(
+                filtered_df[column_name], bins=num_rows
+            )
+            filtered_df = filtered_df.groupby("binned").apply(
+                lambda x: x.head(1)
+            )
         else:
             filtered_df = filtered_df.sample(n=num_rows)
-            
+
     return filtered_df
 
 
@@ -239,7 +248,9 @@ def filter_by_overlap_num(
     
     working_df = working_df.iloc[working_df["count"].values <= max_overlap_num]
     working_df.reset_index(inplace=True, drop=True)
-
+    
+    working_df = working_df.drop(columns=["count"])
+    
     return working_df
 
 
