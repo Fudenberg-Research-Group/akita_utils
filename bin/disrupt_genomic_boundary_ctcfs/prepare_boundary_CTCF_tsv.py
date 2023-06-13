@@ -32,14 +32,14 @@ import bioframe
 import numpy as np
 import pandas as pd
 import os
-from akita_utils import filter_by_chrmlen
+from akita_utils.tsv_gen_utils import filter_by_chrmlen
 
 
 ################################################################################
 # main
 ################################################################################
 def main():
-    usage = "usage: %prog [options] <params_file> <model_file> <vcf_file>"
+    usage = "usage: %prog [options] <params_file> <vcf_file>"
     parser = OptionParser(usage)
 
     parser.add_option(
@@ -167,7 +167,6 @@ def main():
 
 
 def _generate_boundary_mutation_df(df_overlap):
-
     """
     For each boundary generate the following set of mutations, specified as spans:
     - every individual CTCF site overlapping a boundary,

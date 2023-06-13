@@ -14,33 +14,26 @@
 # limitations under the License.
 # =========================================================================
 
+"""
+This script launches multiple worker threads to perform motif-specific SNP scoring and analysis. It takes a model directory and a TSV file as input. The script prepares the necessary directories and files, launches worker threads, and checks if a job has completed by verifying the existence of the output file. The worker threads execute the "akita_motif_scd.py" script with the provided options and arguments. The script utilizes SLURM for job management and uses GPU resources if available.
+
+"""
+
 from optparse import OptionParser
-import glob
 import os
 import pickle
-import shutil
-import subprocess
 import sys
+import akita_utils.slurm_gf as slurm
+import logging
 
-import h5py
-import numpy as np
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+log = logging.getLogger(__name__)
 
-import slurm_gf as slurm
 
-"""
-Derived from akita_scd_multi.py
-
-Compute scores for motifs in a TSV file, using multiple processes.
-
-Relies on slurm_gf.py to auto-generate slurm jobs.
-
-"""
-
-################################################################################
-# main
-################################################################################
 def main():
-    usage = "usage: %prog [options] <params_file> <model_file> <tsv_file>"
+    usage = "usage: %prog [options] <models_dir> <tsv_file>"
     parser = OptionParser(usage)
 
     # scd
@@ -74,7 +67,7 @@ def main():
     parser.add_option(
         "-o",
         dest="out_dir",
-        default="scd",
+        default="motif_scd",
         help="Output directory for tables and plots [Default: %default]",
     )
     parser.add_option(
@@ -119,14 +112,25 @@ def main():
         help="Specify head index (0=human 1=mus) ",
     )
     parser.add_option(
+        "--model-index",
+        dest="model_index",
+        default=None,
+        type="int",
+        help="Specify model index between 0 and 7 ",
+    )
+    parser.add_option(
         "--mut-method",
         dest="mutation_method",
-        default="mask",
+        default="mask_spans",
         type="str",
         help="Specify mutation method, [Default: %default]",
     )
     parser.add_option(
-        "--motif-width", dest="motif_width", default=18, type="int", help="motif width"
+        "--motif-width",
+        dest="motif_width",
+        default=None,
+        type="int",
+        help="motif width",
     )
     parser.add_option(
         "--use-span",
@@ -154,7 +158,7 @@ def main():
     parser.add_option(
         "--name",
         dest="name",
-        default="scd",
+        default="motif_del_stats",
         help="SLURM name prefix [Default: %default]",
     )
     parser.add_option(
@@ -191,6 +195,12 @@ def main():
         help="time to run job. [Default: %default]",
     )
     parser.add_option(
+        "--conda_env",
+        dest="conda_env",
+        default="basenji-gpu",
+        help="name of conda environment to run the script",
+    )
+    parser.add_option(
         "--gres", dest="gres", default="gpu", help="gpu resources. [Default: %default]"
     )
     parser.add_option(
@@ -202,20 +212,26 @@ def main():
 
     (options, args) = parser.parse_args()
 
-    if len(args) != 3:
-        parser.error("Must provide parameters and model files and TSV file")
+    if len(args) != 2:
+        parser.error("Must provide model dir and TSV file")
     else:
-        params_file = args[0]
-        model_file = args[1]
-        tsv_file = args[2]
+        models_dir = args[0]
+        tsv_file = args[1]
 
-    #######################################################
-    # prep work
+        model_dir = models_dir + "/f" + str(options.model_index) + "c0/train/"
+        model_file = model_dir + "model" + str(options.head_index) + "_best.h5"
+        params_file = model_dir + "params.json"
+
+        new_args = [params_file, model_file, tsv_file]
+        options.name = f"{options.name}_m{options.model_index}_h{options.head_index}"
 
     # output directory
+    options.out_dir = f"{options.out_dir}/motif_expt_model{options.model_index}_head{options.head_index}"
+
     if not options.restart:
         if os.path.isdir(options.out_dir):
             print("Please remove %s" % options.out_dir, file=sys.stderr)
+            log.info(f"Please remove {options.out_dir}")
             exit(1)
         os.mkdir(options.out_dir)
 
@@ -225,26 +241,18 @@ def main():
     pickle.dump(options, options_pkl)
     options_pkl.close()
 
-    #######################################################
     # launch worker threads
     jobs = []
     for pi in range(options.processes):
         if not options.restart or not job_completed(options, pi):
-            if options.cpu:
-                cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += "conda activate basenji;"
-                cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
-            else:
-                cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += "conda activate basenji;"
-                cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
-
+            cmd = 'eval "$(conda shell.bash hook)";'
+            cmd += f"conda activate {options.conda_env};"
+            cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
             cmd += " ${SLURM_SUBMIT_DIR}/akita_motif_scd.py %s %s %d" % (
                 options_pkl_file,
-                " ".join(args),
+                " ".join(new_args),
                 pi,
             )
-
             name = "%s_p%d" % (options.name, pi)
             outf = "%s/job%d.out" % (options.out_dir, pi)
             errf = "%s/job%d.err" % (options.out_dir, pi)
@@ -270,94 +278,6 @@ def main():
         jobs, max_proc=options.max_proc, verbose=True, launch_sleep=10, update_sleep=60
     )
 
-    #######################################################
-    # collect output
-
-    collect_h5("scd.h5", options.out_dir, options.processes)
-
-    # for pi in range(options.processes):
-    #     shutil.rmtree('%s/job%d' % (options.out_dir,pi))
-
-
-def collect_table(file_name, out_dir, num_procs):
-    os.rename("%s/job0/%s" % (out_dir, file_name), "%s/%s" % (out_dir, file_name))
-    for pi in range(1, num_procs):
-        subprocess.call(
-            "tail -n +2 %s/job%d/%s >> %s/%s"
-            % (out_dir, pi, file_name, out_dir, file_name),
-            shell=True,
-        )
-
-
-def collect_h5(file_name, out_dir, num_procs):
-    # count variants
-    num_variants = 0
-    for pi in range(num_procs):
-        # open job
-        job_h5_file = "%s/job%d/%s" % (out_dir, pi, file_name)
-        job_h5_open = h5py.File(job_h5_file, "r")
-        num_variants += len(job_h5_open["chrom_core"])
-        job_h5_open.close()
-
-    # initialize final h5
-    final_h5_file = "%s/%s" % (out_dir, file_name)
-    final_h5_open = h5py.File(final_h5_file, "w")
-
-    # keep dict for string values
-    final_strings = {}
-
-    job0_h5_file = "%s/job0/%s" % (out_dir, file_name)
-    job0_h5_open = h5py.File(job0_h5_file, "r")
-    for key in job0_h5_open.keys():
-        if key in ["target_ids", "target_labels"]:
-            # copy
-            final_h5_open.create_dataset(key, data=job0_h5_open[key])
-
-        elif job0_h5_open[key].dtype.char == "S":
-            final_strings[key] = []
-
-        elif job0_h5_open[key].ndim == 1:
-            final_h5_open.create_dataset(
-                key, shape=(num_variants,), dtype=job0_h5_open[key].dtype
-            )
-
-        else:
-            num_targets = job0_h5_open[key].shape[1]
-            final_h5_open.create_dataset(
-                key, shape=(num_variants, num_targets), dtype=job0_h5_open[key].dtype
-            )
-
-    job0_h5_open.close()
-
-    # set values
-    vi = 0
-    for pi in range(num_procs):
-        # open job
-        job_h5_file = "%s/job%d/%s" % (out_dir, pi, file_name)
-        job_h5_open = h5py.File(job_h5_file, "r")
-
-        # append to final
-        for key in job_h5_open.keys():
-            if key in ["target_ids", "target_labels"]:
-                # once is enough
-                pass
-
-            else:
-                if job_h5_open[key].dtype.char == "S":
-                    final_strings[key] += list(job_h5_open[key])
-                else:
-                    job_variants = job_h5_open[key].shape[0]
-                    final_h5_open[key][vi : vi + job_variants] = job_h5_open[key]
-
-        vi += job_variants
-        job_h5_open.close()
-
-    # create final string datasets
-    for key in final_strings:
-        final_h5_open.create_dataset(key, data=np.array(final_strings[key], dtype="S"))
-
-    final_h5_open.close()
-
 
 def job_completed(options, pi):
     """Check whether a specific job has generated its
@@ -366,8 +286,5 @@ def job_completed(options, pi):
     return os.path.isfile(out_file) or os.path.isdir(out_file)
 
 
-################################################################################
-# __main__
-################################################################################
 if __name__ == "__main__":
     main()
