@@ -5,8 +5,8 @@ import glob
 import bioframe
 import itertools
 from io import StringIO
-from akita_utils.format_io import h5_to_df
 import akita_utils.format_io
+
 
 def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
     """Helper function to split a span 'start-end' into two integer series, and either
@@ -146,7 +146,9 @@ def filter_dataframe_by_column(
     """
 
     if filter_mode not in ("head", "tail", "uniform", "random"):
-        raise ValueError("a filter_mode has to be one from: head, tail, uniform, random")
+        raise ValueError(
+            "a filter_mode has to be one from: head, tail, uniform, random"
+        )
 
     upper_thresh = np.percentile(df[column_name].values, upper_threshold)
     lower_thresh = np.percentile(df[column_name].values, lower_threshold)
@@ -156,9 +158,11 @@ def filter_dataframe_by_column(
             (df[column_name] >= lower_thresh)
             & (df[column_name] <= upper_thresh)
         ]
-        .copy().drop_duplicates(subset=[column_name]).sort_values(column_name, ascending=False))
-    
-    
+        .copy()
+        .drop_duplicates(subset=[column_name])
+        .sort_values(column_name, ascending=False)
+    )
+
     if num_rows != None:
         assert num_rows <= len(
             filtered_df
@@ -169,11 +173,15 @@ def filter_dataframe_by_column(
         elif filter_mode == "tail":
             filtered_df = filtered_df[-num_rows:]
         elif filter_mode == "uniform":
-            filtered_df['binned'] = pd.cut(filtered_df[column_name], bins=num_rows)
-            filtered_df = filtered_df.groupby("binned").apply(lambda x: x.head(1))
+            filtered_df["binned"] = pd.cut(
+                filtered_df[column_name], bins=num_rows
+            )
+            filtered_df = filtered_df.groupby("binned").apply(
+                lambda x: x.head(1)
+            )
         else:
             filtered_df = filtered_df.sample(n=num_rows)
-            
+
     return filtered_df
 
 
@@ -302,7 +310,7 @@ def filter_by_ctcf(
     sites = bioframe.count_overlaps(
         sites, ctcf_motifs[site_cols], cols1=["chrom", "start_2", "end_2"]
     )
-    sites = sites.iloc[sites["count"].values == 0]
+    sites = sites.iloc[sites["count"].values == 1]
     sites.reset_index(inplace=True, drop=True)
 
     return sites
