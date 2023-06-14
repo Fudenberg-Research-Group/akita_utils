@@ -85,7 +85,9 @@ def initialize_stat_output_h5(
     head_index = int(model_file.split("model")[-1][0])
     model_index = int(model_file.split("c0")[0][-1])
 
-    num_targets = seqnn_model.num_targets()
+    num_targets = 6
+    if head_index == 0:
+        num_targets = 5
     target_ids = [ti for ti in range(num_targets)]
 
     num_experiments = len(seq_coords_df)
