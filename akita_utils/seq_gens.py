@@ -5,8 +5,11 @@ import pandas as pd
 import logging
 import math
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 log = logging.getLogger(__name__)
+
 
 def _insert_casette(seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string):
     seq_length = seq_1hot.shape[0]
@@ -76,7 +79,6 @@ def _multi_insert_offsets_casette(
     return output_seq
 
 
-
 def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
     """sequence generator for making insertions from tsvs
     construct an iterator that yields a one-hot encoded sequence
@@ -115,23 +117,33 @@ def generate_spans_start_positions(seq_1hot, motif, threshold):
             spans_start_positions.append(i)
     return spans_start_positions
 
-def permute_spans_from_start_positions(seq_1hot, spans_start_positions, span_length, shuffle_parameter):
-    assert span_length > shuffle_parameter, "The motif window size must be greater than the shuffle parameter."
+
+def permute_spans_from_start_positions(
+    seq_1hot, spans_start_positions, span_length, shuffle_parameter
+):
+    assert (
+        span_length > shuffle_parameter
+    ), "The motif window size must be greater than the shuffle parameter."
     seq_1hot_mut = seq_1hot.copy()
     for start in spans_start_positions:
         end = start + span_length
         snippet = seq_1hot_mut[start:end]
         count = 0
         while count < 100:
-            permuted_snippet = akita_utils.dna_utils.permute_seq_k(seq_1hot_mut[start:end], k=shuffle_parameter)
+            permuted_snippet = akita_utils.dna_utils.permute_seq_k(
+                seq_1hot_mut[start:end], k=shuffle_parameter
+            )
             if not np.array_equal(permuted_snippet, snippet):
                 break
             count += 1
         else:
-            raise ValueError(f"Unable to permute span starting at position {start} with window {span_length} using {shuffle_parameter} because it is cyclical i.e produces similar arrangements")
+            raise ValueError(
+                f"Unable to permute span starting at position {start} with window {span_length} using {shuffle_parameter} because it is cyclical i.e produces similar arrangements"
+            )
 
         seq_1hot_mut[start:end] = permuted_snippet
     return seq_1hot_mut
+
 
 def mask_spans_from_start_positions(seq_1hot, spans_start_positions, span_length):
     seq_1hot_perm = seq_1hot.copy()
@@ -140,6 +152,7 @@ def mask_spans_from_start_positions(seq_1hot, spans_start_positions, span_length
         print(start, end)
         seq_1hot_perm[start:end, :] = 0
     return seq_1hot_perm
+
 
 def randomise_spans_from_start_positions(seq_1hot, spans_start_positions, span_length):
     seq_1hot_perm = seq_1hot.copy()
@@ -153,7 +166,9 @@ def randomise_spans_from_start_positions(seq_1hot, spans_start_positions, span_l
                 break
             count += 1
         else:
-            raise ValueError(f"Unable to randomise span starting at position {start} with window {span_length} because it is cyclical i.e produces similar arrangements")
+            raise ValueError(
+                f"Unable to randomise span starting at position {start} with window {span_length} because it is cyclical i.e produces similar arrangements"
+            )
         seq_1hot_perm[start:end] = random_snippet
     return seq_1hot_perm
 
@@ -196,7 +211,7 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open, jasper_motif_fil
     else:
         log.info("CTCF motif jasper file was not provided, using default if available")
         motif = akita_utils.format_io.read_jaspar_to_numpy()
-    
+
     for s in seq_coords_df.itertuples():
         chrom, start, end = s.locus_specification.split(",")
         seq_dna = genome_open.fetch(chrom, int(start), int(end))
@@ -204,27 +219,37 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open, jasper_motif_fil
         mutation_method = s.mutation_method
         if mutation_method == "mask_motif":
             motif_positions = generate_spans_start_positions(
-            wt_1hot, motif, s.ctcf_detection_threshold)
+                wt_1hot, motif, s.ctcf_detection_threshold
+            )
             motif_window = 2 ** (math.ceil(math.log2(len(motif) - 1)))
-            yield mask_spans_from_start_positions(wt_1hot, motif_positions, motif_window)
+            yield mask_spans_from_start_positions(
+                wt_1hot, motif_positions, motif_window
+            )
         elif mutation_method == "permute_motif":
             motif_positions = generate_spans_start_positions(
-            wt_1hot, motif, s.ctcf_detection_threshold)
+                wt_1hot, motif, s.ctcf_detection_threshold
+            )
             motif_window = 2 ** (math.ceil(math.log2(len(motif) - 1)))
-            yield permute_spans_from_start_positions(wt_1hot, motif_positions, motif_window, s.shuffle_parameter)
+            yield permute_spans_from_start_positions(
+                wt_1hot, motif_positions, motif_window, s.shuffle_parameter
+            )
         elif mutation_method == "randomise_motif":
             motif_positions = generate_spans_start_positions(
-            wt_1hot, motif, s.ctcf_detection_threshold)
+                wt_1hot, motif, s.ctcf_detection_threshold
+            )
             motif_window = 2 ** (math.ceil(math.log2(len(motif) - 1)))
-            yield randomise_spans_from_start_positions(wt_1hot, motif_positions, motif_window)
+            yield randomise_spans_from_start_positions(
+                wt_1hot, motif_positions, motif_window
+            )
         elif mutation_method == "permute_whole_seq":
             yield akita_utils.dna_utils.permute_seq_k(wt_1hot, k=s.shuffle_parameter)
         elif mutation_method == "randomise_whole_seq":
             yield random_seq_permutation(wt_1hot)
 
+
 # define sequence generator
 def mask_central_seq(seq_1hot, motif_width):
-    assert motif_width is not None, 'Motif width is needed for method mask_central_seq'
+    assert motif_width is not None, "Motif width is needed for method mask_central_seq"
     seq_length = len(seq_1hot)
     seq_1hot_perm = seq_1hot.copy()
     mask_inds = np.arange(
@@ -233,8 +258,11 @@ def mask_central_seq(seq_1hot, motif_width):
     seq_1hot_perm[mask_inds, :] = 0
     return seq_1hot_perm
 
+
 def permute_central_seq(seq_1hot, motif_width):
-    assert motif_width is not None, 'Motif width is needed for method permute_central_seq'
+    assert (
+        motif_width is not None
+    ), "Motif width is needed for method permute_central_seq"
     seq_length = len(seq_1hot)
     seq_1hot_perm = seq_1hot.copy()
     central_inds = np.arange(
@@ -246,11 +274,13 @@ def permute_central_seq(seq_1hot, motif_width):
     seq_1hot_perm[mask_inds, :] = seq_1hot[central_inds, :].copy()
     return seq_1hot_perm
 
+
 def mask_spans(seq_1hot, spans):
     seq_1hot_perm = seq_1hot.copy()
     for s in spans:
         seq_1hot_perm[s[0] : s[1], :] = 0
     return seq_1hot_perm
+
 
 def permute_spans(seq_1hot, spans):
     seq_1hot_perm = seq_1hot.copy()
@@ -263,25 +293,33 @@ def permute_spans(seq_1hot, spans):
     seq_1hot_perm[spans_permuted, :] = seq_1hot[spans_flat, :].copy()
     return seq_1hot_perm
 
+
 def split_span(span_string):
     spans = []
     for j in span_string.split(","):
         spans.append([int(j.split("-")[0]), int(j.split("-")[1])])
     return spans
 
-def fetch_centered_padded_seq_and_new_start_position(chrom, start, end, seq_length, genome_open):
+
+def fetch_centered_padded_seq_and_new_start_position(
+    chrom, start, end, seq_length, genome_open
+):
     mid = (start + end) // 2
     start_centered, end_centered = int(mid - seq_length // 2), int(
         mid + seq_length // 2
     )
     seq_dna = genome_open.fetch(chrom, start_centered, end_centered).upper()
     return start_centered, seq_dna
-                
-    
-def disruption_seqs_gen(seq_coords_df, mutation_method, seq_length, genome_open, motif_width=None):
+
+
+def disruption_seqs_gen(
+    seq_coords_df, mutation_method, seq_length, genome_open, motif_width=None
+):
     for s in seq_coords_df.itertuples():
         list_1hot = []
-        start, seq_dna = fetch_centered_padded_seq_and_new_start_position(s.chrom, s.start, s.end, seq_length, genome_open)
+        start, seq_dna = fetch_centered_padded_seq_and_new_start_position(
+            s.chrom, s.start, s.end, seq_length, genome_open
+        )
         wt_1hot = akita_utils.dna_utils.dna_1hot(seq_dna)
         list_1hot.append(wt_1hot)
 
@@ -296,12 +334,11 @@ def disruption_seqs_gen(seq_coords_df, mutation_method, seq_length, genome_open,
         elif mutation_method == "mask_central_motif":
             list_1hot.append(mask_central_seq(wt_1hot, motif_width=motif_width))
         elif mutation_method == "permute_central_motif":
-            list_1hot.append(
-                permute_central_seq(wt_1hot, motif_width=motif_width)
-            )
+            list_1hot.append(permute_central_seq(wt_1hot, motif_width=motif_width))
 
         for seq_1hot in list_1hot:
             yield seq_1hot
+
 
 # -----------------------------modifying this function-----------------------------
 
@@ -331,24 +368,30 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
         ValueError: If any 'insert' column in seq_coords_df has an invalid format or refers to a region outside the boundaries of the reference genome.
 
     """
-    
+
     for experiment_index in seq_coords_df.itertuples(index=False):
-        
-        ref_and_pred =[]
-        
+
+        ref_and_pred = []
+
         seq_1hot = background_seqs[experiment_index.background_seqs].copy()
         ref_and_pred += [seq_1hot]
-        
+
         seq_1hot_insertions = []
         offsets_bp = []
         orientation_string = []
-        experiment_index_df = pd.DataFrame([experiment_index], columns=seq_coords_df.columns.to_list())
+        experiment_index_df = pd.DataFrame(
+            [experiment_index], columns=seq_coords_df.columns.to_list()
+        )
 
         for col_name in seq_coords_df.columns:
-            
+
             if "insert" in col_name:
-                
-                (   chrom, start, end, strand,
+
+                (
+                    chrom,
+                    start,
+                    end,
+                    strand,
                     insert_flank_bp,
                     insert_offset,
                     insert_orientation,
@@ -374,13 +417,13 @@ def modular_offsets_insertion_seqs_gen(seq_coords_df, background_seqs, genome_op
             seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
         )
         ref_and_pred += [seq_1hot]
-        
+
         for seq_1hot in ref_and_pred:
             yield seq_1hot
 
-        
-def _inserts_overlap_check_pre_simulation(dataframe):
-    
+
+def inserts_overlap_check(dataframe):
+
     for experiment in dataframe.itertuples(index=False):
         offsets_bp = []
         insertions_length_list = []
@@ -389,48 +432,60 @@ def _inserts_overlap_check_pre_simulation(dataframe):
         for col_name in dataframe.columns:
             if "insert" in col_name:
 
-                (   chrom, start, end, strand,
+                (
+                    chrom,
+                    start,
+                    end,
+                    strand,
                     insert_flank_bp,
                     insert_offset,
                     insert_orientation,
                 ) = experiment_df[col_name][0].split(",")
 
                 offsets_bp.append(int(insert_offset))
-                insertions_length_list.append(int(end)-int(start)+1+2*int(insert_flank_bp))
+                insertions_length_list.append(
+                    int(end) - int(start) + 1 + 2 * int(insert_flank_bp)
+                )
                 insertions_name_list.append(col_name)
-        _check_overlaps_pre_simulation(insertions_length_list, offsets_bp, insertions_name_list)
-                
+        _check_overlaps_pre_processing(
+            insertions_length_list, offsets_bp, insertions_name_list
+        )
 
-def _check_overlaps_pre_simulation(insertions_length_list, offsets_bp, insertions_name_list):
-        assert (
-            len(insertions_length_list) == len(offsets_bp)
-        ), "insertions and offsets dont match, please check"
-        insertion_start_bp = 0
-        insert_limits = []
-        
-        for insertion_index, insertion_length in enumerate(insertions_length_list):
-            
-            insert_bp = insertion_length
-            insertion_offset = offsets_bp[insertion_index]
-            insert_limits += [(
-                insertion_start_bp
-                + insertion_offset , insertion_start_bp
-                + insertion_offset
-                + insert_bp
-            )]
-        _check_overlaps(insert_limits, insertions_name_list)
-            
-            
+
+def _check_overlaps_pre_processing(
+    insertions_length_list, offsets_bp, insertions_name_list
+):
+    assert len(insertions_length_list) == len(
+        offsets_bp
+    ), "insertions and offsets dont match, please check"
+    insertion_start_bp = 0
+    insert_limits = []
+
+    for insertion_index, insertion_length in enumerate(insertions_length_list):
+
+        insert_bp = insertion_length
+        insertion_offset = offsets_bp[insertion_index]
+        insert_limits += [
+            (
+                insertion_start_bp + insertion_offset,
+                insertion_start_bp + insertion_offset + insert_bp,
+            )
+        ]
+    _check_overlaps(insert_limits, insertions_name_list)
+
+
 def _check_overlaps(insert_limits, insertions_name_list):
     sorted_insert_limits = sorted(zip(insert_limits, insertions_name_list))
     sorted_insertions_name_list = [name for _, name in sorted_insert_limits]
     sorted_insert_limits = [limits for limits, _ in sorted_insert_limits]
     for i in range(len(sorted_insert_limits) - 1):
-        if sorted_insert_limits[i][1] > sorted_insert_limits[i+1][0]:
-            raise ValueError(f"Overlap found between inserted sequences: {sorted_insertions_name_list[i]} --> {sorted_insert_limits[i]}, {sorted_insertions_name_list[i+1]} --> {sorted_insert_limits[i+1]}")
+        if sorted_insert_limits[i][1] > sorted_insert_limits[i + 1][0]:
+            raise ValueError(
+                f"Overlap found between inserted sequences: {sorted_insertions_name_list[i]} --> {sorted_insert_limits[i]}, {sorted_insertions_name_list[i+1]} --> {sorted_insert_limits[i+1]}"
+            )
 
 
-def generate_seq_from_fasta(fasta_file_path):  
+def generate_seq_from_fasta(fasta_file_path):
     with open(fasta_file_path, "r") as f:
         for line in f.readlines():
             if ">" in line:

@@ -1,13 +1,13 @@
-### Commands
+# Commands
 
-   - generating tss and other insertion tsv(s)
+###   - generating tss and other insertion tsv(s)
    
-         python generate_tss_with_markers.py
+         python preprocess_tss_to_tsv.py
        
        
-   - generating tsv table of inserts from provided json file
+###   - generating tsv table of inserts from provided json file
    
-        - the json has a structure as in `data.json` file, each dictionary should correspond to a single dataset. single insert insert looks as below
+- the json has a structure as in `data.json` file, each dictionary element in the list should correspond to a single dataset. A single insert may look as below
 ```
     [        
     {   "feature_name": "name of your insert",
@@ -19,13 +19,16 @@
     }
     ]
 ```                
-         python generate_expt_df.py --json-file /home1/kamulege/akita_utils/bin/insert_experiments/data.json -o data/12_uniformly_selcted_model2_motifs.tsv --background_seqs 0 
+- After structuring the data.json file, the you could run the `generate_expt_df.py` script with the created json file, output_file path and the particular background_seqs_indices you will try. e.g
 
-   - For Akita experiment predictions on multiple processes, feed your custom parameters to `insert_expt_bash.sh` and run `sbatch insert_expt_bash.sh` 
+         python generate_expt_df.py --json-file /path/to/data.json -o path/to/output_filename.tsv --background_seqs 0 
 
-   - For non multiple processes Akita experiment predictions, feed `insert_experiment.py` your custom parameters and run as shown below
+###   - To generate Akita predictions on multiple processes, feed your custom parameters to `multi-model_modular-insert.sh` and run `sbatch multi-model_modular-insert.sh` 
+
+
+###   - For more hands on experience, below are the unwrapped commands for single and multiple processes Akita experiment predictions, feed `insert_experiment.py` your custom parameters and run as shown below
    
-         python insert_experiment.py /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/model1_best.h5 /home1/kamulege/akita_utils/bin/insert_experiments/one_strong_motif_in_different_backgrounds.tsv  -f /project/fudenber_735/genomes/mm10/mm10.fa --head-index 1 --batch-size 4 -m -o /scratch1/kamulege/insert_experiments/one_strong_motif_in_different_backgrounds --stats SCD --background-file  /home1/kamulege/akita_utils/bin/background_seq_experiments/data/background_seqs/job0/background_seqs.fa
+         python insert_experiment.py /path/to/a/single/akita/v2/model/train/params.json /path/to/a/single/akita/v2/model.h5 /path/to/experiment.tsv  -f /path/to/genomes/mm10/mm10.fa --head-index 1 --batch-size 4 -m -o /path/to/output/directory --stats SCD --background-file  /path/to/background_seqs.fa
         
         
    

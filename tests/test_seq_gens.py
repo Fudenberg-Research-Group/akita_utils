@@ -105,7 +105,7 @@ def test_mask_spans():
             [0, 0, 0, 1],
         ]
     )
-    spans = [(1,3), (4,5)]
+    spans = [(1, 3), (4, 5)]
     expected_output = [
         [0, 1, 0, 0],
         [0, 0, 0, 0],  # this should be masked
@@ -369,10 +369,10 @@ def test_randomise_spans_from_start_positions():
 
     # Check that the result is as expected
     assert np.array_equal(result, expected_result)
-    
+
 
 def test_multi_insert_offsets_casette():
-    
+
     # Test that the function correctly handles a single insertion at the center of the sequence, in the forward orientation.
     seq_1hot = np.zeros((10, 4))
     seq_1hot_insertions = [np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])]
@@ -384,7 +384,7 @@ def test_multi_insert_offsets_casette():
         seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
     )
     assert np.array_equal(output_seq, expected_output)
-    
+
     # Test that the function correctly handles a single insertion at the center of the sequence, in the reverse orientation.
     seq_1hot = np.zeros((10, 4))
     seq_1hot_insertions = [np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])]
@@ -396,12 +396,12 @@ def test_multi_insert_offsets_casette():
         seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
     )
     assert np.array_equal(output_seq, expected_output)
-    
+
     # Test that the function correctly handles multiple non-overlapping insertions, in different orientations and at different offsets.
     seq_1hot = np.zeros((10, 4))
     seq_1hot_insertions = [
         np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]]),
-        np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
+        np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]),
     ]
     offsets_bp = [-2, 2]
     orientation_string = [">", "<"]
@@ -412,7 +412,7 @@ def test_multi_insert_offsets_casette():
         seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
     )
     assert np.array_equal(output_seq, expected_output)
-    
+
     # Test that the function returns the expected output when all possible arguments are empty.
     seq_1hot = np.zeros((10, 4))
     seq_1hot_insertions = []
@@ -422,4 +422,4 @@ def test_multi_insert_offsets_casette():
     output_seq = _multi_insert_offsets_casette(
         seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
     )
-    assert np.array_equal(output_seq, expected_output)    
+    assert np.array_equal(output_seq, expected_output)

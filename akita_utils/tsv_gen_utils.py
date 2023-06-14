@@ -18,28 +18,34 @@ def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
         .copy()
     )
     if concat:
-        return pd.concat([sites, sites_spans_split], axis=1,)
+        return pd.concat(
+            [sites, sites_spans_split],
+            axis=1,
+        )
 
     else:
         return sites_spans_split
 
-    
+
 def calculate_mean(dataframe, stat):
     if stat in ["INS-16", "INS-32", "INS-64", "INS-128", "INS-256"]:
         reference_columns = [col for col in dataframe.columns if "ref_" + stat in col]
         alternate_columns = [col for col in dataframe.columns if "alt_" + stat in col]
         # print(reference_columns, alternate_columns)
-        return dataframe[alternate_columns].mean(axis=1) - dataframe[reference_columns].mean(axis=1)
-    
-    matching_columns = [col for col in dataframe.columns if stat in col and "genomic" not in col]
+        return dataframe[alternate_columns].mean(axis=1) - dataframe[
+            reference_columns
+        ].mean(axis=1)
+
+    matching_columns = [
+        col for col in dataframe.columns if stat in col and "genomic" not in col
+    ]
     # print(matching_columns)
     if matching_columns:
         filtered_df = dataframe[matching_columns].copy()
         return filtered_df.mean(axis=1)
-    
+
     print(f"No columns matching '{stat}' found in the DataFrame.")
     return pd.Series()  # Return an empty Series if no matching columns were found
-
 
 
 def filter_boundary_ctcfs_from_h5(
@@ -58,24 +64,28 @@ def filter_boundary_ctcfs_from_h5(
         dfs.append(df_mini)
     df = dfs[0].copy()
     df[score_key] = np.mean([df[score_key] for df in dfs], axis=0)
-    
+
     averaged_scores_multi_model_df = df
-    
+
     # append scores for full mut and all ctcf mut to table
     print("annotating each site with boundary-wide scores")
     score_10k = np.zeros((len(averaged_scores_multi_model_df),))
-    averaged_scores_multi_model_df['score10k'] = score_10k
+    averaged_scores_multi_model_df["score10k"] = score_10k
     score_all_ctcf = np.zeros((len(averaged_scores_multi_model_df),))
-    averaged_scores_multi_model_df['score_all_ctcf'] = score_all_ctcf
+    averaged_scores_multi_model_df["score_all_ctcf"] = score_all_ctcf
     for i in np.unique(averaged_scores_multi_model_df["boundary_index"].values):
         inds = averaged_scores_multi_model_df["boundary_index"].values == i
         df_boundary = averaged_scores_multi_model_df.iloc[inds]
         # print(df_boundary.iloc[-1][score_key])
-        averaged_scores_multi_model_df.loc[inds, "score_10k"] = df_boundary.iloc[-1][score_key]
+        averaged_scores_multi_model_df.loc[inds, "score_10k"] = df_boundary.iloc[-1][
+            score_key
+        ]
         # score_10k[inds] = df_boundary.iloc[-1][score_key]
         if len(df_boundary) > 2:
             # score_all_ctcf[inds] = df_boundary.iloc[-2][score_key]
-            averaged_scores_multi_model_df.loc[inds, "score_all_ctcf"] = df_boundary.iloc[-2][score_key]
+            averaged_scores_multi_model_df.loc[
+                inds, "score_all_ctcf"
+            ] = df_boundary.iloc[-2][score_key]
 
     # considering only single ctcf mutations
     # require that they fall in an overall boundary that has some saliency
@@ -91,12 +101,18 @@ def filter_boundary_ctcfs_from_h5(
     sites.reset_index(inplace=True, drop=True)
     if sites.duplicated().sum() > 0:
         raise ValueError("no duplicates allowed")
-        
+
     sites.rename(
-    columns={"start_2": "start_site","end_2": "end_site", "strand_2": "strand_site"},
-    inplace=True,)
+        columns={
+            "start_2": "start_site",
+            "end_2": "end_site",
+            "strand_2": "strand_site",
+        },
+        inplace=True,
+    )
 
     return sites
+
 
 def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
     """
@@ -166,35 +182,36 @@ def filter_dataframe_by_column(
 
     """
 
-
     if filter_mode not in ("head", "tail", "uniform", "random"):
-        raise ValueError("a filter_mode has to be one from: head, tail, uniform, random")
+        raise ValueError(
+            "a filter_mode has to be one from: head, tail, uniform, random"
+        )
 
     upper_thresh = np.percentile(df[column_name].values, upper_threshold)
     lower_thresh = np.percentile(df[column_name].values, lower_threshold)
 
     filtered_df = (
-        df[
-            (df[column_name] >= lower_thresh)
-            & (df[column_name] <= upper_thresh)
-        ]
-        .copy().drop_duplicates(subset=[column_name]).sort_values(column_name, ascending=False))
-    
+        df[(df[column_name] >= lower_thresh) & (df[column_name] <= upper_thresh)]
+        .copy()
+        .drop_duplicates(subset=[column_name])
+        .sort_values(column_name, ascending=False)
+    )
+
     if num_rows != None:
         assert num_rows <= len(
             filtered_df
-        ), f"length of dataframe ({filtered_df.shape[0]}) is smaller than requested number of sites({num_rows}), change contraints" 
+        ), f"length of dataframe ({filtered_df.shape[0]}) is smaller than requested number of sites({num_rows}), change contraints"
 
         if filter_mode == "head":
             filtered_df = filtered_df[:num_rows]
         elif filter_mode == "tail":
             filtered_df = filtered_df[-num_rows:]
         elif filter_mode == "uniform":
-            filtered_df['binned'] = pd.cut(filtered_df[column_name], bins=num_rows)
+            filtered_df["binned"] = pd.cut(filtered_df[column_name], bins=num_rows)
             filtered_df = filtered_df.groupby("binned").apply(lambda x: x.head(1))
         else:
             filtered_df = filtered_df.sample(n=num_rows)
-            
+
     return filtered_df
 
 
@@ -222,10 +239,11 @@ def filter_by_overlap_num(
     working_df,
     filter_df,
     expand_window=60,
-    working_df_cols=["chrom","start","end"],
-    filter_df_cols=["chrom","start","end"],
-    max_overlap_num=0):
-    
+    working_df_cols=["chrom", "start", "end"],
+    filter_df_cols=["chrom", "start", "end"],
+    max_overlap_num=0,
+):
+
     """
     Filter out rows from working_df that overlap entries in filter_df above given threshold.
 
@@ -243,18 +261,20 @@ def filter_by_overlap_num(
         Columns specifying genomic intervals in the filter_df.
     max_overlap_num : int
         All the rows with number of overlaps above this threshold will be filtered out.
-        
+
     Returns
     --------
 
     working_df : dataFrame
         Subset of working_df that do not have overlaps with filter_df above given threshold.
     """
-    
+
     filter_df = bioframe.expand(filter_df, pad=expand_window)
-    
-    working_df = bioframe.count_overlaps(working_df, filter_df, cols1=working_df_cols, cols2=filter_df_cols)
-    
+
+    working_df = bioframe.count_overlaps(
+        working_df, filter_df, cols1=working_df_cols, cols2=filter_df_cols
+    )
+
     working_df = working_df.iloc[working_df["count"].values <= max_overlap_num]
     working_df.reset_index(inplace=True, drop=True)
 
@@ -431,7 +451,8 @@ def add_diff_flanks_and_const_spacer(
     spacer_ls = []
 
     seq_coords_df = pd.concat(
-        [rep_unit for i in range(flank_end - flank_start + 1)], ignore_index=True,
+        [rep_unit for i in range(flank_end - flank_start + 1)],
+        ignore_index=True,
     )
 
     for flank in range(flank_start, flank_end + 1):
@@ -532,7 +553,7 @@ def generate_ctcf_motifs_df(
     ctcf_jaspar_file=None,
     filter_out_inserts_with_repeat_masker_annotations=False,
     rmsk_file=None,
-    out_tsv_name=None
+    out_tsv_name=None,
 ):
     """
     Generates a list of genomic coordinates for potential CTCF binding sites in DNA sequences.
@@ -551,51 +572,75 @@ def generate_ctcf_motifs_df(
     - A df of strings representing genomic coordinates of putative CTCF binding sites in the following format: "chrom,start,end,strand,filter_score=score_value".
     """
     sites = filter_boundary_ctcfs_from_h5(
-        h5_dirs=h5_dirs, score_key=filter_score, threshold_all_ctcf=5,
+        h5_dirs=h5_dirs,
+        score_key=filter_score,
+        threshold_all_ctcf=5,
     )
-    
+
     if filter_out_inserts_with_ctcf_motifs is True:
-        assert ctcf_jaspar_file is not None, "Please provie path to ctcf jaspar motif to use while filtering out loci with ctcf"
-        ctcf_motifs_df = read_ctcf(ctcf_jaspar_file)
-        sites = filter_by_overlap_num(working_df=sites, filter_df=ctcf_motifs_df, working_df_cols=["chrom", "start_site", "end_site"], filter_df_cols=["chrom", "start", "end"])
-       
+        assert (
+            ctcf_jaspar_file is not None
+        ), "Please provie path to ctcf jaspar motif to use while filtering out loci with ctcf"
+        ctcf_motifs_df = bioframe.read_table(
+            ctcf_jaspar_file, schema="jaspar", skiprows=1
+        )
+        sites = filter_by_overlap_num(
+            working_df=sites,
+            filter_df=ctcf_motifs_df,
+            working_df_cols=["chrom", "start_site", "end_site"],
+            filter_df_cols=["chrom", "start", "end"],
+        )
+
     if filter_out_inserts_with_repeat_masker_annotations is True:
-        assert rmsk_file is not None, "Please provie path to rmsk file to use while filtering out loci with repeat masker annotations"
-        rmsk_df = read_rmsk(rmsk_file) 
-        sites = filter_by_overlap_num(working_df=sites, filter_df=rmsk_df, working_df_cols=["chrom", "start_site", "end_site"], filter_df_cols=["chrom", "start", "end"])
+        assert (
+            rmsk_file is not None
+        ), "Please provie path to rmsk file to use while filtering out loci with repeat masker annotations"
+        rmsk_df = read_rmsk(rmsk_file)
+        sites = filter_by_overlap_num(
+            working_df=sites,
+            filter_df=rmsk_df,
+            working_df_cols=["chrom", "start_site", "end_site"],
+            filter_df_cols=["chrom", "start", "end"],
+        )
 
     site_df = filter_dataframe_by_column(
-            df=sites,
-            column_name=filter_score,
-            upper_threshold=strong_thresh_pct,
-            lower_threshold=weak_thresh_pct,
-            filter_mode=filter_mode,
-            num_rows=num_sites,
-            )
-    
+        df=sites,
+        column_name=filter_score,
+        upper_threshold=strong_thresh_pct,
+        lower_threshold=weak_thresh_pct,
+        filter_mode=filter_mode,
+        num_rows=num_sites,
+    )
+
     seq_coords_df = (
         site_df[["chrom", "start_site", "end_site", "strand_site", filter_score]]
         .copy()
         .rename(
             columns={
-                "strand_site":"strand",
-                "start_site":"start",
-                "end_site":"end",
+                "strand_site": "strand",
+                "start_site": "start",
+                "end_site": "end",
                 filter_score: "genomic_" + filter_score,
             }
         )
     )
 
     seq_coords_df.reset_index(drop=True, inplace=True)
-    
+
     if out_tsv_name is not None:
-        seq_coords_df.to_csv(file_path, sep='\t', index=False)
-    
+        seq_coords_df.to_csv(file_path, sep="\t", index=False)
+
     return seq_coords_df
 
 
 def generate_locus_specification_list(
-    dataframe, specification_list=None, unique_identifier="", filter_out_inserts_with_ctcf_motifs=False, ctcf_jaspar_file=None, filter_out_inserts_with_repeat_masker_annotations=False, rmsk_file=None
+    dataframe,
+    specification_list=None,
+    unique_identifier="",
+    filter_out_inserts_with_ctcf_motifs=False,
+    ctcf_jaspar_file=None,
+    filter_out_inserts_with_repeat_masker_annotations=False,
+    rmsk_file=None,
 ):
     """
     Generate a list of locus specifications from a dataframe of genomic features.
@@ -614,20 +659,37 @@ def generate_locus_specification_list(
     """
 
     if filter_out_inserts_with_ctcf_motifs:
-        assert ctcf_jaspar_file is not None, "Please provide the path to the CTCF JASPAR motif file to use while filtering out loci with CTCF motifs"
-        ctcf_motifs_df = bioframe.read_table(ctcf_jaspar_file, schema="jaspar", skiprows=1)
-        dataframe = filter_by_overlap_num(working_df=dataframe, filter_df=ctcf_motifs_df, working_df_cols=["chrom", "start", "end"], filter_df_cols=["chrom", "start", "end"])
+        assert (
+            ctcf_jaspar_file is not None
+        ), "Please provide the path to the CTCF JASPAR motif file to use while filtering out loci with CTCF motifs"
+        ctcf_motifs_df = bioframe.read_table(
+            ctcf_jaspar_file, schema="jaspar", skiprows=1
+        )
+        dataframe = filter_by_overlap_num(
+            working_df=dataframe,
+            filter_df=ctcf_motifs_df,
+            working_df_cols=["chrom", "start", "end"],
+            filter_df_cols=["chrom", "start", "end"],
+        )
 
     if filter_out_inserts_with_repeat_masker_annotations:
-        assert rmsk_file is not None, "Please provide the path to the RMSK file to use while filtering out loci with RepeatMasker annotations"
+        assert (
+            rmsk_file is not None
+        ), "Please provide the path to the RMSK file to use while filtering out loci with RepeatMasker annotations"
         rmsk_df = read_rmsk(rmsk_file)
-        dataframe = filter_by_overlap_num(working_df=dataframe, filter_df=rmsk_df, working_df_cols=["chrom", "start", "end"], filter_df_cols=["chrom", "start", "end"])
+        dataframe = filter_by_overlap_num(
+            working_df=dataframe,
+            filter_df=rmsk_df,
+            working_df_cols=["chrom", "start", "end"],
+            filter_df_cols=["chrom", "start", "end"],
+        )
 
-        
     if "strand" not in dataframe.columns:  # some inserts dont have this column
         dataframe["strand"] = "+"
 
-    dataframe = _dataframe_cleaning(dataframe=dataframe, unique_identifier=unique_identifier)
+    dataframe = _dataframe_cleaning(
+        dataframe=dataframe, unique_identifier=unique_identifier
+    )
 
     # Generate list of locus specifications
     if specification_list is not None:
@@ -714,8 +776,8 @@ def parameter_dataframe_reorganisation(parameters_combo_dataframe, insert_names_
 
 
 def _dataframe_cleaning(dataframe, unique_identifier=""):
-    
-        # Generate locus specification column
+
+    # Generate locus specification column
     dataframe["locus_specification"] = (
         dataframe["chrom"].astype(str)
         + ","
@@ -734,5 +796,68 @@ def _dataframe_cleaning(dataframe, unique_identifier=""):
         dataframe["locus_specification"] += (
             "#" + f"{unique_identifier}_" + col + "=" + dataframe[col].astype(str)
         )
-        
+
     return dataframe
+
+
+def inserts_overlap_check(dataframe):
+
+    for experiment in dataframe.itertuples(index=False):
+        offsets_bp = []
+        insertions_length_list = []
+        insertions_name_list = []
+        experiment_df = pd.DataFrame([experiment], columns=dataframe.columns.to_list())
+        for col_name in dataframe.columns:
+            if "insert" in col_name:
+
+                (
+                    chrom,
+                    start,
+                    end,
+                    strand,
+                    insert_flank_bp,
+                    insert_offset,
+                    insert_orientation,
+                ) = experiment_df[col_name][0].split(",")
+
+                offsets_bp.append(int(insert_offset))
+                insertions_length_list.append(
+                    int(end) - int(start) + 1 + 2 * int(insert_flank_bp)
+                )
+                insertions_name_list.append(col_name)
+        _check_overlaps_pre_processing(
+            insertions_length_list, offsets_bp, insertions_name_list
+        )
+
+
+def _check_overlaps_pre_processing(
+    insertions_length_list, offsets_bp, insertions_name_list
+):
+    assert len(insertions_length_list) == len(
+        offsets_bp
+    ), "insertions and offsets dont match, please check"
+    insertion_start_bp = 0
+    insert_limits = []
+
+    for insertion_index, insertion_length in enumerate(insertions_length_list):
+
+        insert_bp = insertion_length
+        insertion_offset = offsets_bp[insertion_index]
+        insert_limits += [
+            (
+                insertion_start_bp + insertion_offset,
+                insertion_start_bp + insertion_offset + insert_bp,
+            )
+        ]
+    _check_overlaps(insert_limits, insertions_name_list)
+
+
+def _check_overlaps(insert_limits, insertions_name_list):
+    sorted_insert_limits = sorted(zip(insert_limits, insertions_name_list))
+    sorted_insertions_name_list = [name for _, name in sorted_insert_limits]
+    sorted_insert_limits = [limits for limits, _ in sorted_insert_limits]
+    for i in range(len(sorted_insert_limits) - 1):
+        if sorted_insert_limits[i][1] > sorted_insert_limits[i + 1][0]:
+            raise ValueError(
+                f"Overlap found between inserted sequences: {sorted_insertions_name_list[i]} --> {sorted_insert_limits[i]}, {sorted_insertions_name_list[i+1]} --> {sorted_insert_limits[i+1]}"
+            )

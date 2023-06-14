@@ -41,7 +41,7 @@ def read_requirements(path):
         for line in read(path).split("\n")
         if not line.startswith(('"', "#", "-", "git+"))
     ]
- 
+
 
 setup(
     name="akita_utils",
@@ -52,9 +52,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Fudenberg-Research-Group",
     packages=find_packages(exclude=["tests", ".github"]),
-    entry_points={
-        "console_scripts": ["akita_utils = akita_utils.__main__:main"]
-    },
+    entry_points={"console_scripts": ["akita_utils = akita_utils.__main__:main"]},
     classifiers=CLASSIFIERS,
     python_requires=">=3.7",
     install_requires=read_requirements(INSTALL_DEPS_PATH),

@@ -12,9 +12,9 @@ import pandas as pd
 import akita_utils
 from akita_utils.tsv_gen_utils import (
     generate_locus_specification_list,
-    generate_ctcf_motifs_list,
     parameter_dataframe_reorganisation,
 )
+from akita_utils.tsv_gen_utils import inserts_overlap_check
 import argparse
 import json
 import logging
@@ -44,8 +44,8 @@ def main():
         "--json-file", help="Path to JSON file with insert(s) dataframe(s)"
     )
     parser.add_argument(
-        "--dont-search-overlaps",
-        help="Use this flag to skip searching for overlaps (if unnecessary) between inserts since it can be time consuming depending on the number of inserts",
+        "--dont_raise_error_with_ovelaps",
+        help="Use this flag to skip searching for overlaps(and raising overlap error) between inserts",
         action="store_true",
     )
 
@@ -68,20 +68,8 @@ def main():
             df_path = insert_specs["path"]
             root, ext = os.path.splitext(df_path)
 
-            # Check if the file path is a CSV,TSV or HDF5 file
-            if ext == ".csv":
-                grid_params[
-                    f"{insert_identifier}_locus_specification"
-                ] = generate_locus_specification_list(
-                    dataframe=pd.read_csv(df_path),
-                    filter_out_ctcf_motifs=insert_specs.get(
-                        "filter_out_inserts_with_ctcf_motifs", False
-                    ),
-                    specification_list=insert_specs.get("specification_list", None),
-                    unique_identifier=insert_identifier,
-                    ctcf_jaspar_file=insert_specs.get("ctcf_jaspar_file", None),
-                )
-            elif ext == ".tsv":
+            # Check if the file path is a TSV
+            if ext == ".tsv":
                 grid_params[
                     f"{insert_identifier}_locus_specification"
                 ] = generate_locus_specification_list(
@@ -93,21 +81,9 @@ def main():
                     unique_identifier=insert_identifier,
                     ctcf_jaspar_file=insert_specs.get("ctcf_jaspar_file", None),
                 )
-            elif ext == ".h5":
-                grid_params[
-                    f"{insert_identifier}_locus_specification"
-                ] = generate_ctcf_motifs_list(
-                    h5_dirs=df_path,
-                    rmsk_file=insert_specs["rmsk_file"],
-                    ctcf_jaspar_file=insert_specs["ctcf_jaspar_file"],
-                    filter_score=insert_specs["filter_score"],
-                    filter_mode=insert_specs["filter_mode"],
-                    num_sites=insert_specs["num_sites"],
-                    unique_identifier=insert_identifier,
-                )
 
             else:
-                raise ValueError("Input file must be a TSV, CSV or HDF5 file.")
+                raise ValueError("Input file must be a TSV.")
 
             grid_params[f"{insert_identifier}_flank_bp"] = insert_specs.get(
                 "flank_bp", DEFAULT_FLANK_BP
@@ -127,15 +103,13 @@ def main():
         grid_params_dataframe, insert_names_list
     )
 
-    search_overlaps = not args.dont_search_overlaps
+    raise_error_with_ovelaps = not args.dont_raise_error_with_ovelaps
 
-    if search_overlaps:
+    if raise_error_with_ovelaps:
         log.info(
             "Searching for overlaps between inserts, it might take time depending on the number of inserts and parameters ..."
         )
-        akita_utils.seq_gens._inserts_overlap_check_pre_simulation(
-            grid_params_dataframe
-        )
+        inserts_overlap_check(grid_params_dataframe)
 
     grid_params_dataframe.to_csv(f"{args.out_dir}", sep="\t", index=False)
 

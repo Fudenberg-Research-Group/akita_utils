@@ -74,9 +74,7 @@ def test_filter_by_overlap_num():
         columns=["chrom", "start", "end"],
     )
 
-    test1_out = filter_by_overlap_num(
-        df1, df2, expand_window=0, max_overlap_num=1
-    )
+    test1_out = filter_by_overlap_num(df1, df2, expand_window=0, max_overlap_num=1)
 
     assert len(test1_out) == 4, "sub-test 1 failed"
     # the only row that is filtered out is: ["chr1", 500, 510]

@@ -393,9 +393,7 @@ def write_stats(
                 for target_ind in range(ref_preds.shape[1]):
                     stats_out[
                         "ref_" + f"{stat}_h{head_index}_m{model_index}_t{target_ind}"
-                    ][experiment_ID] = calculate_INS(
-                        ref_map, window=insul_window
-                    )[
+                    ][experiment_ID] = calculate_INS(ref_map, window=insul_window)[
                         target_ind
                     ].astype(
                         "float16"
@@ -403,9 +401,7 @@ def write_stats(
 
                     stats_out[
                         "alt_" + f"{stat}_h{head_index}_m{model_index}_t{target_ind}"
-                    ][experiment_ID] = calculate_INS(
-                        alt_map, window=insul_window
-                    )[
+                    ][experiment_ID] = calculate_INS(alt_map, window=insul_window)[
                         target_ind
                     ].astype(
                         "float16"
