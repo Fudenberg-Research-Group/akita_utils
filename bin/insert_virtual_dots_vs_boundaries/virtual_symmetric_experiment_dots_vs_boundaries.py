@@ -375,14 +375,14 @@ def main():
         batch_size,
     )
     
-    motifs_ids = list(pd.unique(seq_coords_df.start))
-    
     for altseq_index in range(num_experiments):
         # get predictions
         preds_matrix = preds_stream[altseq_index]
         map_matrix = ut_dense(preds_matrix, seqnn_model.diagonal_offset)
         background_index = seq_coords_df.iloc[altseq_index].background_index
-        seq_id = motifs_ids.index(seq_coords_df.iloc[altseq_index].start)
+        exp_id = seq_coords_df.iloc[altseq_index].exp_id
+        seq_id = seq_coords_df.iloc[altseq_index].seq_id
+        identifier = f"{exp_id}_s{seq_id}"
         
         # # save stat metrics for each prediction
         # write_stat_metrics_to_h5(
@@ -399,7 +399,7 @@ def main():
         # save maps
         write_maps_to_h5_background(map_matrix,
                         h5_outfile,
-                        seq_id,
+                        identifier,
                         background_index,
                         head_index,
                         model_index
