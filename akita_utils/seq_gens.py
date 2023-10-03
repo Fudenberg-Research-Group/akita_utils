@@ -3,6 +3,7 @@ import numpy as np
 import akita_utils.format_io
 import pandas as pd
 import logging
+import math
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 log = logging.getLogger(__name__)
@@ -134,54 +135,69 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
 
 
 def reference_seqs_gen(background_seqs):
-    """sequence generator for making insertions from tsvs
-    construct an iterator that yields a one-hot encoded sequence
+    """an iterator that yields one-hot encoded reference sequences
     that can be used as input to akita via PredStreamGen
+    
+    Note, background_seqs is a list of DNA sequences (strings)
     """
 
     for background_index in range(len(background_seqs)):
         seq_1hot = background_seqs[background_index].copy()
         yield seq_1hot
         
-        
+       
 # define sequence generator
 def generate_spans_start_positions(seq_1hot, motif, threshold):
     index_scores_array = akita_utils.dna_utils.scan_motif(seq_1hot, motif)
-    motif_window = len(motif)
-    half_motif_window = int(np.ceil(motif_window / 2))
-    spans = []
+    span_length = len(motif)
+    spans_start_positions = []
     for i in np.where(index_scores_array > threshold)[0]:
-        if half_motif_window < i < len(seq_1hot) - half_motif_window:
-            spans.append(i)
-    return spans
+        if i < (len(seq_1hot) - span_length):
+            spans_start_positions.append(i)
+    return spans_start_positions
 
-
-def permute_spans(seq_1hot, spans, motif_window, shuffle_parameter):
+def permute_spans_from_start_positions(seq_1hot, spans_start_positions, span_length, shuffle_parameter):
+    assert span_length > shuffle_parameter, "The motif window size must be greater than the shuffle parameter."
     seq_1hot_mut = seq_1hot.copy()
-    half_motif_window = int(np.ceil(motif_window / 2))
-    for s in spans:
-        start, end = s - half_motif_window, s + half_motif_window
-        seq_1hot_mut[start:end] = akita_utils.dna_utils.permute_seq_k(
-            seq_1hot_mut[start:end], k=shuffle_parameter
-        )
+    for start in spans_start_positions:
+        end = start + span_length
+        snippet = seq_1hot_mut[start:end]
+        count = 0
+        while count < 100:
+            permuted_snippet = akita_utils.dna_utils.permute_seq_k(seq_1hot_mut[start:end], k=shuffle_parameter)
+            if not np.array_equal(permuted_snippet, snippet):
+                break
+            count += 1
+        else:
+            raise ValueError(f"Unable to permute span starting at position {start} with window {span_length} using {shuffle_parameter} because it is cyclical i.e produces similar arrangements")
+
+        seq_1hot_mut[start:end] = permuted_snippet
+
     return seq_1hot_mut
 
-
-def mask_spans(seq_1hot, spans, motif_window):
+def mask_spans_from_start_positions(seq_1hot, spans_start_positions, span_length):
     seq_1hot_perm = seq_1hot.copy()
-    half_motif_window = int(np.ceil(motif_window / 2))
-    for s in spans:
-        start, end = s - half_motif_window, s + half_motif_window
+    for s in spans_start_positions:
+        start, end = s, s + span_length
+        print(start, end)
         seq_1hot_perm[start:end, :] = 0
     return seq_1hot_perm
 
 
-def randomise_spans(seq_1hot, spans, motif_window):
+def randomise_spans_from_start_positions(seq_1hot, spans_start_positions, span_length):
     seq_1hot_perm = seq_1hot.copy()
-    half_motif_window = int(np.ceil(motif_window / 2))
-    for s in spans:
-        start, end = s - half_motif_window, s + half_motif_window
-        seq_1hot_perm[start:end] = random_seq_permutation(seq_1hot_perm[start:end])
+    for start in spans_start_positions:
+        end = start + span_length
+        snippet = seq_1hot_perm[start:end]
+        count = 0
+        while count < 100:
+            random_snippet = random_seq_permutation(seq_1hot_perm[start:end])
+            if not np.array_equal(random_snippet, snippet):
+                break
+            count += 1
+        else:
+            raise ValueError(f"Unable to randomise span starting at position {start} with window {span_length} because it is cyclical i.e produces similar arrangements")
+        seq_1hot_perm[start:end] = random_snippet
     return seq_1hot_perm
 
 
@@ -234,22 +250,102 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open, jasper_motif_fil
             motif_positions = generate_spans_start_positions(
             wt_1hot, motif, s.ctcf_detection_threshold)
             motif_window = 2 ** (math.ceil(math.log2(len(motif) - 1)))
-            yield mask_spans(wt_1hot, motif_positions, motif_window)
+            yield mask_spans_from_start_positions(wt_1hot, motif_positions, motif_window)
         elif mutation_method == "permute_motif":
             motif_positions = generate_spans_start_positions(
             wt_1hot, motif, s.ctcf_detection_threshold)
             motif_window = 2 ** (math.ceil(math.log2(len(motif) - 1)))
-            yield permute_spans(wt_1hot, motif_positions, motif_window, s.shuffle_parameter)
+            yield permute_spans_from_start_positions(wt_1hot, motif_positions, motif_window, s.shuffle_parameter)
         elif mutation_method == "randomise_motif":
             motif_positions = generate_spans_start_positions(
             wt_1hot, motif, s.ctcf_detection_threshold)
             motif_window = 2 ** (math.ceil(math.log2(len(motif) - 1)))
-            yield randomise_spans(wt_1hot, motif_positions, motif_window)
+            yield randomise_spans_from_start_positions(wt_1hot, motif_positions, motif_window)
         elif mutation_method == "permute_whole_seq":
             yield akita_utils.dna_utils.permute_seq_k(wt_1hot, k=s.shuffle_parameter)
         elif mutation_method == "randomise_whole_seq":
             yield random_seq_permutation(wt_1hot)
 
+# define sequence generator
+def mask_central_seq(seq_1hot, motif_width):
+    assert motif_width is not None, 'Motif width is needed for method mask_central_seq'
+    seq_length = len(seq_1hot)
+    seq_1hot_perm = seq_1hot.copy()
+    mask_inds = np.arange(
+        seq_length // 2 - motif_width // 2, seq_length // 2 + motif_width // 2
+    )
+    seq_1hot_perm[mask_inds, :] = 0
+    return seq_1hot_perm
+
+def permute_central_seq(seq_1hot, motif_width):
+    assert motif_width is not None, 'Motif width is needed for method permute_central_seq'
+    seq_length = len(seq_1hot)
+    seq_1hot_perm = seq_1hot.copy()
+    central_inds = np.arange(
+        seq_length // 2 - motif_width // 2, seq_length // 2 + motif_width // 2
+    )
+    mask_inds = np.random.permutation(central_inds)
+    while np.array_equal(mask_inds, central_inds):
+        mask_inds = np.random.permutation(central_inds)
+    seq_1hot_perm[mask_inds, :] = seq_1hot[central_inds, :].copy()
+    return seq_1hot_perm
+
+def mask_spans(seq_1hot, spans):
+    seq_1hot_perm = seq_1hot.copy()
+    for s in spans:
+        seq_1hot_perm[s[0] : s[1], :] = 0
+    return seq_1hot_perm
+
+def permute_spans(seq_1hot, spans):
+    seq_1hot_perm = seq_1hot.copy()
+    spans_flat = np.array([]).astype(int)
+    for s in spans:
+        spans_flat = np.hstack((spans_flat, np.arange(s[0], s[1])))
+    spans_permuted = np.random.permutation(spans_flat)
+    while np.array_equal(spans_permuted, spans_flat):
+        spans_permuted = np.random.permutation(spans_flat)
+    seq_1hot_perm[spans_permuted, :] = seq_1hot[spans_flat, :].copy()
+    return seq_1hot_perm
+
+def split_span(span_string):
+    spans = []
+    for j in span_string.split(","):
+        spans.append([int(j.split("-")[0]), int(j.split("-")[1])])
+    return spans
+
+def fetch_centered_padded_seq_and_new_start_position(chrom, start, end, seq_length, genome_open):
+    mid = (start + end) // 2
+    start_centered, end_centered = int(mid - seq_length // 2), int(
+        mid + seq_length // 2
+    )
+    seq_dna = genome_open.fetch(chrom, start_centered, end_centered).upper()
+    return start_centered, seq_dna
+                
+    
+def disruption_seqs_gen(seq_coords_df, mutation_method, seq_length, genome_open, motif_width=None):
+    for s in seq_coords_df.itertuples():
+        list_1hot = []
+        start, seq_dna = fetch_centered_padded_seq_and_new_start_position(s.chrom, s.start, s.end, seq_length, genome_open)
+        wt_1hot = akita_utils.dna_utils.dna_1hot(seq_dna)
+        list_1hot.append(wt_1hot)
+
+        if mutation_method == "mask_spans":
+            spans = split_span(s.span)
+            spans = np.array(spans) - start
+            list_1hot.append(mask_spans(wt_1hot, spans))
+        elif mutation_method == "permute_spans":
+            spans = split_span(s.span)
+            spans = np.array(spans) - start
+            list_1hot.append(permute_spans(wt_1hot, spans))
+        elif mutation_method == "mask_central_motif":
+            list_1hot.append(mask_central_seq(wt_1hot, motif_width=motif_width))
+        elif mutation_method == "permute_central_motif":
+            list_1hot.append(
+                permute_central_seq(wt_1hot, motif_width=motif_width)
+            )
+
+        for seq_1hot in list_1hot:
+            yield seq_1hot
 
 # -----------------------------modifying this function-----------------------------
 

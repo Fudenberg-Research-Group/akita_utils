@@ -18,8 +18,8 @@
 ###################################################
 
 """
-virtual_symmetric_experiment.py
-derived from akita_insert.py (https://github.com/Fudenberg-Research-Group/akita_utils/blob/flank_experiment/bin/akita_insert.py)
+virtual_symmetric_experiment_compare_SCD.py
+derived from virtual_symmetric_experiment.py
 
 
 This scripts computes insertion scores for motif insertions from a tsv file with:
@@ -39,7 +39,7 @@ Options:
 -----------
 - path to the mouse or human genome in the fasta format
 - comma-separated list of statistic scores (stats, e.g. --stats SCD,INS-16)
-- head index (depending if predictions are to be made in the mouse (--head_index 0) or human genome-context (--head_index 1))
+- head index (depending if predictions are to be made in the human (--head_index 0) or mouse genome-context (--head_index 1))
 - model index (same as specified one by the model_file)
 - batch size 
 - path to the background file (in the fasta format)
@@ -62,36 +62,35 @@ from __future__ import print_function
 from optparse import OptionParser
 import json
 import os
+
 import pickle
 import random
 
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 import pysam
-from skimage.measure import block_reduce
-import seaborn as sns
-
-sns.set(style="ticks", font_scale=1.3)
 
 import tensorflow as tf
+
+import h5py
+from datetime import date
 
 if tf.__version__[0] == "1":
     tf.compat.v1.enable_eager_execution()
 gpus = tf.config.experimental.list_physical_devices("GPU")
-# for gpu in gpus:
-#  tf.config.experimental.set_memory_growth(gpu, True)
+
 print(gpus)
 
 from basenji import seqnn, stream, dna_io
 
-# import os
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-
-from akita_utils.seq_gens import symmertic_insertion_seqs_gen
 from akita_utils.utils import ut_dense, split_df_equally
-from akita_utils.stats_utils import insul_diamonds_scores
-from akita_utils.h5_utils import initialize_output_h5, write_to_h5_stats_for_prediction
+from akita_utils.seq_gens import (
+    symmertic_insertion_seqs_gen,
+    reference_seqs_gen,
+)
+
+from akita_utils.h5_utils import (initialize_stat_output_h5, initialize_maps_output_h5, write_stat_metrics_to_h5, write_maps_to_h5)
+
 
 ################################################################################
 # main
@@ -104,6 +103,13 @@ def main():
         dest="genome_fasta",
         default=None,
         help="Genome FASTA for sequences [Default: %default]",
+    )
+    parser.add_option(
+        "-s",
+        dest="save_map_matrices",
+        default=False,
+        action="store_true",
+        help="Save map matrices in the h5 file [Default: %default]",
     )
     parser.add_option(
         "-l",
@@ -128,7 +134,7 @@ def main():
     )
     parser.add_option(
         "-o",
-        dest="out_dir",      # to be changed?
+        dest="out_dir",  # to be changed?
         default="./",
         help="Output directory for tables and plots [Default: %default]",
     )
@@ -139,14 +145,14 @@ def main():
         type="int",
         help="Number of processes, passed by multi script",
     )
-    parser.add_option(       # reverse complement
+    parser.add_option(  # reverse complement
         "--rc",
         dest="rc",
         default=False,
         action="store_true",
         help="Average forward and reverse complement predictions [Default: %default]",
     )
-    parser.add_option(      # shifts
+    parser.add_option(  # shifts
         "--shifts",
         dest="shifts",
         default="0",
@@ -156,7 +162,7 @@ def main():
     parser.add_option(
         "--stats",
         dest="scd_stats",
-        default="SCD",
+        default="SCD,diffSCD",
         help="Comma-separated list of stats to save. [Default: %default]",
     )
     parser.add_option(
@@ -196,7 +202,7 @@ def main():
     )
 
     (options, args) = parser.parse_args()
-    
+
     print("\n++++++++++++++++++\n")
     print("INPUT")
     print("\n++++++++++++++++++\n")
@@ -206,14 +212,14 @@ def main():
     print("args", args)
     print(args)
     print("\n++++++++++++++++++\n")
-    
+
     if len(args) == 3:
         # single worker
         params_file = args[0]
         model_file = args[1]
         motif_file = args[2]
 
-    elif len(args) == 5:                 # muliti-GPU option
+    elif len(args) == 5:  # muliti-GPU option
         # multi worker
         options_pkl_file = args[0]
         params_file = args[1]
@@ -230,7 +236,9 @@ def main():
         options.out_dir = "%s/job%d" % (options.out_dir, worker_index)
 
     else:
-        parser.error("Must provide parameters and model files and insertion TSV file")
+        parser.error(
+            "Must provide parameters and model files and insertion TSV file"
+        )
 
     if not os.path.isdir(options.out_dir):
         os.mkdir(options.out_dir)
@@ -243,7 +251,7 @@ def main():
     options.scd_stats = options.scd_stats.split(",")
 
     random.seed(44)
-    
+
     #################################################################
     # read parameters and targets
 
@@ -265,41 +273,53 @@ def main():
 
     #################################################################
     # setup model
+    
+    # TODO: can be implied from the model file name
     head_index = options.head_index
     model_index = options.model_index
-    
+
     # load model
     seqnn_model = seqnn.SeqNN(params_model)
     seqnn_model.restore(model_file, head_i=head_index)
     seqnn_model.build_ensemble(options.rc, options.shifts)
     seq_length = int(params_model["seq_length"])
-
+    prediction_vector_length = seqnn_model.target_lengths[0]
+    
     # dummy target info
     if options.targets_file is None:
         num_targets = seqnn_model.num_targets()
-        target_ids = [ti for ti in range(num_targets)]      # checkpoint? to be sure that the langth of given targets_file is compatibile with the requested head?
+        target_ids = [
+            ti for ti in range(num_targets)
+        ]  # checkpoint? to be sure that the langth of given targets_file is compatibile with the requested head?
         target_labels = [""] * len(target_ids)
 
     #################################################################
-    # load motifs    
-    
+    # load motifs
+
     # filter for worker motifs
-    if options.processes is not None:                    # multi-GPU option
+    if options.processes is not None:  # multi-GPU option
         # determine boundaries from motif file
         seq_coords_full = pd.read_csv(motif_file, sep="\t")
-        seq_coords_df = split_df_equally(seq_coords_full, options.processes, worker_index)
-        
+        seq_coords_df = split_df_equally(
+            seq_coords_full, options.processes, worker_index
+        )
+
     else:
         # read motif positions from csv
         seq_coords_df = pd.read_csv(motif_file, sep="\t")
-        
+
     num_experiments = len(seq_coords_df)
+    num_backgrounds = len(seq_coords_df.background_index.unique())
     
     print("===================================")
-    print("Number of experiements = ", num_experiments)         # Warning! It's not number of predictions. Num of predictions is this number x5 or x6
-    
+    print(
+        "Number of experiements = ", num_experiments
+    )  # Warning! It's not number of predictions. Num of predictions is this number x5 or x6
+
     # open genome FASTA
-    genome_open = pysam.Fastafile(options.genome_fasta)          # needs to be closed at some point
+    genome_open = pysam.Fastafile(
+        options.genome_fasta
+    )  # needs to be closed at some point
 
     background_seqs = []
     with open(options.background_file, "r") as f:
@@ -314,48 +334,98 @@ def main():
             + "backgrounds as those specified in the insert seq_coords tsv."
             + "\nThe provided background file has {len(background_seqs)} sequences."
         )
-        
+
     #################################################################
     # setup output
     
-    scd_out = initialize_output_h5(
-        options.out_dir,
-        params["model"],
+    stat_h5_outfile = initialize_stat_output_h5(options.out_dir,
+        model_file,
         options.genome_fasta,
         seqnn_model,
         options.scd_stats,
-        seq_coords_df
-    )
+        seq_coords_df)
+    
+    print("STATS_OUT initialized")
+    
+    if options.save_map_matrices:
+        maps_h5_outfile = initialize_maps_output_h5(
+            options.out_dir,
+            model_file,
+            options.genome_fasta,
+            seqnn_model,
+            seq_coords_df
+        )
 
-    print("initialized")
+        print("MAPS_OUT initialized")
 
     #################################################################
-    # predict SNP scores, write output
+    # predict SCD scores
 
-    # initialize predictions stream
-    preds_stream = stream.PredStreamGen(
-        seqnn_model, symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open), batch_size
+    # initialize predictions stream for reference (background) sequences
+    refs_stream = stream.PredStreamGen(
+        seqnn_model, reference_seqs_gen(background_seqs), batch_size
     )
+
+    background_preds_vectors = np.zeros((num_backgrounds, prediction_vector_length, num_targets))
+
+    for background_index in range(num_backgrounds):
         
+        bg_preds_matrix = refs_stream[background_index]
+        
+        background_preds_vectors[background_index, :, :] = bg_preds_matrix
+        
+        if options.save_map_matrices:
+            write_maps_to_h5(
+                bg_preds_matrix,
+                maps_h5_outfile,
+                background_index,
+                head_index,
+                model_index,
+                reference=True
+            )
+
+    # initialize predictions stream for alternate (ctcf-inserted) sequences
+    preds_stream = stream.PredStreamGen(
+        seqnn_model,
+        symmertic_insertion_seqs_gen(
+            seq_coords_df, background_seqs, genome_open
+        ),
+        batch_size,
+    )
+    
     for exp in range(num_experiments):
         # get predictions
-        preds = preds_stream[exp]
+        preds_matrix = preds_stream[exp]
+        background_index = seq_coords_df.iloc[exp].background_index
+        
         # save stat metrics for each prediction
-        write_to_h5_stats_for_prediction(
-            preds,
-            scd_out,
+        write_stat_metrics_to_h5(
+            preds_matrix,
+            background_preds_vectors[background_index, :, :],
+            stat_h5_outfile,
             exp,
             head_index,
             model_index,
             seqnn_model.diagonal_offset,
             options.scd_stats,
-            plot_dir,
-            options.plot_lim_min,
-            options.plot_freq,
         )
-    
+        
+        if options.save_map_matrices:
+            write_maps_to_h5(
+                preds_matrix,
+                maps_h5_outfile,
+                exp,
+                head_index,
+                model_index,
+                reference=False
+            )
+        
     genome_open.close()
-    scd_out.close()
+    stat_h5_outfile.close()
+    
+    if options.save_map_matrices:
+        maps_h5_outfile.close()
+
 
 ################################################################################
 # __main__
@@ -364,3 +434,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+    
