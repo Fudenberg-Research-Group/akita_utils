@@ -3,6 +3,7 @@ import numpy as np
 # SCORES
 # 1) Insulation score
 
+
 def _single_map_insulation(target_map, window=10):
     """
     Calculate insulation in a window-size diamond around the central pixel.
@@ -18,7 +19,7 @@ def _single_map_insulation(target_map, window=10):
     ---------
     score : ISN-window score for a given target
     """
-    
+
     map_size = target_map.shape[0]
     if window > map_size // 2:
         raise ValueError("window cannot be larger than map")
@@ -45,14 +46,18 @@ def calculate_INS(map_matrix, window=10):
     ---------
     scores : num_targets-long vector with ISN-window scores
     """
-    
+
     num_targets = mats.shape[-1]
     scores = np.zeros((num_targets,))
     for target_index in range(num_targets):
-        scores[target_index] = _single_map_insulation(map_matrix[:, :, target_index], window=window)
+        scores[target_index] = _single_map_insulation(
+            map_matrix[:, :, target_index], window=window
+        )
     return scores
 
+
 # 2) SCD (Square Contact Differences)
+
 
 def calculate_SCD(map_matrix, reference_map_matrix=None):
     """
@@ -72,19 +77,23 @@ def calculate_SCD(map_matrix, reference_map_matrix=None):
     num_targets-long vector with SCD score calculated for eacg target.
     """
     if type(reference_map_matrix) != np.ndarray:
-        return np.sqrt((map_matrix**2).sum(axis=(0,1)) * (1/2))
+        return np.sqrt((map_matrix**2).sum(axis=(0, 1)) * (1 / 2))
     else:
         return np.sqrt(
-            ((map_matrix - reference_map_matrix) ** 2).sum(axis=(0,1))  * (1/2)
+            ((map_matrix - reference_map_matrix) ** 2).sum(axis=(0, 1))
+            * (1 / 2)
         )
-    
-    
+
+
 # 3) dot score
+
 
 def calculate_dot_score(map_matrix):
     pass
 
+
 # 4) flames score
+
 
 def calculate_flames_score(map_matrix):
     pass
@@ -92,25 +101,26 @@ def calculate_flames_score(map_matrix):
 
 # calculating all desired scores for a set of maps
 
+
 def calculate_scores(stat_metrics, map_matrix, reference_map_matrix=None):
-    
+
     scores = {}
-    
+
     if "SCD" in stat_metrics:
         SCDs = calculate_SCD(map_matrix, None)
         scores["SCD"] = SCDs
-    
+
     if "diffSCD" in stat_metrics:
         diffSCDs = calculate_SCD(map_matrix, reference_map_matrix)
         scores["diffSCD"] = diffSCDs
-    
+
     if np.any((["INS" in i.split("-")[0] for i in stat_metrics])):
         for stat in stat_metrics:
             if stat.split("-")[0] == "INS":
                 window = stat.split("-")[1]
                 INS = calculate_INS(map_matrix, window)
                 scores[stat] = INS
-    
+
     # new scores will be added soon...
 
     num_targets = map_matrix.shape[-1]
@@ -123,6 +133,7 @@ def calculate_scores(stat_metrics, map_matrix, reference_map_matrix=None):
 
 
 # 2) SCD (Square Contact Differences)
+
 
 def calculate_SCD(map_matrix, reference_map_matrix=None):
     """
@@ -166,6 +177,7 @@ def calculate_flames_score(map_matrix):
 
 # calculating all desired scores for a set of maps
 
+
 def calculate_scores(stat_metrics, map_matrix, reference_map_matrix=None):
 
     scores = {}
@@ -186,4 +198,3 @@ def calculate_scores(stat_metrics, map_matrix, reference_map_matrix=None):
     # new scores will be added soon...
 
     return scores
-

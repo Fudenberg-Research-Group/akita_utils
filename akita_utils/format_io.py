@@ -3,9 +3,12 @@ import h5py
 from io import StringIO
 import numpy as np
 
+
 def h5_to_df(
     filename,
-    scd_stats=["SCD", "SSD"] + ["alt_INS-16", "alt_INS-32", "alt_INS-64", "alt_INS-128", "alt_INS-256"] + ["ref_INS-16", "ref_INS-32", "ref_INS-64", "ref_INS-128", "ref_INS-256"],
+    scd_stats=["SCD", "SSD"]
+    + ["alt_INS-16", "alt_INS-32", "alt_INS-64", "alt_INS-128", "alt_INS-256"]
+    + ["ref_INS-16", "ref_INS-32", "ref_INS-64", "ref_INS-128", "ref_INS-256"],
     drop_duplicates_key="index",
     verbose=False,
 ):
@@ -38,7 +41,9 @@ def h5_to_df(
     df_out = pd.DataFrame()
 
     for stat in scd_stats:
-        keys = [key for key in hf.keys() if stat in key and key not in scd_stats]
+        keys = [
+            key for key in hf.keys() if stat in key and key not in scd_stats
+        ]
         if keys:
             data = pd.DataFrame()
             for key in keys:
@@ -47,22 +52,32 @@ def h5_to_df(
                 series = pd.Series(hf[key][()], name=key)
                 data = pd.concat([data, series], axis=1)
 
-            if not data.empty: 
+            if not data.empty:
                 average = data.mean(axis=1)
-                df_out = pd.concat([df_out, pd.Series(average, name=stat)],axis=1)
+                df_out = pd.concat(
+                    [df_out, pd.Series(average, name=stat)], axis=1
+                )
 
-    remaining_keys = [key for key in hf.keys() if all(stat not in key for stat in scd_stats)]
+    remaining_keys = [
+        key for key in hf.keys() if all(stat not in key for stat in scd_stats)
+    ]
     exact_matches = [key for key in hf.keys() if key in scd_stats]
-    
+
     for key in remaining_keys:
         if verbose:
             print(f"remaining_keys, {key}")
-        df_out = pd.concat([df_out, pd.Series(hf[key][()], name=key)],axis=1)
-        
+        df_out = pd.concat([df_out, pd.Series(hf[key][()], name=key)], axis=1)
+
     for key in exact_matches:
         if verbose:
             print(f"exact match thus using old pipeline processing for {key}")
-        df_out = pd.concat([df_out, pd.Series(pd.DataFrame(hf[key][()]).mean(axis=1), name=key)], axis=1)             
+        df_out = pd.concat(
+            [
+                df_out,
+                pd.Series(pd.DataFrame(hf[key][()]).mean(axis=1), name=key),
+            ],
+            axis=1,
+        )
     hf.close()
 
     # adding difference between reference and alternate insulation
@@ -70,7 +85,7 @@ def h5_to_df(
     for key in insulation_stats:
         if "ref_" + key in df_out.columns:
             df_out[key] = df_out["alt_" + key] - df_out["ref_" + key]
-            
+
     for key, key_dtype in df_out.dtypes.items():
         if not pd.api.types.is_numeric_dtype(key_dtype):
             df_out[key] = df_out[key].str.decode("utf8").copy()
@@ -127,10 +142,12 @@ def read_jaspar_to_numpy(
     return motif
 
 
-def read_rmsk(rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz"):
-    
+def read_rmsk(
+    rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz",
+):
+
     """reads a data frame containing repeatable elements and renames columns specifying genomic intervals to standard: chrom, start, end, used in thie repo."""
-    
+
     rmsk_cols = list(
         pd.read_csv(
             StringIO(
@@ -144,11 +161,10 @@ def read_rmsk(rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz
         rmsk_file,
         names=rmsk_cols,
     )
-    
+
     rmsk.rename(
         columns={"genoName": "chrom", "genoStart": "start", "genoEnd": "end"},
         inplace=True,
     )
-    
-    return rmsk
 
+    return rmsk

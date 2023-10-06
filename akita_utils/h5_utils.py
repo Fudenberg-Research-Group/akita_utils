@@ -72,13 +72,13 @@ def initialize_stat_output_h5(
                 Path to the genome file (mouse or human).
             seqnn_model : object
                 Loaded model.
-                
+
     Returns
     ---------
     h5_outfile : h5py object
         An initialized h5 file.
     """
-  
+
     h5_outfile = h5py.File(f"%s/STATS_OUT.h5" % out_dir, "w")
     seq_coords_df_dtypes = seq_coords_df.dtypes
 
@@ -94,7 +94,7 @@ def initialize_stat_output_h5(
 
     if add_metadata:
         h5_outfile.attrs["date"] = str(date.today())
-        
+
         metadata_dict = prepare_metadata_dir(
             model_file, genome_fasta, seqnn_model
         )
@@ -137,7 +137,7 @@ def initialize_stat_output_h5(
                     dtype="float16",
                     compression=None,
                 )
-                
+
     return h5_outfile
 
 
@@ -190,13 +190,13 @@ def initialize_maps_output_h5(
         shape=(num_experiments, prediction_vector_length, num_targets),
         dtype="float16",
     )
-    
+
     h5_outfile.create_dataset(
         f"refmap_h{head_index}_m{model_index}",
         shape=(num_backgrounds, prediction_vector_length, num_targets),
         dtype="float16",
     )
-    
+
     return h5_outfile
 
 
@@ -238,21 +238,23 @@ def write_stat_metrics_to_h5(
     h5_outfile : h5py object
         An overwritten h5 file.
     """
-        
+
     # increase dtype
     prediction_matrix = prediction_matrix.astype("float32")
-    
+
     # convert prediction vectors to maps
     map_matrix = ut_dense(prediction_matrix, diagonal_offset)
-    
+
     # getting desired scores
     # TODO: reference_map_matrix may not be None if the experiments are done in the genomic context,
     # it should be adjusted in the future
     scores = calculate_scores(stat_metrics, map_matrix, reference_map_matrix)
-    
+
     for key in scores:
         for target_index in range(prediction_matrix.shape[1]):
-            h5_outfile[f"{key}_h{head_index}_m{model_index}_t{target_index}"][experiment_index] = scores[key][target_index].astype("float16")
+            h5_outfile[f"{key}_h{head_index}_m{model_index}_t{target_index}"][
+                experiment_index
+            ] = scores[key][target_index].astype("float16")
 
     # convert prediction vectors to maps
     map_matrix = ut_dense(prediction_matrix, diagonal_offset)
@@ -348,7 +350,7 @@ def save_map_plots(
     plot_freq : int
         A plot of one out of plot_freq number of predictions is saved.
     """
->>>>>>> fc7e7b1e376f9838b963af568ada26aa00f62acf
+
 
 def write_maps_to_h5(
     map_matrix,
@@ -357,7 +359,7 @@ def write_maps_to_h5(
     head_index,
     model_index,
     diagonal_offset=2,
-    reference=False
+    reference=False,
 ):
     """
     Writes entire maps to an h5 file.
@@ -381,11 +383,13 @@ def write_maps_to_h5(
     prefix = "e"
     if reference:
         prefix = "ref"
-        
-    for target_index in range(map_matrix.shape[-1]):
-        h5_outfile[f"{prefix}{experiment_index}_h{head_index}_m{model_index}_t{target_index}"] = map_matrix[:, :, target_index]
 
-        
+    for target_index in range(map_matrix.shape[-1]):
+        h5_outfile[
+            f"{prefix}{experiment_index}_h{head_index}_m{model_index}_t{target_index}"
+        ] = map_matrix[:, :, target_index]
+
+
 def write_maps_to_h5_background(
     map_matrix,
     h5_outfile,
@@ -394,7 +398,7 @@ def write_maps_to_h5_background(
     head_index,
     model_index,
     diagonal_offset=2,
-    reference=False
+    reference=False,
 ):
     """
     Writes entire maps to an h5 file.
@@ -418,12 +422,16 @@ def write_maps_to_h5_background(
     prefix = "e"
     if reference:
         prefix = "ref"
-        
+
     for target_index in range(map_matrix.shape[-1]):
-        h5_outfile[f"{prefix}{experiment_index}_h{head_index}_m{model_index}_t{target_index}_b{background_index}"] = map_matrix[:, :, target_index]
-            
+        h5_outfile[
+            f"{prefix}{experiment_index}_h{head_index}_m{model_index}_t{target_index}_b{background_index}"
+        ] = map_matrix[:, :, target_index]
+
+
 # TODO: this function should be moved somewhere else - where?
-            
+
+
 def save_maps(
     prediction_matrix,
     experiment_index,
@@ -432,9 +440,9 @@ def save_maps(
     diagonal_offset=2,
     plot_dir=None,
     plot_lim_min=0.1,
-    plot_freq=100
+    plot_freq=100,
 ):
-    
+
     """
     Writes to an h5 file saving statistical metrics calculated from Akita's predicftions.
 
@@ -458,7 +466,7 @@ def save_maps(
     plot_freq : int
         A plot of one out of plot_freq number of predictions is saved.
     """
-            
+
     if (plot_dir is not None) and (np.mod(experiment_index, plot_freq) == 0):
         print("plotting prediction: ", experiment_index)
 
