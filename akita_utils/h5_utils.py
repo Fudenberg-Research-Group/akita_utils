@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import date
 
+import os
+
 from akita_utils.utils import ut_dense
 from akita_utils.stats_utils import calculate_scores
 
@@ -370,36 +372,102 @@ def save_maps(
         plt.close()
 
 
-def collect_h5(file_name, out_dir, num_procs):
-    """collects data from multiple h5 files, works for higher-dimensional h5 keys as well"""
-    # count variants
-    num_variants = 0
-    for pi in range(num_procs):
-        # open job
-        job_h5_file = "%s/job%d/%s" % (out_dir, pi, file_name)
-        job_h5_open = h5py.File(job_h5_file, "r")
-        num_variants += len(job_h5_open["chrom"])
-        job_h5_open.close()
+# COLLECTING DATA FROM MULTIPLE HDF5 FILES
 
-    # initialize final h5
-    final_h5_file = "%s/%s" % (out_dir, file_name)
+def infer_num_jobs(out_dir):
+    """
+    Infer the number of jobs from a directory containing job-related files.
+    
+    This function looks for directories named "jobX" within the specified directory
+    and determines the highest job index present, then returns the number of jobs
+    (highest index + 1).
+    
+    Parameters
+    ------------
+    out_dir : str
+        Path to the directory containing job-related files.
+    
+    Returns
+    ---------
+    num_job : int
+        Number of jobs found in the specified directory.
+    """
+    highest_index = 0
+    
+    for r, d, folder in os.walk(out_dir):
+        for object_name in folder:
+            if object_name[:3] == "job":
+                index = int(object_name.split("job")[1].split(".")[0])
+                if index > highest_index:
+                    highest_index = index
+    
+    num_job = highest_index + 1
+    return num_job
+
+
+def collect_h5(out_dir, h5_file_name="STATS_OUT.h5"):
+    """
+    Collects statistics from multiple job-specific HDF5 files into a final HDF5 file.
+    
+    This function collects statistics from individual job-specific HDF5 files stored
+    in directories named "jobX" within the specified directory. It combines the data
+    into a single HDF5 file, considering different dimensions (1D, 2D, 3D) of the
+    statistics matrices.
+    
+    Parameters
+    ------------
+    out_dir : str
+        Path to the directory containing job-specific HDF5 files.
+    h5_file_name : str, optional
+        Name of the output HDF5 file. Default is "STATS_OUT.h5".
+    
+    Returns
+    ---------
+        None
+    """
+    num_jobs = infer_num_jobs(out_dir)
+    
+    # count experiments (number of sites x number of brackground if applies)
+    num_experiments = 0
+    for job_index in range(num_jobs):
+        # open job
+        job_h5_file = "%s/job%d/%s" % (out_dir, job_index, h5_file_name)
+        job_h5_open = h5py.File(job_h5_file, "r")
+        num_experiments += len(job_h5_open["chrom"])
+        job_h5_open.close()
+        
+    # initialize final final h5 based on the 0th-job file
+    final_h5_file = "%s/%s" % (out_dir, h5_file_name)
     final_h5_open = h5py.File(final_h5_file, "w")
 
-    job0_h5_file = "%s/job0/%s" % (out_dir, file_name)
+    job0_h5_file = "%s/job0/%s" % (out_dir, h5_file_name)
     job0_h5_open = h5py.File(job0_h5_file, "r")
+
     for key in job0_h5_open.keys():
 
         if job0_h5_open[key].ndim == 1:
             final_h5_open.create_dataset(
-                key, shape=(num_variants,), dtype=job0_h5_open[key].dtype
+                key, shape=(num_experiments,), dtype=job0_h5_open[key].dtype
             )
 
+        elif job0_h5_open[key].ndim == 2:
+            # keys with saved stat metrics
+            _, num_targets = job0_h5_open[key].shape
+
+            final_h5_open.create_dataset(
+                    key,
+                    shape=(
+                        num_experiments,
+                        num_targets,
+                    ),
+                    dtype=job0_h5_open[key].dtype,
+                )
+        
         elif job0_h5_open[key].ndim == 3:
+            # keys with saved prediction vectors
 
             if key.split("_")[0] == "map":
-                _, prediction_vector_length, num_targets = job0_h5_open[
-                    key
-                ].shape
+                _, num_targets = job0_h5_open[key].shape
 
                 final_h5_open.create_dataset(
                     key,
@@ -416,7 +484,7 @@ def collect_h5(file_name, out_dir, num_procs):
                     prediction_vector_length,
                     num_targets,
                 ) = job0_h5_open[key].shape
-
+        
                 final_h5_open.create_dataset(
                     key,
                     shape=(
@@ -426,39 +494,43 @@ def collect_h5(file_name, out_dir, num_procs):
                     ),
                     dtype=job0_h5_open[key].dtype,
                 )
+        else:
+            raise Exception(f"Unexpected dimension = {job0_h5_open[key].ndim} of the following key: {key}")
 
     job0_h5_open.close()
-
-    # set values
-    vi = 0
-    for pi in range(num_procs):
-        print("collecting job", pi)
-        # open job
-        job_h5_file = "%s/job%d/%s" % (out_dir, pi, file_name)
+    
+    # set values of the final h5 file
+    experiment_index = 0
+    for job_index in range(num_jobs):
+        print("Collecting job number:", job_index)
+        
+        # open the h5 file
+        job_h5_file = "%s/job%d/%s" % (out_dir, job_index, h5_file_name)
         job_h5_open = h5py.File(job_h5_file, "r")
 
-        # append to final
+        # append to the final h5 file
         for key in job_h5_open.keys():
 
-            job_variants = job_h5_open[key].shape[0]
+            job_experiments_num = job_h5_open[key].shape[0]
 
             if job_h5_open[key].ndim == 1:
-                final_h5_open[key][vi : vi + job_variants] = job_h5_open[key]
+                final_h5_open[key][experiment_index : experiment_index + job_experiments_num] = job_h5_open[key]
 
+            elif job_h5_open[key].ndim == 2:
+                # keys with stat metrics
+                final_h5_open[key][experiment_index : experiment_index + job_experiments_num, :] = job_h5_open[key]
+                
             elif job_h5_open[key].ndim == 3:
 
                 if key.split("_")[0] == "map":
-                    final_h5_open[key][
-                        vi : vi + job_variants, :, :
-                    ] = job_h5_open[key]
+                    final_h5_open[key][experiment_index : experiment_index + job_experiments_num, :, :] = job_h5_open[key]
 
                 else:
                     num_backgrounds, _, _ = job_h5_open[key].shape
-                    final_h5_open[key][:num_backgrounds, :, :] = job_h5_open[
-                        key
-                    ]
+                    final_h5_open[key][num_backgrounds, :, :] = job_h5_open[key]
 
-        vi += job_variants
+        experiment_index += job_experiments_num
         job_h5_open.close()
 
     final_h5_open.close()
+
