@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # STANDARDS
-standards = {MOTIF_LEN: 19,
-             FLANK_LEN: 20,
-             INSERT_LEN: 2 * FLANK_LEN + MOTIF_LEN}
+MOTIF_LEN = 19,
+FLANK_LEN = 20,
+INSERT_LEN = 2 * FLANK_LEN + MOTIF_LEN]
 
 # MATRIX TRANSFORMATION
 
@@ -488,7 +488,7 @@ def calculate_scores(stat_metrics, map_matrix, reference_map_matrix=None, **kwar
 
     if ("dot-score" in stat_metrics) or ("cross-score" in stat_metrics) or ("x-score" in stat_metrics):
         starting_positions = get_insertion_start_pos()
-        row_line, col_line = get_bin(starting_positions[0], starting_positions[0] + standards[INSERT_LEN]), get_bin(starting_positions[1], starting_positions[1] + standards[INSERT_LEN])
+        row_line, col_line = get_bin(starting_positions[0], starting_positions[0] + INSERT_LEN), get_bin(starting_positions[1], starting_positions[1] + INSERT_LEN)
 
         if "dot-score" in stat_metrics:
             dot_score = calculate_dot_score(map_matrix, row_line, col_line, reference_map_matrix=reference_map_matrix)
