@@ -144,7 +144,7 @@ def initialize_stat_output_h5(
 
 
 def initialize_maps_output_h5_background(
-    out_dir, model_file, genome_fasta, seqnn_model, seq_coords_df
+    out_dir, model_file, genome_fasta, seqnn_model, seq_coords_df, num_backgrounds=10
 ):
     """
     Initializes an h5 file to save vectors predicted by Akita.
@@ -174,7 +174,6 @@ def initialize_maps_output_h5_background(
     model_index = int(model_file.split("c0")[0][-1])
     prediction_vector_length = seqnn_model.target_lengths[0]
 
-    num_backgrounds = len(seq_coords_df.background_index.unique())
     num_targets = seqnn_model.num_targets()
 
     num_experiments = len(seq_coords_df)
@@ -405,6 +404,30 @@ def infer_num_jobs(out_dir):
     return num_job
 
 
+def job_completed(out_dir, job_index, h5_file_name="STATS_OUT.h5"):
+    """
+    Check if a specific job has completed and generated its output file.
+    
+    This function verifies if the output file for a particular job exists. It constructs
+    the path to the job's output file using the specified directory, job index, and file name.
+    Returns True if the file exists, indicating the job's completion, or False otherwise.
+    
+    Parameters
+    ------------
+    out_dir : str
+        Path to the directory containing job-specific output files.
+    job_index : int
+        Index of the job to be checked for completion.
+    h5_file_name : str, optional
+        Name of the output HDF5 file. Default is "STATS_OUT.h5".
+    
+    Returns:
+    bool: True if the job's output file exists, indicating job completion. False otherwise.
+    """
+    out_file = "%s/job%d/%s" % (out_dir, job_index, h5_file_name)
+    return os.path.isfile(out_file) or os.path.isdir(out_file)
+
+
 def collect_h5(out_dir, h5_file_name="STATS_OUT.h5"):
     """
     Collects statistics from multiple job-specific HDF5 files into a final HDF5 file.
@@ -420,7 +443,7 @@ def collect_h5(out_dir, h5_file_name="STATS_OUT.h5"):
         Path to the directory containing job-specific HDF5 files.
     h5_file_name : str, optional
         Name of the output HDF5 file. Default is "STATS_OUT.h5".
-    
+        
     Returns
     ---------
         None
@@ -429,13 +452,20 @@ def collect_h5(out_dir, h5_file_name="STATS_OUT.h5"):
     
     # count experiments (number of sites x number of brackground if applies)
     num_experiments = 0
+    num_backgrounds = 0
+    
     for job_index in range(num_jobs):
         # open job
         job_h5_file = "%s/job%d/%s" % (out_dir, job_index, h5_file_name)
         job_h5_open = h5py.File(job_h5_file, "r")
         num_experiments += len(job_h5_open["chrom"])
-        job_h5_open.close()
+        max_bg_index = max(list(set(job_h5_open["background_index"])))
+
+        if max_bg_index > num_backgrounds:
+            num_backgrounds = max_bg_index + 1
         
+        job_h5_open.close()
+    
     # initialize final final h5 based on the 0th-job file
     final_h5_file = "%s/%s" % (out_dir, h5_file_name)
     final_h5_open = h5py.File(final_h5_file, "w")
@@ -467,24 +497,19 @@ def collect_h5(out_dir, h5_file_name="STATS_OUT.h5"):
             # keys with saved prediction vectors
 
             if key.split("_")[0] == "map":
-                _, num_targets = job0_h5_open[key].shape
+                _, prediction_vector_length, num_targets = job0_h5_open[key].shape
 
                 final_h5_open.create_dataset(
                     key,
                     shape=(
-                        num_variants,
+                        num_experiments,
                         prediction_vector_length,
                         num_targets,
                     ),
                     dtype=job0_h5_open[key].dtype,
                 )
-            else:
-                (
-                    num_backgrounds,
-                    prediction_vector_length,
-                    num_targets,
-                ) = job0_h5_open[key].shape
-        
+            elif key.split("_")[0] == "refmap":
+                
                 final_h5_open.create_dataset(
                     key,
                     shape=(
@@ -494,9 +519,11 @@ def collect_h5(out_dir, h5_file_name="STATS_OUT.h5"):
                     ),
                     dtype=job0_h5_open[key].dtype,
                 )
+            else:
+                raise Exception(f"Unexpected 3-dimensional key: {key}")
         else:
             raise Exception(f"Unexpected dimension = {job0_h5_open[key].ndim} of the following key: {key}")
-
+            
     job0_h5_open.close()
     
     # set values of the final h5 file
@@ -521,14 +548,25 @@ def collect_h5(out_dir, h5_file_name="STATS_OUT.h5"):
                 final_h5_open[key][experiment_index : experiment_index + job_experiments_num, :] = job_h5_open[key]
                 
             elif job_h5_open[key].ndim == 3:
-
+                # keys with maps
+                
                 if key.split("_")[0] == "map":
                     final_h5_open[key][experiment_index : experiment_index + job_experiments_num, :, :] = job_h5_open[key]
 
+                elif key.split("_")[0] == "refmap":
+                    bg_indices = list(set(job_h5_open["background_index"]))
+                    min_bg_index = min(list(set(job_h5_open["background_index"])))
+                    
+                    for bg_index in bg_indices:
+                        # if this background hasn't been saved yet, save it
+                        # [note, the same background indices may appear in multiple files
+                        # depending on the number of jobs the task has been split into]
+                        if final_h5_open[key][bg_index, :, :].sum() == 0.0:
+                            final_h5_open[key][bg_index, :, :] = job_h5_open[key][bg_index, :, :]
+                        
                 else:
-                    num_backgrounds, _, _ = job_h5_open[key].shape
-                    final_h5_open[key][num_backgrounds, :, :] = job_h5_open[key]
-
+                    raise Exception(f"Unexpected dimension = {job0_h5_open[key].ndim} of the following key: {key}")
+                    
         experiment_index += job_experiments_num
         job_h5_open.close()
 
