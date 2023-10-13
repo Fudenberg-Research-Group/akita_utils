@@ -340,12 +340,23 @@ def read_jaspar_to_numpy(
     return motif
 
 
-def read_rmsk(
-    rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz",
-):
-
-    """reads a data frame containing repeatable elements and renames columns specifying genomic intervals to standard: chrom, start, end, used in thie repo."""
-
+def read_rmsk(rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz"):
+    """
+    Reads a DataFrame containing repeatable elements and renames genomic interval columns to standard format.
+    
+    This function reads a tabular file containing repeatable elements (typically from RepeatMasker output)
+    and processes it into a DataFrame. The input file should have columns specifying genomic intervals
+    with headers like "genoName", "genoStart", and "genoEnd". This function renames these columns to "chrom",
+    "start", and "end" respectively, which is the standard format used in this repository.
+    
+    Parameters:
+    rmsk_file : str, optional
+        Path to the RepeatMasker output file. Default is a specific mm10 genome file.
+    
+    Returns:
+    rmsk : pd.DataFrame: 
+        A DataFrame containing repeatable elements with columns "chrom", "start", and "end".
+    """    
     rmsk_cols = list(
         pd.read_csv(
             StringIO(
@@ -359,10 +370,10 @@ def read_rmsk(
         rmsk_file,
         names=rmsk_cols,
     )
-
+    
     rmsk.rename(
         columns={"genoName": "chrom", "genoStart": "start", "genoEnd": "end"},
         inplace=True,
     )
-
+    
     return rmsk
