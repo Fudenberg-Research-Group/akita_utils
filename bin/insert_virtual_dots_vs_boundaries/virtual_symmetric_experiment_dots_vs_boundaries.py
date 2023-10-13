@@ -18,9 +18,8 @@
 ###################################################
 
 """
-virtual_symmetric_experiment_compare_SCD.py
+virtual_symmetric_experiment_dots_vs_boundaries
 derived from virtual_symmetric_experiment.py
-
 
 This scripts computes insertion scores for motif insertions from a tsv file with:
 chrom | start | end | strand | genomic_SCD | orientation | background_index | flank_bp | spacer_bp
@@ -38,9 +37,6 @@ Parameters:
 Options:
 -----------
 - path to the mouse or human genome in the fasta format
-- comma-separated list of statistic scores (stats, e.g. --stats SCD,INS-16)
-- head index (depending if predictions are to be made in the mouse (--head_index 0) or human genome-context (--head_index 1))
-- model index (same as specified one by the model_file)
 - batch size 
 - path to the background file (in the fasta format)
 - output directory for tables and plots
@@ -49,7 +45,7 @@ Options:
 - (optional, specific for plotting) heatmap plot frequency
 - (optional) add option --rc to average forward and reverse complement predictions
 - (optional) adding --shifts k ensembles prediction shifts by k
-
+- (optional) adding --save-maps generates h5 file with saved all prediction vectors
 
 """
 
@@ -89,8 +85,7 @@ from akita_utils.seq_gens import (
     reference_seqs_gen,
 )
 from akita_utils.utils import split_df_equally
-from akita_utils.h5_utils import initialize_output_h5, write_stat_metrics_to_h5, write_maps_to_h5, write_maps_to_h5_background
-
+from akita_utils.h5_utils import initialize_stat_output_h5, initialize_maps_output_h5_background, write_stat_metrics_to_h5, write_maps_to_h5
 
 ################################################################################
 # main
@@ -127,7 +122,7 @@ def main():
     )
     parser.add_option(
         "-o",
-        dest="out_dir",  # to be changed?
+        dest="out_dir",
         default="./",
         help="Output directory for tables and plots [Default: %default]",
     )
@@ -138,25 +133,26 @@ def main():
         type="int",
         help="Number of processes, passed by multi script",
     )
-    parser.add_option(  # reverse complement
+    parser.add_option(
         "--rc",
         dest="rc",
         default=False,
         action="store_true",
         help="Average forward and reverse complement predictions [Default: %default]",
     )
-    parser.add_option(  # shifts
+    parser.add_option(
+        "--stats",
+        dest="stats",
+        default="SCD",
+        type="str",
+        help="Comma-separated list of stats to save. [Default: %default]",
+    )
+    parser.add_option(
         "--shifts",
         dest="shifts",
         default="0",
         type="str",
         help="Ensemble prediction shifts [Default: %default]",
-    )
-    parser.add_option(
-        "--stats",
-        dest="scd_stats",
-        default="SCD,diffSCD",
-        help="Comma-separated list of stats to save. [Default: %default]",
     )
     parser.add_option(
         "-t",
@@ -172,26 +168,19 @@ def main():
         type="int",
         help="Specify batch size",
     )
-    parser.add_option(
-        "--head-index",
-        dest="head_index",
-        default=0,
-        type="int",
-        help="Specify head index (0=human 1=mus)",
-    )
-    parser.add_option(
-        "--model-index",
-        dest="model_index",
-        default=0,
-        type="int",
-        help="Specify model index (from 0 to 7)",
-    )
-    ## insertion-specific options
+    # insertion-specific options
     parser.add_option(
         "--background-file",
         dest="background_file",
-        default="/project/fudenber_735/tensorflow_models/akita/v2/analysis/background_seqs.fa",
+        default=None,
         help="file with insertion seqs in fasta format",
+    )
+    parser.add_option(
+        "--save-maps",
+        dest="save_maps",
+        default=False,
+        action="store_true",
+        help="Save all the maps in the h5 file(for all inserts, all backgrounds used, and all targets)",
     )
 
     (options, args) = parser.parse_args()
@@ -202,10 +191,10 @@ def main():
     print("options")
     print(options)
     print("\n++++++++++++++++++\n")
-    print("args", args)
+    print("args")
     print(args)
     print("\n++++++++++++++++++\n")
-
+    
     if len(args) == 3:
         # single worker
         params_file = args[0]
@@ -239,10 +228,19 @@ def main():
         plot_dir = options.out_dir
     else:
         plot_dir = None
-
+    
     options.shifts = [int(shift) for shift in options.shifts.split(",")]
-    options.scd_stats = options.scd_stats.split(",")
-
+    stats = options.stats.split(",")
+    
+    head_index = int(model_file.split("model")[-1][0])
+    model_index = int(model_file.split("c0")[0][-1])
+    
+    if options.background_file is None:
+        if head_index == 1:
+            options.background_file = f"/project/fudenber_735/tensorflow_models/akita/v2/analysis/mouse_backgrounds/m{model_index}_background_seqs.fa"
+        else:
+            raise Exception("Please, provide a path to fasta file with human backgrounds")
+            
     random.seed(44)
 
     #################################################################
@@ -265,10 +263,6 @@ def main():
         target_labels = targets_df.description
 
     #################################################################
-    # setup model
-    head_index = options.head_index
-    model_index = options.model_index
-
     # load model
     seqnn_model = seqnn.SeqNN(params_model)
     seqnn_model.restore(model_file, head_i=head_index)
@@ -280,7 +274,7 @@ def main():
         num_targets = seqnn_model.num_targets()
         target_ids = [
             ti for ti in range(num_targets)
-        ]  # checkpoint? to be sure that the langth of given targets_file is compatibile with the requested head?
+        ]
         target_labels = [""] * len(target_ids)
 
     #################################################################
@@ -316,8 +310,11 @@ def main():
             if ">" in line:
                 continue
             background_seqs.append(dna_io.dna_1hot(line.strip()))
-    num_insert_backgrounds = seq_coords_df["background_index"].max()
-    if len(background_seqs) < num_insert_backgrounds:
+            
+    max_bg_index = seq_coords_df["background_index"].max()
+    min_bg_index = seq_coords_df["background_index"].min()
+    
+    if len(background_seqs) < max_bg_index:
         raise ValueError(
             "must provide a background file with at least as many"
             + "backgrounds as those specified in the insert seq_coords tsv."
@@ -327,87 +324,81 @@ def main():
     #################################################################
     # setup output
 
-    h5_outfile = initialize_output_h5(
-        options.out_dir,
-        seq_coords_df,
-        options.scd_stats,
-        target_ids,
-        head_index,
-        model_index,
-    )
+    stat_h5_outfile = initialize_stat_output_h5(options.out_dir,
+                                                model_file,
+                                                stats,
+                                                seq_coords_df)
 
-    print("initialized")
-
+    print("stat_h5_outfile initialized")
+    
+    if options.save_maps:
+        maps_h5_outfile = initialize_maps_output_h5_background(options.out_dir,
+                                                        model_file,
+                                                        options.genome_fasta,
+                                                        seqnn_model,
+                                                        seq_coords_df)
+    
+        print("maps_h5_outfile initialized")
+    
     #################################################################
-    # predict SCD scores
-
-    num_backgrounds = len(background_seqs)
 
     # initialize predictions stream for reference (background) sequences
     refs_stream = stream.PredStreamGen(
         seqnn_model, reference_seqs_gen(background_seqs), batch_size
-    )
+    )    
 
-    background_preds_maps = np.zeros((num_backgrounds, 512, 512, num_targets))
+    if options.save_maps:
+        # saving prediction vectors to the maps_h5_outfile
+        for background_index in range(min_bg_index, (max_bg_index+1)):
+            bg_prediction = refs_stream[background_index]
 
-    for background_index in range(num_backgrounds):
-        background_preds_maps[background_index] = ut_dense(
-            refs_stream[background_index], seqnn_model.diagonal_offset
-        )
-        
-        # save maps for background sequences
-        write_maps_to_h5(background_preds_maps[background_index, :, :, :],
-                        h5_outfile,
-                        background_index,
-                        head_index,
-                        model_index,
-                        diagonal_offset=2,
-                        reference=True
-        )
-        print(f"reference {background_index} saved")
-            
-    # initialize predictions stream for alternate (ctcf-inserted) sequences
-    preds_stream = stream.PredStreamGen(
-        seqnn_model,
-        symmertic_insertion_seqs_gen(
-            seq_coords_df, background_seqs, genome_open
-        ),
-        batch_size,
-    )
+            # save maps for background sequences
+            write_maps_to_h5(bg_prediction,
+                            maps_h5_outfile,
+                            background_index,
+                            head_index,
+                            model_index,
+                            reference=True
+            )
+            print(f"Maps for reference {background_index} saved")
     
-    for altseq_index in range(num_experiments):
-        # get predictions
-        preds_matrix = preds_stream[altseq_index]
-        map_matrix = ut_dense(preds_matrix, seqnn_model.diagonal_offset)
-        background_index = seq_coords_df.iloc[altseq_index].background_index
-        exp_id = seq_coords_df.iloc[altseq_index].exp_id
-        seq_id = seq_coords_df.iloc[altseq_index].seq_id
-        identifier = f"{exp_id}_s{seq_id}"
-        
-        # # save stat metrics for each prediction
-        # write_stat_metrics_to_h5(
-        #     preds_matrix,
-        #     background_preds_maps[background_index, :, :, :],
-        #     h5_outfile,
-        #     seq_id,
-        #     head_index,
-        #     model_index,
-        #     seqnn_model.diagonal_offset,
-        #     options.scd_stats,
-        # )
-        
-        # save maps
-        write_maps_to_h5_background(map_matrix,
-                        h5_outfile,
-                        identifier,
-                        background_index,
-                        head_index,
-                        model_index
-        )
-        
-    genome_open.close()
-    h5_outfile.close()
+    # initialize predictions stream for alternate (ctcf-inserted) sequences
+    preds_stream = stream.PredStreamGen(seqnn_model,
+                                        symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open),
+                                        batch_size)
 
+    # saving stat metrics
+    for exp_index in range(num_experiments):
+        # get predictions
+        preds_matrix = preds_stream[exp_index]
+        background_index = seq_coords_df.iloc[exp_index].background_index
+        ref_matrix = refs_stream[background_index]
+    
+        write_stat_metrics_to_h5(preds_matrix,
+                                ref_matrix,
+                                stat_h5_outfile,
+                                exp_index,
+                                head_index,
+                                model_index,
+                                diagonal_offset=2,
+                                stat_metrics=stats)
+    
+        if options.save_maps:
+
+            # save maps for inserted sequences
+            write_maps_to_h5(preds_matrix,
+                            maps_h5_outfile,
+                            exp_index,
+                            head_index,
+                            model_index,
+                            reference=False)
+
+    stat_h5_outfile.close()
+    
+    if options.save_maps:
+        maps_h5_outfile.close()
+
+    genome_open.close()
 
 ################################################################################
 # __main__
@@ -416,3 +407,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    

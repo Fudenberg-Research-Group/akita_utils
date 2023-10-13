@@ -27,7 +27,7 @@ Relies on slurm_gf.py to auto-generate slurm jobs.
 
 from optparse import OptionParser
 import os
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 import pickle
 import subprocess
@@ -37,6 +37,7 @@ import h5py
 import numpy as np
 
 import akita_utils.slurm_gf as slurm
+from akita_utils.h5_utils import job_completed
 
 ################################################################################
 # main
@@ -95,8 +96,9 @@ def main():
     )
     parser.add_option(
         "--stats",
-        dest="scd_stats",
-        default="SCD,diffSCD",
+        dest="stats",
+        default="SCD",
+        type="str",
         help="Comma-separated list of stats to save. [Default: %default]",
     )
     parser.add_option(
@@ -113,26 +115,20 @@ def main():
         type="int",
         help="Specify batch size",
     )
-    parser.add_option(
-        "--head-index",
-        dest="head_index",
-        default=None,
-        type="int",
-        help="Specify head index (0=human 1=mus) ",
-    )
-    parser.add_option(
-        "--model-index",
-        dest="model_index",
-        default=0,
-        type="int",
-        help="Specify model index (from 0 to 7)",
-    )
-    ## insertion-specific options
+    
+    # insertion-specific options
     parser.add_option(
         "--background-file",
         dest="background_file",
         default="/project/fudenber_735/tensorflow_models/akita/v2/analysis/background_seqs.fa",
         help="file with insertion seqs in fasta format",
+    )
+    parser.add_option(
+        "--save-maps",
+        dest="save_maps",
+        default=False,
+        action="store_true",
+        help="Save all the maps in the h5 file(for all inserts, all backgrounds used, and all targets)",
     )
 
     # multi
@@ -153,7 +149,7 @@ def main():
     parser.add_option(
         "--name",
         dest="name",
-        default="scd",
+        default="exp",
         help="SLURM name prefix [Default: %default]",
     )
     parser.add_option(
@@ -272,103 +268,8 @@ def main():
 
     #######################################################
     # collect output
-
-    # collect_h5("scd.h5", options.out_dir, options.processes)
     
-    # for pi in range(options.processes):
-    #     shutil.rmtree('%s/job%d' % (options.out_dir,pi))
-
-
-def collect_table(file_name, out_dir, num_procs):
-    os.rename("%s/job0/%s" % (out_dir, file_name), "%s/%s" % (out_dir, file_name))
-    for pi in range(1, num_procs):
-        subprocess.call(
-            "tail -n +2 %s/job%d/%s >> %s/%s"
-            % (out_dir, pi, file_name, out_dir, file_name),
-            shell=True,
-        )
-
-
-def collect_h5(file_name, out_dir, num_procs):
-    # count variants
-    num_variants = 0
-    for pi in range(num_procs):
-        # open job
-        job_h5_file = "%s/job%d/%s" % (out_dir, pi, file_name)
-        job_h5_open = h5py.File(job_h5_file, "r")
-        num_variants += len(job_h5_open["chrom"])
-        job_h5_open.close()
-
-    # initialize final h5
-    final_h5_file = "%s/%s" % (out_dir, file_name)
-    final_h5_open = h5py.File(final_h5_file, "w")
-
-    # keep dict for string values
-    final_strings = {}
-
-    job0_h5_file = "%s/job0/%s" % (out_dir, file_name)
-    job0_h5_open = h5py.File(job0_h5_file, "r")
-    for key in job0_h5_open.keys():
-
-        if key in ["experiment_id", "chrom", "start", "end", "strand", "genomic_SCD", "orientation", "background_index", "flank_bp", "spacer_bp"]:
-            final_h5_open.create_dataset(
-                key, shape=(num_variants,), dtype=job0_h5_open[key].dtype
-            )
-            
-        elif job0_h5_open[key].dtype.char == "S":
-            final_strings[key] = []
-
-        elif job0_h5_open[key].ndim == 1:
-            final_h5_open.create_dataset(
-                key, shape=(num_variants,), dtype=job0_h5_open[key].dtype
-            )
-
-        else:
-            num_targets = job0_h5_open[key].shape[1]
-            final_h5_open.create_dataset(
-                key, shape=(num_variants, num_targets), dtype=job0_h5_open[key].dtype
-            )
-
-    job0_h5_open.close()
-
-    # set values
-    vi = 0
-    for pi in range(num_procs):
-        print("collecting job", pi)
-        # open job
-        job_h5_file = "%s/job%d/%s" % (out_dir, pi, file_name)
-        job_h5_open = h5py.File(job_h5_file, "r")
-
-        # append to final
-        for key in job_h5_open.keys():
-            
-            job_variants = job_h5_open[key].shape[0]
-            
-            if key in ["experiment_id", "chrom", "start", "end", "strand", "genomic_SCD", "orientation", "background_index", "flank_bp", "spacer_bp"]:
-                final_h5_open[key][vi : vi + job_variants] = job_h5_open[key]
-
-            else:
-                if job_h5_open[key].dtype.char == "S":
-                    final_strings[key] = list(job_h5_open[key])
-                else:
-                    final_h5_open[key][vi : vi + job_variants] = job_h5_open[key]
-
-        vi += job_variants
-        job_h5_open.close()
-
-    # create final string datasets
-    for key in final_strings:
-        final_h5_open.create_dataset(key, data=np.array(final_strings[key], dtype="S"))
-
-    final_h5_open.close()
-
-
-def job_completed(options, pi):
-    """Check whether a specific job has generated its
-    output file."""
-    out_file = "%s/job%d/scd.h5" % (options.out_dir, pi)
-    return os.path.isfile(out_file) or os.path.isdir(out_file)
-
+    # TO BE ADDED 
 
 ################################################################################
 # __main__
