@@ -371,37 +371,7 @@ def save_maps(
         plt.close()
 
 
-# COLLECTING DATA FROM MULTIPLE HDF5 FILES
-
-def infer_num_jobs(out_dir):
-    """
-    Infer the number of jobs from a directory containing job-related files.
-    
-    This function looks for directories named "jobX" within the specified directory
-    and determines the highest job index present, then returns the number of jobs
-    (highest index + 1).
-    
-    Parameters
-    ------------
-    out_dir : str
-        Path to the directory containing job-related files.
-    
-    Returns
-    ---------
-    num_job : int
-        Number of jobs found in the specified directory.
-    """
-    highest_index = 0
-    
-    for r, d, folder in os.walk(out_dir):
-        for object_name in folder:
-            if object_name[:3] == "job":
-                index = int(object_name.split("job")[1].split(".")[0])
-                if index > highest_index:
-                    highest_index = index
-    
-    num_job = highest_index + 1
-    return num_job
+# COLLECTING DATA FROM MULTIPLE HDF5 FILES & CHECKING JOBS COMPLETENESS
 
 
 def job_completed(out_dir, job_index, h5_file_name="STATS_OUT.h5"):
@@ -426,6 +396,37 @@ def job_completed(out_dir, job_index, h5_file_name="STATS_OUT.h5"):
     """
     out_file = "%s/job%d/%s" % (out_dir, job_index, h5_file_name)
     return os.path.isfile(out_file) or os.path.isdir(out_file)
+
+
+def infer_num_jobs(out_dir):
+    """
+    Infer the number of jobs from a directory containing job-related files.
+    
+    This function looks for directories named "jobX" within the specified directory
+    and determines the highest job index present, then returns the number of jobs
+    (highest index + 1).
+    
+    Parameters
+    ------------
+    out_dir : str
+        Path to the directory containing job-related files.
+    
+    Returns
+    ---------
+    num_job : int
+        Number of jobs found in the specified directory.
+    """
+    highest_index = 0
+    
+    for r, d, folder in os.walk(out_dir):
+        for folder_name in d:
+            if folder_name[:3] == "job":
+                index = int(folder_name.split("job")[1].split(".")[0])
+                if index > highest_index:
+                    highest_index = index
+    
+    num_job = highest_index + 1
+    return num_job
 
 
 def collect_h5(out_dir, h5_file_name="STATS_OUT.h5"):
@@ -571,4 +572,69 @@ def collect_h5(out_dir, h5_file_name="STATS_OUT.h5"):
         job_h5_open.close()
 
     final_h5_open.close()
+
+
+def suspicious_collected_h5_size(out_dir, h5_file_name, collected_to_sum_file_size_ths):
+
+    """
+    Check if the size of a collected HDF5 file is suspiciously small compared to the sum of individual job files.
+
+    This function calculates the size of the collected HDF5 file and the sum of sizes of individual job-specific
+    HDF5 files. It then compares the ratio of the collected HDF5 size to the sum of individual job file sizes 
+    against the specified threshold. If the ratio is less than the threshold, it suggests that the collected HDF5 
+    file might be suspiciously small compared to the individual job files.
+
+    Parameters
+    ------------
+    out_dir : str 
+        Path to the directory containing job-specific HDF5 files.
+    h5_file_name : str
+        Name of the HDF5 file.
+    collected_to_sum_file_size_ths : float
+    Threshold ratio for comparison. Should be a float value representing the threshold for suspicious size difference.
+
+    Returns:
+    bool: True if the collected HDF5 file size is suspiciously small compared to individual job files,
+        False otherwise.
+    """
+    
+    num_jobs = infer_num_jobs(out_dir)
+    collected_h5_path = f"{out_dir}/{h5_file_name}"
+
+    # size of collected h5 file in kb
+    collected_h5_size = round(os.stat(collected_h5_path).st_size / (1024), 3)
+
+    # sum of sizes of collected job-files
+    file_size_cum = 0
+    for job_index in range(num_jobs):
+        file_path = f"{out_dir}/job{job_index}/{h5_file_name}"
+        file_size = round(os.stat(file_path).st_size / (1024), 3)
+        file_size_cum += file_size
+
+    if collected_h5_size / file_size_cum < collected_to_sum_file_size_ths:
+        return True
+    else:
+        return False
+
+
+def clean_directory(out_dir, h5_file_name):
+
+    """
+    Clean up job-specific directories by removing individual HDF5 files.
+
+    This function deletes individual HDF5 files within the specified job directories,
+    effectively cleaning up all job-related HDF5 files generated during processing.
+
+    Parameters:
+    - out_dir (str): Path to the directory containing job-specific directories.
+    - h5_file_name (str): Name of the HDF5 file to be removed from each job directory.
+
+    Returns:
+    None
+    """
+    
+    num_jobs = infer_num_jobs(out_dir)
+    
+    for job_index in range(num_jobs):
+        os.remove("%s/job%d/%s" % (out_dir, job_index, h5_file_name))
 
