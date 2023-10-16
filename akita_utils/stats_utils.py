@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # STANDARDS
-MOTIF_LEN = 19,
-FLANK_LEN = 20,
+MOTIF_LEN = 19
+FLANK_LEN = 20
 INSERT_LEN = 2 * FLANK_LEN + MOTIF_LEN
 
 # MATRIX TRANSFORMATION
