@@ -57,9 +57,6 @@ def main():
     )
 
     (options, args) = parser.parse_args()
-
-    print("options: ", options)
-    print("args: ", args)
     
     if len(args) == 1:
         out_dir = args[0]
