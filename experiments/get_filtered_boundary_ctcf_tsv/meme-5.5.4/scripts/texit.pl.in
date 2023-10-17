@@ -1,0 +1,56 @@
+#!@WHICHPERL@ -w
+
+use strict;
+use warnings;
+
+use Getopt::Long qw(:config posix_default);
+use Pod::Usage;
+
+=head1 NAME
+
+texit - creates a PDF file from a TEX file.
+
+=head1 SYNOPSIS
+
+texit <tex file>
+
+=cut
+
+sub check {
+  my ($prog) = @_;
+  if ($? == -1) {
+    # system writes out a message
+  } elsif ($? & 127) {
+    printf("$prog died with signal %d, %s coredump\n", ($? & 127), ($? & 128) ? 'with' : 'without');
+  } else {
+    printf("$prog exited with value %d\n", $? >> 8);
+  }
+  exit(1) if $? != 0;
+}
+
+sub main {
+  # configuration
+  my $help = 0; # FALSE
+  GetOptions(
+    "help|?" => \$help 
+  ) or pod2usage(2);
+
+  # display help
+  pod2usage(1) if $help;
+
+  my ($file) = @ARGV;
+  pod2usage("Error: no input name.") unless (defined($file));
+
+  # remove tex extension if it exists
+  if ($file =~ m/(.*)\.tex/) {
+    $file = $1;
+  }
+  pod2usage("Error: could not find tex file $file.tex") unless (-e "$file.tex");
+
+  # run latex to create PDF
+  system('pdflatex', '-shell-escape', $file.'.tex');
+  check('pdflatex');
+  system('chmod', '644', $file.'.pdf');
+}
+main();
+1;

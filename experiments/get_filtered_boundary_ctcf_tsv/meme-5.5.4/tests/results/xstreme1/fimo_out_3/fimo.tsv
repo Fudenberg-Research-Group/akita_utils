@@ -1,0 +1,8 @@
+motif_id	motif_alt_id	sequence_name	start	stop	strand	score	p-value	q-value	matched_sequence
+4-CWWKKTGDWMTTTWMDG	STREME-4	bglr1	54	70	-	23.327	1.06e-09	3.39e-06	CTTTGTGTAATTTTAGG
+4-CWWKKTGDWMTTTWMDG	STREME-4	ara	37	53	-	20.7358	9.01e-08	0.000143	CAATGTGGACTTTTCTG
+4-CWWKKTGDWMTTTWMDG	STREME-4	tdc	17	33	+	18.9119	2.73e-07	0.00029	CTTGTTGATATTTAAAG
+
+# FIMO (Find Individual Motif Occurrences): Version 5.5.4 compiled on Oct  3 2023 at 16:32:18
+# The format of this file is described at https://meme-suite.org/meme/doc/fimo-output-format.html#tsv_results.
+# fimo --verbosity 1 --oc results/xstreme1/fimo_out_3 --bgfile results/xstreme1/background --motif 4-CWWKKTGDWMTTTWMDG results/xstreme1/streme_out/streme.xml common/crp0.s

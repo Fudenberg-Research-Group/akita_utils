@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>index-sequence-db - MEME Suite</title>
+    <link rel="shortcut icon" type="image/x-icon" href="images/memesuite_icon.ico">
+    <link rel="icon" type="image/png" href="images/memesuite_icon.png">
+    <link href="css/style.css" rel="stylesheet" type="text/css">
+    <script src="js/menu.js"></script>
+    <script src="js/shared-doc.js"></script>
+    <style>
+    h4.db_table_name {
+      font-size: larger;
+      text-decoration: underline;
+      margin-top: 20px;
+    }
+    table.db_schema td {
+      padding-right: 20px;
+    }
+    </style>
+  </head>
+  <body>
+    <div class="memesuitelogo">
+      <h1>The MEME Suite</h1>
+      <h2>Motif-based sequence analysis tools</h2>
+    </div>
+    <h2>index-sequence-db</h2>
+    
+    <div class="usage">
+      <h3>Usage:</h3>
+      <code>index-sequence-db &lt;sequence database directory&gt;</code>
+    </div>
+
+    <h3>Description</h3>
+    <div class="indent">
+      <p>Create index files for the genomes in the sequence database directory.</p>
+      <p>This program requires the <code>update-sequence-db</code> program to have been run first.</p>
+      <p>If necessary, the program adds the fileSeqIndex column to the tblSequenceFile.
+      Then loops through all the databases specified in the SQLite database <code>fasta_db.sqlite</code>
+      that is created by <code>update-sequence-db</code> and uses <code>fasta-file-indexer</code>
+      to create the FASTA index file for each genome database. 
+      The program then updates the tblSequenceFile record with 
+      the name of the index file in the fileSeqIndex column.</p>
+    </div>
+
+    <h3>Input</h3>
+    <div class="indent">
+      <h4><span class='popt'>&lt;sequence database directory&gt;</h4>
+      <div class="indent">
+        <p>The folder to used to store sequence database files that should be indexed. 
+        The program expects the folder to contain the sequence FASTA files,
+        and the SQLite database <code>fasta_db.sqlite</code> created by
+	<code>update-sequence-db</code>.</div>
+    </div>
+
+    <h3>Output</h3>
+    <div class="indent">
+      <p>For each sequence file indexed the program creates a corresponding index file
+      with the same basename, but the suffix <code>.fai</code>. 
+      The <code>fasta_db.sqlite</code> database is updated with the name of the index file.
+      The program also creates a folder called 
+      called <code>logs</code> containing date-stamped logs of the program's activity.
+    </div>
+
+    <h3>Database Schema</h3>
+    <div class="indent">
+      <p>As well as downloading the sequence files from many sources, the updater
+      tracks the files using a SQLite database. The schema of the database is
+      given below.</p>
+      <h4 class="db_table_name">tblCategory</h4>
+      <table class="db_schema">
+        <tr>
+          <th>Column</th><th>Type</th><th>Constraint</th><th>Description</th>
+        </tr>
+        <tr>
+          <td>id</td><td>INTEGER</td><td>PRIMARY KEY</td><td>A auto-generated unique identifier for the category. Other tables reference this field.</td>
+        </tr>
+        <tr>
+          <td>name</td><td>TEXT</td><td>UNIQUE NOT NULL</td><td>The unique name of the category as shown to users.</td>
+        </tr>
+      </table>
+      <h4 class="db_table_name">tblListing</h4>
+      <table class="db_schema">
+        <tr>
+          <th>Column</th><th>Type</th><th>Constraint</th><th>Description</th>
+        </tr>
+        <tr>
+          <td>id</td><td>INTEGER</td><td>PRIMARY KEY</td><td>A auto-generated unique identifier for the listing. Other tables reference this field.</td>
+        </tr>
+        <tr>
+          <td>categoryId</td><td>INTEGER</td><td>NOT NULL REFERENCES tblCategory (id)</td><td>The identifier of the category that contains this listing.</td>
+        </tr>
+        <tr>
+          <td>name</td><td>TEXT</td><td>NOT NULL</td><td>The name of the listing shown to users.</td>
+        </tr>
+        <tr>
+          <td>description</td><td>TEXT</td><td>NOT NULL</td><td>The description of the listing shown to users.</td>
+        </tr>
+      </table>
+      <p>The combination of the fields <code>categoryId</code> and <code>name</code> is unique.</p>
+
+      <h4 class="db_table_name">tblSequenceFile</h4>
+      <table class="db_schema">
+        <tr>
+          <th>Column</th><th>Type</th><th>Constraint</th><th>Description</th>
+        </tr>
+        <tr>
+          <td>id</td><td>INTEGER</td><td>PRIMARY KEY</td><td>A auto-generated unique identifier for the sequence file.</td>
+        </tr>
+        <tr>
+          <td>retriever</td><td>INTEGER</td><td>NOT NULL</td>
+          <td>An identifier for the code module that downloaded this sequence.
+            It allows the individual code modules to ensure they don't change
+            the records of files downloaded by other modules.</td>
+        </tr>
+        <tr>
+          <td>listingId</td><td>INTEGER</td><td>NOT NULL REFERENCES tblListing (id)</td><td>The identifier of the listing that contains this sequence file.</td>
+        </tr>
+        <tr>
+          <td>alphabet</td><td>INTEGER</td><td>NOT NULL CHECK (alphabet IN (1, 2, 4))</td>
+          <td>Represents the alphabet as powers of 2 so they can be combined into a bitset.
+            <ul>
+              <li>RNA = 1,</li>
+              <li>DNA = 2,</li>
+              <li>Protein = 4.</li>
+            </ul>
+          </td>
+        </tr>
+        <tr>
+          <td>edition</td><td>INTEGER</td><td>NOT NULL</td><td>A machine readable version. This field is used for sorting. Larger numbers are considered newer.</td>
+        </tr>
+        <tr>
+          <td>version</td><td>TEXT</td><td>NOT NULL</td><td>A human readable version which is displayed to the user.</td>
+        </tr>
+        <tr>
+          <td>description</td><td>TEXT</td><td>NOT NULL</td><td>The description of the sequence file, often containing information about the source.</td>
+        </tr>
+        <tr>
+          <td>fileSeq</td><td>TEXT</td><td>UNIQUE NOT NULL</td><td>The relative path to the sequence file.</td>
+        </tr>
+        <tr>
+          <td>fileBg</td><td>TEXT</td><td>UNIQUE NOT NULL</td><td>The relative path to the background file.</td>
+        </tr>
+        <tr>
+          <td>fileSeqIndex</td><td>TEXT</td><td>UNIQUE NOT NULL</td><td>The relative path to the index file for the sequence.</td>
+        </tr>
+        <tr>
+          <td>sequenceCount</td><td>INTEGER</td><td>NOT NULL</td><td>The number of sequences.</td>
+        </tr>
+        <tr>
+          <td>totalLen</td><td>INTEGER</td><td>NOT NULL</td><td>The total end-to-end combined length of the sequences.</td>
+        </tr>
+        <tr>
+          <td>minLen</td><td>INTEGER</td><td>NOT NULL</td><td>The length of the shortest sequence.</td>
+        </tr>
+        <tr>
+          <td>maxLen</td><td>INTEGER</td><td>NOT NULL</td><td>The length of the longest sequence.</td>
+        </tr>
+        <tr>
+          <td>avgLen</td><td>REAL</td><td>NOT NULL</td><td>The average length of the sequences.</td>
+        </tr>
+        <tr>
+          <td>stdDLen</td><td>REAL</td><td>NOT NULL</td><td>Currently unused! Intended to store the standard deviation of the average length.</td>
+        </tr>
+        <tr>
+          <td>obsolete</td><td>INTEGER</td><td>DEFAULT 0</td><td>Used to flag sequences as obsolete. Sequences flagged as obsolete are hidden from the interface.</td>
+        </tr>
+      </table>
+      <p>The combination of the fields <code>listingId</code>, <code>alphabet</code> and <code>edition</code> is unique.</p>
+
+      <h4 class="db_table_name">tblPriorFile</h4>
+      <table class="db_schema">
+        <tr>
+          <th>Column</th><th>Type</th><th>Constraint</th><th>Description</th>
+        </tr>
+        <tr>
+          <td>id</td><td>INTEGER</td><td>PRIMARY KEY</td><td>A auto-generated unique identifier for the prior.</td>
+        </tr>
+        <tr>
+          <td>sequenceId</td><td>INTEGER</td><td>NOT NULL REFERENCES tblSequenceFile (id)</td><td>The identifier of the sequence that is associated with this prior.</td>
+        </tr>
+        <tr>
+          <td>filePrior</td><td>TEXT</td><td>UNIQUE NOT NULL</td><td>The relative path to the wig file (which may be gzipped).</td>
+        </tr>
+        <tr>
+          <td>fileDist</td><td>TEXT</td><td>UNIQUE NOT NULL</td><td>The relative path to the dist file (which may be gzipped).</td>
+        </tr>
+        <tr>
+          <td>biosample</td><td>TEXT</td><td>NOT NULL</td><td>A short descriptive name for the sample used in the experiment that the priors were derived from.</td>
+        </tr>
+        <tr>
+          <td>assay</td><td>TEXT</td><td>NOT NULL</td><td>A short descriptive name for the experiment that the priors were derived from.</td>
+        </tr>
+        <tr>
+          <td>source</td><td>TEXT</td><td>NOT NULL</td><td>A short descriptive name of the lab or group that performed the experiment that the priors were derived from.</td>
+        </tr>
+        <tr>
+          <td>url</td><td>TEXT</td><td>NOT NULL</td><td>A URL linking to further information on the experiment.</td>
+        </tr>
+        <tr>
+          <td>description</td><td>TEXT</td><td>NOT NULL</td><td>A description of the experiment which may contain HTML.</td>
+        </tr>
+      </table>
+
+    </div>
+
+  </body>
+</html>
+
+

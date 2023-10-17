@@ -1,0 +1,12 @@
+Query_ID	Target_ID	Optimal_offset	p-value	E-value	q-value	Overlap	Query_consensus	Target_consensus	Orientation
+1	1	0	8.38123e-24	4.19061e-23	4.19061e-23	14	UAUUCAUGUAAAUA	UAUUCAUGUAAAUA	+
+1	2	-4	9.00547e-09	4.50273e-08	2.25137e-08	10	UAUUCAUGUAAAUA	CUUGUAAAUAUA	+
+2	2	0	2.62835e-20	1.31418e-19	1.31418e-19	12	CUUGUAAAUAUA	CUUGUAAAUAUA	+
+2	1	4	2.16805e-08	1.08403e-07	5.42013e-08	10	CUUGUAAAUAUA	UAUUCAUGUAAAUA	+
+3	3	0	3.35249e-25	1.67625e-24	1.67625e-24	14	UUAAUAAAAUAAAA	UUAAUAAAAUAAAA	+
+4	4	0	2.21559e-15	1.10779e-14	1.10779e-14	9	UUUUUCUCU	UUUUUCUCU	+
+5	5	0	5.79007e-13	2.89503e-12	2.89503e-12	7	GAUGACA	GAUGACA	+
+
+# Tomtom (Motif Comparison Tool): Version 5.5.4 compiled on Oct  3 2023 at 16:32:33
+# The format of this file is described at https://meme-suite.org/meme/doc/tomtom-output-format.html.
+# tomtom -verbosity 1 -text -thresh 0.1 results/xstreme3/combined.meme results/xstreme3/combined.meme

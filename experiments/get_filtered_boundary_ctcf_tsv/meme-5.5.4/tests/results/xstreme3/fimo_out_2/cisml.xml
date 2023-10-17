@@ -1,0 +1,538 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<!-- Document definition -->
+<!-- http://zlab.bu.edu/~phaverty/SupplementalData/CisML/cisml.dtd -->
+<!DOCTYPE cis-element-search[
+<!ELEMENT cis-element-search (program-name, parameters, (pattern | multi-pattern-scan)*)>
+<!ELEMENT program-name (#PCDATA)>
+<!ELEMENT parameters (
+  pattern-file, 
+  sequence-file, 
+  background-seq-file?,
+  pattern-pvalue-cutoff?,
+  sequence-pvalue-cutoff?,
+  site-pvalue-cutoff?,
+  sequence-filtering,
+  ANY*
+ )>
+<!ELEMENT command-line (#PCDATA)>
+<!ELEMENT pattern-file (#PCDATA)>
+<!ELEMENT sequence-file (#PCDATA)>
+<!ELEMENT background-seq-file (#PCDATA)>
+<!ELEMENT pattern-pvalue-cutoff (#PCDATA)>
+<!ELEMENT sequence-pvalue-cutoff (#PCDATA)>
+<!ELEMENT site-pvalue-cutoff (#PCDATA)>
+<!ELEMENT sequence-filtering EMPTY>
+<!ELEMENT multi-pattern-scan (pattern+, ANY*)>
+<!ELEMENT pattern (scanned-sequence+, ANY*)>
+<!ELEMENT scanned-sequence (matched-element*, ANY*)>
+<!ELEMENT matched-element (sequence)>
+<!ELEMENT sequence (#PCDATA)>
+<!ATTLIST cis-element-search
+xmlns:xsi CDATA #IMPLIED
+xmlns:mem CDATA #IMPLIED
+xsi:schemaLocation CDATA #IMPLIED
+>
+<!ATTLIST sequence-filtering
+on-off CDATA #REQUIRED
+type CDATA #IMPLIED
+>
+<!ATTLIST multi-pattern-scan
+score CDATA #IMPLIED
+pvalue CDATA #IMPLIED
+>
+<!ATTLIST pattern
+accession CDATA #REQUIRED
+name CDATA #REQUIRED
+pvalue CDATA #IMPLIED
+score CDATA #IMPLIED
+db CDATA #IMPLIED
+lsid CDATA #IMPLIED
+>
+<!ATTLIST scanned-sequence
+accession CDATA #REQUIRED
+name CDATA #REQUIRED
+score CDATA #IMPLIED
+pvalue CDATA #IMPLIED
+length CDATA #IMPLIED
+db CDATA #IMPLIED
+lsid CDATA #IMPLIED
+>
+<!ATTLIST matched-element
+start CDATA #REQUIRED
+stop CDATA #REQUIRED
+score CDATA #IMPLIED
+pvalue CDATA #IMPLIED
+clusterid CDATA #IMPLIED
+>
+
+]>
+<cis-element-search
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://zlab.bu.edu/schema/cisml cisml.xsd"
+  xmlns="http://zlab.bu.edu/schema/cisml"
+  xmlns:mem="http://noble.gs.washington.edu/meme"
+>
+<program-name>fimo</program-name>
+<parameters>
+<command-line>fimo --verbosity 1 --oc results/xstreme3/fimo_out_2 --bgfile results/xstreme3/background --motif 2-UUAAUAAAAWWAAW results/xstreme3/streme_out/streme.xml common/Puf3p-200.s</command-line>
+<pattern-file>results/xstreme3/streme_out/streme.xml</pattern-file>
+<sequence-file>common/Puf3p-200.s</sequence-file>
+<site-pvalue-cutoff>0.0001</site-pvalue-cutoff>
+<sequence-filtering on-off="off"/>
+</parameters>
+<pattern accession="2-UUAAUAAAAWWAAW" name="STREME-2">
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+<matched-element start="79480" stop="79493" score="10.8381" pvalue="9.37e-05">
+<sequence>UUAAUGAAUUAAAU</sequence>
+<mem:qvalue>0.129</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+<matched-element start="120809" stop="120822" score="13.4667" pvalue="6.15e-06">
+<sequence>UUAAUGAACAGAAA</sequence>
+<mem:qvalue>0.0178</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrI" name="sacCer3_chrI">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+<matched-element start="256870" stop="256883" score="14.8667" pvalue="5.15e-07">
+<sequence>UUAAUAAAAAAAAA</sequence>
+<mem:qvalue>0.00223</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+<matched-element start="256870" stop="256883" score="14.8667" pvalue="5.15e-07">
+<sequence>UUAAUAAAAAAAAA</sequence>
+<mem:qvalue>0.00223</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+<matched-element start="596095" stop="596108" score="13.0952" pvalue="1.01e-05">
+<sequence>UUAAGAAAAUAGAA</sequence>
+<mem:qvalue>0.0218</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+<matched-element start="782049" stop="782062" score="11.8476" pvalue="3.85e-05">
+<sequence>UUAAUACAAAAGAA</sequence>
+<mem:qvalue>0.074</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+<matched-element start="406546" stop="406559" score="11.6952" pvalue="4.35e-05">
+<sequence>CUAAUAACAUAGAU</sequence>
+<mem:qvalue>0.0753</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrII" name="sacCer3_chrII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIII" name="sacCer3_chrIII">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+<matched-element start="38825" stop="38838" score="14.0476" pvalue="2.63e-06">
+<sequence>UUAAUAAAAAGAAU</sequence>
+<mem:qvalue>0.00912</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+<matched-element start="45980" stop="45993" score="15.0667" pvalue="2.21e-07">
+<sequence>UUAAUAAAAUAAAA</sequence>
+<mem:qvalue>0.00192</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+<matched-element start="45980" stop="45993" score="15.0667" pvalue="2.21e-07">
+<sequence>UUAAUAAAAUAAAA</sequence>
+<mem:qvalue>0.00192</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+<matched-element start="322994" stop="323007" score="10.8857" pvalue="8.86e-05">
+<sequence>UAAAUAAAAAUAAU</sequence>
+<mem:qvalue>0.129</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+<matched-element start="372566" stop="372579" score="10.781" pvalue="9.7e-05">
+<sequence>UUGAUAAUAUUAAA</sequence>
+<mem:qvalue>0.129</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+<matched-element start="961384" stop="961397" score="13.2952" pvalue="7.89e-06">
+<sequence>UUAAUAAUAAAAAA</sequence>
+<mem:qvalue>0.0195</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<scanned-sequence accession="sacCer3_chrIV" name="sacCer3_chrIV">
+</scanned-sequence>
+<mem:has-qvalues>yes</mem:has-qvalues>
+</pattern>
+</cis-element-search>

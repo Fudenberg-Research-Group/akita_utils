@@ -1,0 +1,15 @@
+##gff-version 3
+sacCer3_chrI	fimo	nucleotide_motif	142354	142362	42.5	+	.	Name=3-UUUUUCUCU_sacCer3_chrI+;Alias=STREME-3;ID=3-UUUUUCUCU-STREME-3-1-sacCer3_chrI;pvalue=5.6e-05;qvalue=0.084;sequence=UUUUUCGCU;
+sacCer3_chrII	fimo	nucleotide_motif	333937	333945	 46	+	.	Name=3-UUUUUCUCU_sacCer3_chrII+;Alias=STREME-3;ID=3-UUUUUCUCU-STREME-3-1-sacCer3_chrII;pvalue=2.5e-05;qvalue=0.0693;sequence=UUUUUCUCU;
+sacCer3_chrII	fimo	nucleotide_motif	453281	453289	 46	+	.	Name=3-UUUUUCUCU_sacCer3_chrII+;Alias=STREME-3;ID=3-UUUUUCUCU-STREME-3-1-sacCer3_chrII;pvalue=2.5e-05;qvalue=0.0693;sequence=UUUUUCUCU;
+sacCer3_chrII	fimo	nucleotide_motif	536313	536321	43.3	+	.	Name=3-UUUUUCUCU_sacCer3_chrII+;Alias=STREME-3;ID=3-UUUUUCUCU-STREME-3-1-sacCer3_chrII;pvalue=4.63e-05;qvalue=0.0758;sequence=UUUUCCUCU;
+sacCer3_chrII	fimo	nucleotide_motif	556373	556381	 46	+	.	Name=3-UUUUUCUCU_sacCer3_chrII+;Alias=STREME-3;ID=3-UUUUUCUCU-STREME-3-1-sacCer3_chrII;pvalue=2.5e-05;qvalue=0.0693;sequence=UUUUUCUCU;
+sacCer3_chrII	fimo	nucleotide_motif	110028	110036	41.1	+	.	Name=3-UUUUUCUCU_sacCer3_chrII+;Alias=STREME-3;ID=3-UUUUUCUCU-STREME-3-1-sacCer3_chrII;pvalue=7.68e-05;qvalue=0.0987;sequence=UUUUUCUGU;
+sacCer3_chrII	fimo	nucleotide_motif	110494	110502	41.1	+	.	Name=3-UUUUUCUCU_sacCer3_chrII+;Alias=STREME-3;ID=3-UUUUUCUCU-STREME-3-1-sacCer3_chrII;pvalue=7.68e-05;qvalue=0.0987;sequence=UUUUUCUGU;
+sacCer3_chrII	fimo	nucleotide_motif	488779	488787	44.6	+	.	Name=3-UUUUUCUCU_sacCer3_chrII+;Alias=STREME-3;ID=3-UUUUUCUCU-STREME-3-1-sacCer3_chrII;pvalue=3.47e-05;qvalue=0.0693;sequence=GUUUUCUCU;
+sacCer3_chrIII	fimo	nucleotide_motif	163309	163317	 46	+	.	Name=3-UUUUUCUCU_sacCer3_chrIII+;Alias=STREME-3;ID=3-UUUUUCUCU-STREME-3-1-sacCer3_chrIII;pvalue=2.5e-05;qvalue=0.0693;sequence=UUUUUCUCU;
+sacCer3_chrIV	fimo	nucleotide_motif	45958	45966	44.6	+	.	Name=3-UUUUUCUCU_sacCer3_chrIV+;Alias=STREME-3;ID=3-UUUUUCUCU-STREME-3-1-sacCer3_chrIV;pvalue=3.47e-05;qvalue=0.0693;sequence=GUUUUCUCU;
+sacCer3_chrIV	fimo	nucleotide_motif	45958	45966	44.6	+	.	Name=3-UUUUUCUCU_sacCer3_chrIV+;Alias=STREME-3;ID=3-UUUUUCUCU-STREME-3-1-sacCer3_chrIV;pvalue=3.47e-05;qvalue=0.0693;sequence=GUUUUCUCU;
+sacCer3_chrIV	fimo	nucleotide_motif	371860	371868	43.3	+	.	Name=3-UUUUUCUCU_sacCer3_chrIV+;Alias=STREME-3;ID=3-UUUUUCUCU-STREME-3-1-sacCer3_chrIV;pvalue=4.63e-05;qvalue=0.0758;sequence=UUUUCCUCU;
+sacCer3_chrIV	fimo	nucleotide_motif	911346	911354	 46	+	.	Name=3-UUUUUCUCU_sacCer3_chrIV+;Alias=STREME-3;ID=3-UUUUUCUCU-STREME-3-1-sacCer3_chrIV;pvalue=2.5e-05;qvalue=0.0693;sequence=UUUUUCUCU;
+sacCer3_chrIV	fimo	nucleotide_motif	911357	911365	 46	+	.	Name=3-UUUUUCUCU_sacCer3_chrIV+;Alias=STREME-3;ID=3-UUUUUCUCU-STREME-3-2-sacCer3_chrIV;pvalue=2.5e-05;qvalue=0.0693;sequence=UUUUUCUCU;

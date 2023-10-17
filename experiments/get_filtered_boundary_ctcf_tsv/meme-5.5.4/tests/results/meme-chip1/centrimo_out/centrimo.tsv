@@ -1,0 +1,16 @@
+db_index	motif_id	motif_alt_id	consensus	E-value	adj_p-value	log_adj_p-value	bin_location	bin_width	total_width	sites_in_bin	total_sites	p_success	p-value	mult_tests
+   2	1-WGGGYGTG	STREME-1	WGGGYGTG	1.8e-9	   8.6e-12	         -25.48	         0.0	     65.0	        493	          38	         76	  0.13185	3.5e-14	       246
+   3	MA0039.2	Klf4	DGGGYGKGGC	1.9e-6	   9.1e-9	         -18.51	         0.0	     69.0	        491	          36	         81	  0.14053	3.7e-11	       245
+   1	WGGGTGTGGY	MEME-1	WGGGTGTGGY	6.1e-6	   2.9e-8	         -17.36	         0.0	     63.0	        491	          29	         63	  0.12831	1.2e-10	       245
+   3	MA0493.1	Klf1	RRCCACACCCW	6.8e-6	   3.2e-8	         -17.26	         0.0	     68.0	        490	          32	         70	  0.13878	1.3e-10	       244
+   3	MA0599.1	KLF5	GCCCCDCCCH	7.0e-5	   3.3e-7	         -14.93	         0.0	     39.0	        491	          24	         74	  0.07943	1.3e-9	       245
+   3	MA0140.2	TAL1::GATA1	MTTATCWSNNNNNHVCAG	1.9e-2	   9.0e-5	          -9.32	         0.0	    133.0	        483	          31	         50	  0.27536	3.7e-7	       241
+   3	MA0079.3	SP1	GCCCCKCCCCC	2.1e-2	   9.8e-5	          -9.23	         0.0	    110.0	        490	          30	         56	  0.22449	4.0e-7	       244
+   3	MA0035.3	Gata1	TYCTTATCTSY	2.9e-2	   1.4e-4	          -8.89	         0.0	    184.0	        490	          40	         56	  0.37551	5.7e-7	       244
+   3	MA0036.2	GATA2	WRDTTCTTATCTSH	3.3e-2	   1.6e-4	          -8.76	         0.0	    179.0	        487	          40	         58	  0.36756	6.4e-7	       243
+   1	GYAGGGGYGGRKCTG	MEME-2	GYAGGGGYGGRKCTG	1.3e-1	   6.0e-4	          -7.41	         0.0	     64.0	        486	          12	         21	  0.13169	2.5e-6	       242
+   3	MA0037.2	GATA3	AGATAAGA	6.8e0	   3.2e-2	          -3.44	         0.0	    221.0	        493	          23	         28	  0.44828	1.3e-4	       246
+
+# CentriMo (Local Motif Enrichment Analysis): Version 5.5.4 compiled on Oct  3 2023 at 16:32:16
+# The format of this file is described at https://meme-suite.org/meme/doc/centrimo-output-format.html.
+# centrimo -seqlen 500 -verbosity 1 -oc results/meme-chip1/centrimo_out -bfile results/meme-chip1/background results/meme-chip1/Klf1.100.fa results/meme-chip1/meme_out/meme.xml results/meme-chip1/streme_out/streme.xml meme-chip/JASPAR_CORE_2014_vertebrates.meme

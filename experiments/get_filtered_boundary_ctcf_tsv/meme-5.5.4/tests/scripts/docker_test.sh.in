@@ -1,0 +1,66 @@
+#!@DOCKER_SHELL@
+#!/usr/bin/sh
+
+echo "Run Docker from directory meme_git containing directory meme."
+echo "Run docker_test from within the Docker Container in directory ~/meme/tests/scripts."
+
+# set higher for debugging
+first=1
+
+i=0
+for fn in $(ls -1 *.test); do 
+  # remove extension
+  pgm=${fn%.*}
+
+  # obsolete programs
+  if [[ "$pgm" == "clustalw2fasta" || "$pgm" == "fasta-io" || "$fn" == "mhmm"* || "$pgm" == "shadow" ]]; then
+    continue
+  fi
+
+  # announce program
+  i=$((i+1));
+  echo "$i $fn $pgm";
+
+  # for quicker debugging
+  if (( $i < first )) ; then 
+    continue
+  fi
+
+  # name mismatch problem
+  if [ "$pgm" = "create_priors" ]; then 
+    pgm="create-priors" 
+  fi
+  if [ "$pgm" = "pspgen" ]; then 
+    pgm="psp-gen" 
+  fi
+
+  # libexec problems
+  if ! [[ -f "@DOCKER_BIN@/$pgm" || -h "@DOCKER_BIN@/$pgm" ]] ; then
+    ln -s @DOCKER_LIBEXEC@/$pgm @DOCKER_BIN@
+  fi
+
+  # add getsize to bin; needed by meme-chip and xstreme
+  if ! [ -f "@DOCKER_BIN@/getsize" ] ; then 
+    ln -s @DOCKER_LIBEXEC@/getsize @DOCKER_BIN@
+  fi
+
+  # add meme2images to bin; needed by motif-in test
+  if ! [ -f "@DOCKER_BIN@/meme2images" ] ; then 
+    ln -s @DOCKER_LIBEXEC@/meme2images @DOCKER_BIN@
+  fi
+
+  # add "src" subdir link in DOCKER_BIN, pointing at DOCKER_BIN
+  # needed by motif-in test
+  if ! [ -h "@DOCKER_BIN@/src" ] ; then 
+    ln -s @DOCKER_BIN@ @DOCKER_BIN@/src
+  fi
+
+  # run test!
+  if [ "$pgm" = "motif-in" ]; then
+    # skip comprehensive for motif-in.test
+    ./docker_test_driver $fn
+  else
+   ./docker_test_driver --comprehensive $fn
+  fi
+
+done

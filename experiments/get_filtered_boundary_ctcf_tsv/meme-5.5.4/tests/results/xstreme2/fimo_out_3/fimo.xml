@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Begin document body -->
+<fimo version="5.5.4" release="Fri Jun 16 12:19:08 2023 -0700">
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation=  xmlns:fimo="http://noble.gs.washington.edu/schema/fimo"
+>
+<command-line>fimo --verbosity 1 --oc results/xstreme2/fimo_out_3 --bgfile results/xstreme2/background --motif EDFDRVIDVNLTGVF results/xstreme2/meme_out/meme.xml common/adh.s</command-line>
+<settings>
+<setting name="output directory">results/xstreme2/fimo_out_3</setting>
+<setting name="MEME file name">results/xstreme2/meme_out/meme.xml</setting>
+<setting name="sequence file name">common/adh.s</setting>
+<setting name="background file name">results/xstreme2/background</setting>
+<setting name="allow clobber">true</setting>
+<setting name="compute q-values">true</setting>
+<setting name="parse genomic coord.">true</setting>
+<setting name="text only">false</setting>
+<setting name="scan both strands">false</setting>
+<setting name="output threshold">0.0001</setting>
+<setting name="threshold type">p-value</setting>
+<setting name="max stored scores">100000</setting>
+<setting name="pseudocount">0.1</setting>
+<setting name="verbosity">1</setting>
+<setting name="selected motif">EDFDRVIDVNLTGVF</setting>
+</settings>
+<sequence-data num-sequences="33" num-residues="9996" />
+<alphabet name="Protein" like="protein">
+<letter id="A" symbol="A" name="Alanine" colour="0000CC"/>
+<letter id="C" symbol="C" name="Cysteine" colour="0000CC"/>
+<letter id="D" symbol="D" name="Aspartic acid" colour="FF00FF"/>
+<letter id="E" symbol="E" name="Glutamic acid" colour="FF00FF"/>
+<letter id="F" symbol="F" name="Phenylalanine" colour="0000CC"/>
+<letter id="G" symbol="G" name="Glycine" colour="FFB300"/>
+<letter id="H" symbol="H" name="Histidine" colour="FFCCCC"/>
+<letter id="I" symbol="I" name="Isoleucine" colour="0000CC"/>
+<letter id="K" symbol="K" name="Lysine" colour="CC0000"/>
+<letter id="L" symbol="L" name="Leucine" colour="0000CC"/>
+<letter id="M" symbol="M" name="Methionine" colour="0000CC"/>
+<letter id="N" symbol="N" name="Asparagine" colour="008000"/>
+<letter id="P" symbol="P" name="Proline" colour="FFFF00"/>
+<letter id="Q" symbol="Q" name="Glutamine" colour="008000"/>
+<letter id="R" symbol="R" name="Arginine" colour="CC0000"/>
+<letter id="S" symbol="S" name="Serine" colour="008000"/>
+<letter id="T" symbol="T" name="Threonine" colour="008000"/>
+<letter id="V" symbol="V" name="Valine" colour="0000CC"/>
+<letter id="W" symbol="W" name="Tryptophan" colour="0000CC"/>
+<letter id="Y" symbol="Y" name="Tyrosine" colour="33E6CC"/>
+<letter id="X" symbol="X" aliases="*." equals="ACDEFGHIKLMNPQRSTVWY" name="Any amino acid"/>
+<letter id="B" symbol="B" equals="DN" name="Asparagine or Aspartic acid"/>
+<letter id="Z" symbol="Z" equals="EQ" name="Glutamine or Glutamic acid"/>
+<letter id="J" symbol="J" equals="IL" name="Leucine or Isoleucine"/>
+</alphabet>
+<motif name="KVALVTGAASGIGKA" alt="MEME-1" width="15" best-possible-match="KVALVTGAASGIGKA"/>
+<motif name="YSASKAAVRGLTRSL" alt="MEME-2" width="15" best-possible-match="YSASKAAVRGLTRSL"/>
+<motif name="LGRLDVLVNNAGI" alt="MEME-3" width="13" best-possible-match="LGGLDVLVNNAGI"/>
+<motif name="RRKSGRIVNVSSVAG" alt="MEME-4" width="15" best-possible-match="RRKSGRIVNVSSVAG"/>
+<motif name="TGIRVNSVAPG" alt="MEME-5" width="11" best-possible-match="TGIRVNSVAPG"/>
+<motif name="EDFDRVIDVNLTGVF" alt="MEME-6" width="15" best-possible-match="EDFDRVIDVNLTGVF"/>
+<motif name="FLASDLASYITGQTI" alt="MEME-7" width="15" best-possible-match="FLASDLASYVTGQTI"/>
+<motif name="IPJRRIGEPEEVAN" alt="MEME-8" width="14" best-possible-match="IPLRRIGTPEEVAN"/>
+<motif name="AKALAEAGAKVVVAD" alt="MEME-9" width="15" best-possible-match="AKALAAAGAKVVVAD"/>
+<background source="results/xstreme2/background">
+<value letter="A">0.111</value>
+<value letter="C">0.012</value>
+<value letter="D">0.050</value>
+<value letter="E">0.055</value>
+<value letter="F">0.036</value>
+<value letter="G">0.090</value>
+<value letter="H">0.018</value>
+<value letter="I">0.057</value>
+<value letter="K">0.052</value>
+<value letter="L">0.092</value>
+<value letter="M">0.027</value>
+<value letter="N">0.041</value>
+<value letter="P">0.041</value>
+<value letter="Q">0.029</value>
+<value letter="R">0.049</value>
+<value letter="S">0.064</value>
+<value letter="T">0.057</value>
+<value letter="V">0.083</value>
+<value letter="W">0.010</value>
+<value letter="Y">0.027</value>
+</background>
+<cisml-file>cisml.xml</cisml-file>
+</fimo>

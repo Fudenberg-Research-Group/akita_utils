@@ -1,0 +1,4 @@
+# <db_root>,<prot?>,<nuc?>,<short_seqs?>,<db_menu_name>,<db_long_name>,<protein_url>,<nuc_url>
+,,,no,----Other Genomes----,,,
+
+lotus_japonicus,no,yes,no,Lotus Japonicus Gifu v1.2 assembly,Genome of L. japonicus from Gifu v1.2 <a href="https://lotus.au.dk/data/download">LOTUS Base</a>. We have stripped the text "LjG1.1_" from in front of the chromosome names.,,https://meme-suite.org/meme/meme-software/Databases/OTHER_GENOMES/Lotusjaponicus_Gifu_v1.2_genome.ucsd.fa.gz

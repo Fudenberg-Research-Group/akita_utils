@@ -1,0 +1,18 @@
+##gff-version 3
+ce1cg	fimo	nucleotide_motif	64	79	 54	+	.	Name=TGTGAYBYNKTTCACA_ce1cg+;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-ce1cg;pvalue=3.99e-06;qvalue=0.00119;sequence=TTTGATCGTTTTCACA;
+ara	fimo	nucleotide_motif	58	73	62.4	-	.	Name=TGTGAYBYNKTTCACA_ara-;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-ara;pvalue=5.72e-07;qvalue=0.00119;sequence=TGTGACGCCGTGCAAA;
+bglr1	fimo	nucleotide_motif	79	94	52.3	-	.	Name=TGTGAYBYNKTTCACA_bglr1-;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-bglr1;pvalue=5.86e-06;qvalue=0.00134;sequence=TATGACCATGCTCACA;
+crp	fimo	nucleotide_motif	66	81	53.6	-	.	Name=TGTGAYBYNKTTCACA_crp-;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-crp;pvalue=4.33e-06;qvalue=0.00119;sequence=TGTGACGTCCTTTGCA;
+cya	fimo	nucleotide_motif	53	68	50.7	-	.	Name=TGTGAYBYNKTTCACA_cya-;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-cya;pvalue=8.53e-06;qvalue=0.00182;sequence=CGTGATCAATTTAACA;
+deop2	fimo	nucleotide_motif	10	25	55.8	-	.	Name=TGTGAYBYNKTTCACA_deop2-;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-deop2;pvalue=2.65e-06;qvalue=0.00119;sequence=TGCGATCTGGTTCAAA;
+gale	fimo	nucleotide_motif	54	69	 48	+	.	Name=TGTGAYBYNKTTCACA_gale+;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-gale;pvalue=1.59e-05;qvalue=0.00318;sequence=TGTCACACTTTTCGCA;
+lac	fimo	nucleotide_motif	12	27	53.1	+	.	Name=TGTGAYBYNKTTCACA_lac+;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-lac;pvalue=4.85e-06;qvalue=0.00119;sequence=TGTGAGTTAGCTCACT;
+male	fimo	nucleotide_motif	17	32	53.4	-	.	Name=TGTGAYBYNKTTCACA_male-;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-male;pvalue=4.6e-06;qvalue=0.00119;sequence=TGTGATCTCTGTTACA;
+malk	fimo	nucleotide_motif	64	79	53.8	+	.	Name=TGTGAYBYNKTTCACA_malk+;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-malk;pvalue=4.18e-06;qvalue=0.00119;sequence=CGTGATGTTGCTTGCA;
+malt	fimo	nucleotide_motif	44	59	 55	+	.	Name=TGTGAYBYNKTTCACA_malt+;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-malt;pvalue=3.12e-06;qvalue=0.00119;sequence=TGTGACACAGTGCAAA;
+ompa	fimo	nucleotide_motif	51	66	57.8	+	.	Name=TGTGAYBYNKTTCACA_ompa+;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-ompa;pvalue=1.65e-06;qvalue=0.00119;sequence=CCTGACGGAGTTCACA;
+tnaa	fimo	nucleotide_motif	74	89	58.6	+	.	Name=TGTGAYBYNKTTCACA_tnaa+;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-tnaa;pvalue=1.37e-06;qvalue=0.00119;sequence=TGTGATTCGATTCACA;
+uxu1	fimo	nucleotide_motif	20	35	55.9	+	.	Name=TGTGAYBYNKTTCACA_uxu1+;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-uxu1;pvalue=2.57e-06;qvalue=0.00119;sequence=TGTGATGTGGTTAACC;
+pbr322	fimo	nucleotide_motif	56	71	59.3	-	.	Name=TGTGAYBYNKTTCACA_pbr322-;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-pbr322;pvalue=1.16e-06;qvalue=0.00119;sequence=TGTGCGGTATTTCACA;
+tdc	fimo	nucleotide_motif	81	96	56.1	+	.	Name=TGTGAYBYNKTTCACA_tdc+;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-1-tdc;pvalue=2.46e-06;qvalue=0.00119;sequence=TGTGAGTGGTCGCACA;
+tdc	fimo	nucleotide_motif	81	96	43.2	-	.	Name=TGTGAYBYNKTTCACA_tdc-;Alias=MEME-1;ID=TGTGAYBYNKTTCACA-MEME-1-2-tdc;pvalue=4.79e-05;qvalue=0.00902;sequence=TGTGCGACCACTCACA;

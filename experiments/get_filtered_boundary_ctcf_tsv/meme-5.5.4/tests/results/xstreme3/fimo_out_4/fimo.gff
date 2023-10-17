@@ -1,0 +1,6 @@
+##gff-version 3
+sacCer3_chrI	fimo	nucleotide_motif	139584	139590	43.8	+	.	Name=4-GAUGACA_sacCer3_chrI+;Alias=STREME-4;ID=4-GAUGACA-STREME-4-1-sacCer3_chrI;pvalue=4.21e-05;qvalue=0.335;sequence=GAUGACA;
+sacCer3_chrII	fimo	nucleotide_motif	452726	452732	40.5	+	.	Name=4-GAUGACA_sacCer3_chrII+;Alias=STREME-4;ID=4-GAUGACA-STREME-4-1-sacCer3_chrII;pvalue=8.91e-05;qvalue=0.335;sequence=GAGGACC;
+sacCer3_chrII	fimo	nucleotide_motif	376523	376529	40.9	+	.	Name=4-GAUGACA_sacCer3_chrII+;Alias=STREME-4;ID=4-GAUGACA-STREME-4-1-sacCer3_chrII;pvalue=8.05e-05;qvalue=0.335;sequence=GAUGACC;
+sacCer3_chrII	fimo	nucleotide_motif	770290	770296	43.8	+	.	Name=4-GAUGACA_sacCer3_chrII+;Alias=STREME-4;ID=4-GAUGACA-STREME-4-1-sacCer3_chrII;pvalue=4.21e-05;qvalue=0.335;sequence=GAUGACA;
+sacCer3_chrIII	fimo	nucleotide_motif	240032	240038	40.9	+	.	Name=4-GAUGACA_sacCer3_chrIII+;Alias=STREME-4;ID=4-GAUGACA-STREME-4-1-sacCer3_chrIII;pvalue=8.05e-05;qvalue=0.335;sequence=GAUGACC;

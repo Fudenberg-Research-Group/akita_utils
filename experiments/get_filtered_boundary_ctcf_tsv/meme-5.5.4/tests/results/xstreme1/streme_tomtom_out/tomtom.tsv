@@ -1,0 +1,9 @@
+Query_ID	Target_ID	Optimal_offset	p-value	E-value	q-value	Overlap	Query_consensus	Target_consensus	Orientation
+1-KTGTGAYRCVGWDCAMA	MA0067.1	0	0.00222175	0.45546	0.910919	8	TTGTGACACAGTTCAAA	CCGTGACT	-
+2-GAKCAWVSTCWYWTTTT	MA0068.1	12	0.00117132	0.240121	0.480242	17	GATCAACGTCACATTTT	GGGGGGGGAGTGGAGTATTGGAAATTTTTC	-
+2-GAKCAWVSTCWYWTTTT	MA0112.2	1	0.0036767	0.753723	0.753723	17	GATCAACGTCACATTTT	AGGTCAGGGTGACCTGGGCC	-
+3-TWTRAAAWAASCATWKMATA	MA0041.1	-4	0.000875464	0.17947	0.35894	12	TTTAAAATAAGCATTTAATA	AAACAAACATTC	-
+
+# Tomtom (Motif Comparison Tool): Version 5.5.4 compiled on Oct  3 2023 at 16:32:33
+# The format of this file is described at https://meme-suite.org/meme/doc/tomtom-output-format.html.
+# tomtom -verbosity 1 -oc results/xstreme1/streme_tomtom_out -min-overlap 5 -dist ed -evalue -thresh 1 -no-ssc results/xstreme1/streme_out/streme.xml meme-chip/JASPAR_CORE_2014_vertebrates.meme

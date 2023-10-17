@@ -1,0 +1,10 @@
+Query_ID	Target_ID	Optimal_offset	p-value	E-value	q-value	Overlap	Query_consensus	Target_consensus	Orientation
+1-Sm1BCMDS	MA0140.1	10	0.0233564	0.490484	0.375972	8	Cm1GCAAG	CTTATCTGTCCCCACCAG	-
+1-Sm1BCMDS	TGCm1C	0	0.0278178	0.584174	0.375972	6	Cm1GCAAG	Gm1GCA	-
+1-Sm1BCMDS	GCm1C1	1	0.0358068	0.751944	0.375972	5	Cm1GCAAG	mGm1GC	-
+2-GCWGCWGC	GCAGCA	0	0.00808391	0.169762	0.169762	6	GCTGCAGC	GCAGCA	+
+2-GCWGCWGC	TGCmGC	-2	0.0282496	0.593242	0.296621	6	GCTGCAGC	TGCmGC	+
+
+# Tomtom (Motif Comparison Tool): Version 5.5.4 compiled on Oct  3 2023 at 16:32:33
+# The format of this file is described at https://meme-suite.org/meme/doc/tomtom-output-format.html.
+# tomtom -verbosity 1 -oc results/xstreme4/streme_tomtom_out -min-overlap 5 -dist ed -evalue -thresh 1 -no-ssc -xalph results/xstreme4/streme_out/streme.xml common/Jaspar-subset.meme common/dna_with_covalent.meme

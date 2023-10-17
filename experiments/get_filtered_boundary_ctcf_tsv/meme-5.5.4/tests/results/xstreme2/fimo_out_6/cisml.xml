@@ -1,0 +1,264 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<!-- Document definition -->
+<!-- http://zlab.bu.edu/~phaverty/SupplementalData/CisML/cisml.dtd -->
+<!DOCTYPE cis-element-search[
+<!ELEMENT cis-element-search (program-name, parameters, (pattern | multi-pattern-scan)*)>
+<!ELEMENT program-name (#PCDATA)>
+<!ELEMENT parameters (
+  pattern-file, 
+  sequence-file, 
+  background-seq-file?,
+  pattern-pvalue-cutoff?,
+  sequence-pvalue-cutoff?,
+  site-pvalue-cutoff?,
+  sequence-filtering,
+  ANY*
+ )>
+<!ELEMENT command-line (#PCDATA)>
+<!ELEMENT pattern-file (#PCDATA)>
+<!ELEMENT sequence-file (#PCDATA)>
+<!ELEMENT background-seq-file (#PCDATA)>
+<!ELEMENT pattern-pvalue-cutoff (#PCDATA)>
+<!ELEMENT sequence-pvalue-cutoff (#PCDATA)>
+<!ELEMENT site-pvalue-cutoff (#PCDATA)>
+<!ELEMENT sequence-filtering EMPTY>
+<!ELEMENT multi-pattern-scan (pattern+, ANY*)>
+<!ELEMENT pattern (scanned-sequence+, ANY*)>
+<!ELEMENT scanned-sequence (matched-element*, ANY*)>
+<!ELEMENT matched-element (sequence)>
+<!ELEMENT sequence (#PCDATA)>
+<!ATTLIST cis-element-search
+xmlns:xsi CDATA #IMPLIED
+xmlns:mem CDATA #IMPLIED
+xsi:schemaLocation CDATA #IMPLIED
+>
+<!ATTLIST sequence-filtering
+on-off CDATA #REQUIRED
+type CDATA #IMPLIED
+>
+<!ATTLIST multi-pattern-scan
+score CDATA #IMPLIED
+pvalue CDATA #IMPLIED
+>
+<!ATTLIST pattern
+accession CDATA #REQUIRED
+name CDATA #REQUIRED
+pvalue CDATA #IMPLIED
+score CDATA #IMPLIED
+db CDATA #IMPLIED
+lsid CDATA #IMPLIED
+>
+<!ATTLIST scanned-sequence
+accession CDATA #REQUIRED
+name CDATA #REQUIRED
+score CDATA #IMPLIED
+pvalue CDATA #IMPLIED
+length CDATA #IMPLIED
+db CDATA #IMPLIED
+lsid CDATA #IMPLIED
+>
+<!ATTLIST matched-element
+start CDATA #REQUIRED
+stop CDATA #REQUIRED
+score CDATA #IMPLIED
+pvalue CDATA #IMPLIED
+clusterid CDATA #IMPLIED
+>
+
+]>
+<cis-element-search
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://zlab.bu.edu/schema/cisml cisml.xsd"
+  xmlns="http://zlab.bu.edu/schema/cisml"
+  xmlns:mem="http://noble.gs.washington.edu/meme"
+>
+<program-name>fimo</program-name>
+<parameters>
+<command-line>fimo --verbosity 1 --oc results/xstreme2/fimo_out_6 --bgfile results/xstreme2/background --motif TGIRVNSVAPG results/xstreme2/meme_out/meme.xml common/adh.s</command-line>
+<pattern-file>results/xstreme2/meme_out/meme.xml</pattern-file>
+<sequence-file>common/adh.s</sequence-file>
+<site-pvalue-cutoff>0.0001</site-pvalue-cutoff>
+<sequence-filtering on-off="off"/>
+</parameters>
+<pattern accession="TGIRVNSVAPG" name="MEME-5">
+<scanned-sequence accession="2BHD_STREX" name="2BHD_STREX">
+<matched-element start="173" stop="183" score="28.7" pvalue="1.43e-10">
+<sequence>DRIRVNSVHPG</sequence>
+<mem:qvalue>3.95e-07</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="3BHD_COMTE" name="3BHD_COMTE">
+<matched-element start="174" stop="184" score="26.1125" pvalue="1.52e-09">
+<sequence>YAIRVNSIHPD</sequence>
+<mem:qvalue>1.46e-06</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="ADH_DROME" name="ADH_DROME">
+<matched-element start="173" stop="183" score="18.1375" pvalue="2.29e-07">
+<sequence>TGVTAYTVNPG</sequence>
+<mem:qvalue>8.82e-05</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="AP27_MOUSE" name="AP27_MOUSE">
+<matched-element start="170" stop="180" score="26.9375" pvalue="7.52e-10">
+<sequence>HKIRVNSVNPT</sequence>
+<mem:qvalue>9.04e-07</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="BA72_EUBSP" name="BA72_EUBSP">
+<matched-element start="178" stop="188" score="25.225" pvalue="3.09e-09">
+<sequence>KNIRVVGVAPG</sequence>
+<mem:qvalue>2.48e-06</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="BDH_HUMAN" name="BDH_HUMAN">
+<matched-element start="229" stop="239" score="20.0875" pvalue="8.48e-08">
+<sequence>LGVKVSVVEPG</sequence>
+<mem:qvalue>3.88e-05</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="BPHB_PSEPS" name="BPHB_PSEPS">
+<matched-element start="173" stop="183" score="24.4875" pvalue="5.37e-09">
+<sequence>PYVRVNGVGPG</sequence>
+<mem:qvalue>3.97e-06</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="BUDC_KLETE" name="BUDC_KLETE">
+<matched-element start="173" stop="183" score="27.0375" pvalue="6.9e-10">
+<sequence>LGITVNGFCPG</sequence>
+<mem:qvalue>9.04e-07</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="DHES_HUMAN" name="DHES_HUMAN">
+</scanned-sequence>
+<scanned-sequence accession="DHGB_BACME" name="DHGB_BACME">
+<matched-element start="181" stop="191" score="28.5125" pvalue="1.72e-10">
+<sequence>KGIRVNNIGPG</sequence>
+<mem:qvalue>3.95e-07</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="DHII_HUMAN" name="DHII_HUMAN">
+</scanned-sequence>
+<scanned-sequence accession="DHMA_FLAS1" name="DHMA_FLAS1">
+<matched-element start="186" stop="196" score="17.7" pvalue="2.83e-07">
+<sequence>HGILVNMIAPG</sequence>
+<mem:qvalue>0.000105</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="ENTA_ECOLI" name="ENTA_ECOLI">
+<matched-element start="165" stop="175" score="23.55" pvalue="1.04e-08">
+<sequence>SGVRCNVVSPG</sequence>
+<mem:qvalue>7.15e-06</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="FIXR_BRAJA" name="FIXR_BRAJA">
+<matched-element start="210" stop="220" score="31.3125" pvalue="5.85e-12">
+<sequence>HGIRVNAIAPG</sequence>
+<mem:qvalue>5.62e-08</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="GUTD_ECOLI" name="GUTD_ECOLI">
+<matched-element start="175" stop="185" score="19.7" pvalue="1.04e-07">
+<sequence>YGITVHSLMLG</sequence>
+<mem:qvalue>4.36e-05</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="HDE_CANTR" name="HDE_CANTR">
+<matched-element start="488" stop="498" score="22.8625" pvalue="1.64e-08">
+<sequence>NNIKVNIVAPH</sequence>
+<mem:qvalue>1.05e-05</mem:qvalue>
+</matched-element>
+<matched-element start="184" stop="194" score="13.0375" pvalue="2.08e-06">
+<sequence>YNIKANAIAPL</sequence>
+<mem:qvalue>0.00074</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="HDHA_ECOLI" name="HDHA_ECOLI">
+<matched-element start="180" stop="190" score="30.15" pvalue="2.82e-11">
+<sequence>KNIRVNGIAPG</sequence>
+<mem:qvalue>1.36e-07</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="LIGD_PSEPA" name="LIGD_PSEPA">
+<matched-element start="178" stop="188" score="19.5375" pvalue="1.14e-07">
+<sequence>YGIGVSVCTPA</sequence>
+<mem:qvalue>4.55e-05</mem:qvalue>
+</matched-element>
+<matched-element start="53" stop="63" score="2.2125" pvalue="8.51e-05">
+<sequence>LGITAHGIVLD</sequence>
+<mem:qvalue>0.0292</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="NODG_RHIME" name="NODG_RHIME">
+<matched-element start="173" stop="183" score="28.3375" pvalue="2.05e-10">
+<sequence>RNITVNCVAPG</sequence>
+<mem:qvalue>3.95e-07</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="RIDH_KLEAE" name="RIDH_KLEAE">
+<matched-element start="181" stop="191" score="22.175" pvalue="2.54e-08">
+<sequence>YGVRVGAVLPG</sequence>
+<mem:qvalue>1.44e-05</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="YINL_LISMO" name="YINL_LISMO">
+<matched-element start="177" stop="187" score="20.1" pvalue="8.43e-08">
+<sequence>TNIRTATIYPA</sequence>
+<mem:qvalue>3.88e-05</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="YRTP_BACSU" name="YRTP_BACSU">
+<matched-element start="176" stop="186" score="22.2875" pvalue="2.37e-08">
+<sequence>HNIRVSALTPS</sequence>
+<mem:qvalue>1.42e-05</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="CSGA_MYXXA" name="CSGA_MYXXA">
+</scanned-sequence>
+<scanned-sequence accession="DHB2_HUMAN" name="DHB2_HUMAN">
+<matched-element start="253" stop="263" score="25.25" pvalue="3.03e-09">
+<sequence>WGIKVASIQPG</sequence>
+<mem:qvalue>2.48e-06</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="DHB3_HUMAN" name="DHB3_HUMAN">
+</scanned-sequence>
+<scanned-sequence accession="DHCA_HUMAN" name="DHCA_HUMAN">
+<matched-element start="218" stop="228" score="20.25" pvalue="7.77e-08">
+<sequence>DKILLNACCPG</sequence>
+<mem:qvalue>3.88e-05</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="FABI_ECOLI" name="FABI_ECOLI">
+<matched-element start="180" stop="190" score="19.7375" pvalue="1.02e-07">
+<sequence>EGVRVNAISAG</sequence>
+<mem:qvalue>4.36e-05</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="FVT1_HUMAN" name="FVT1_HUMAN">
+</scanned-sequence>
+<scanned-sequence accession="HMTR_LEIMA" name="HMTR_LEIMA">
+<matched-element start="214" stop="224" score="26.675" pvalue="9.45e-10">
+<sequence>LQIRVNGVGPG</sequence>
+<mem:qvalue>1.01e-06</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="MAS1_AGRRA" name="MAS1_AGRRA">
+</scanned-sequence>
+<scanned-sequence accession="PCR_PEA" name="PCR_PEA">
+<matched-element start="296" stop="306" score="21.7875" pvalue="3.22e-08">
+<sequence>TGITFASLYPG</sequence>
+<mem:qvalue>1.72e-05</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<scanned-sequence accession="RFBB_NEIGO" name="RFBB_NEIGO">
+</scanned-sequence>
+<scanned-sequence accession="YURA_MYXXA" name="YURA_MYXXA">
+<matched-element start="181" stop="191" score="27.075" pvalue="6.68e-10">
+<sequence>TGVRVTCIYPG</sequence>
+<mem:qvalue>9.04e-07</mem:qvalue>
+</matched-element>
+</scanned-sequence>
+<mem:has-qvalues>yes</mem:has-qvalues>
+</pattern>
+</cis-element-search>

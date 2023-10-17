@@ -1,0 +1,10 @@
+RANK	DB	ID	ALT_ID	CONSENSUS	TP	TP%	FP	FP%	ENR_RATIO	SCORE_THR	PVALUE	LOG_PVALUE	EVALUE	LOG_EVALUE	QVALUE	LOG_QVALUE
+1	results/xstreme3/meme_out/meme.xml	UHWWCHUGUAAAUA	MEME-1	UHWWCHUGUAAAUA	54	30.00	9	5.00	5.5	8.9	1.06e-10	-22.97	5.29e-10	-21.36	3.84e-10	-21.68
+2	results/xstreme3/streme_out/streme.xml	1-CHUGUAAAUAWW	STREME-1	CHUGUAAAUAWW	59	32.78	12	6.67	4.62	8.3	1.54e-10	-22.60	7.68e-10	-20.99	3.84e-10	-21.68
+3	results/xstreme3/streme_out/streme.xml	2-UUAAUAAAAWWAAW	STREME-2	UUAAUAAAAWWAAW	59	32.78	27	15.00	2.14	5	5.59e-5	-9.79	2.79e-4	-8.18	9.32e-5	-9.28
+4	results/xstreme3/streme_out/streme.xml	3-UUUUUCUCU	STREME-3	UUUUUCUCU	12	6.67	0	0.00	13	10	2.02e-4	-8.51	1.01e-3	-6.90	2.53e-4	-8.28
+5	results/xstreme3/streme_out/streme.xml	4-GAUGACA	STREME-4	GAUGACA	97	53.89	106	58.89	0.916	2.1	8.56e-1	-0.16	4.28e0	1.45	8.56e-1	-0.16
+
+# SEA (Simple Enrichment Analysis): Version 5.5.4 compiled on Oct  3 2023 at 16:32:27
+# The format of this file is described at https://meme-suite.org/meme/doc/sea-output-format.html.
+# sea --verbosity 1 --oc results/xstreme3/sea_out --qvalue --thresh 1 --order 2 --bfile results/xstreme3/background --seed 0 --align center --motif-pseudo 0.01 --noseqs --m results/xstreme3/meme_out/meme.xml --m results/xstreme3/streme_out/streme.xml --p common/Puf3p-200.s

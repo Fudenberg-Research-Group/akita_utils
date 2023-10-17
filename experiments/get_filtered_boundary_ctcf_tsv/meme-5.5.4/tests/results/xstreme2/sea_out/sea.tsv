@@ -1,0 +1,19 @@
+RANK	DB	ID	ALT_ID	CONSENSUS	TP	TP%	FP	FP%	ENR_RATIO	SCORE_THR	PVALUE	LOG_PVALUE	EVALUE	LOG_EVALUE	QVALUE	LOG_QVALUE
+1	results/xstreme2/streme_out/streme.xml	1-AYSASKAA	STREME-1	AYSASKAA	31	93.94	0	0.00	32	5.8	8.24e-17	-37.03	1.15e-15	-34.40	2.88e-16	-35.78
+2	results/xstreme2/meme_out/meme.xml	EDFDRVIDVNLTGVF	MEME-6	EDFDRVIDVNLTGVF	31	93.94	0	0.00	32	15	8.24e-17	-37.03	1.15e-15	-34.40	2.88e-16	-35.78
+3	results/xstreme2/meme_out/meme.xml	KVALVTGAASGIGKA	MEME-1	KVALVTGAASGJGKA	31	93.94	0	0.00	32	19	8.24e-17	-37.03	1.15e-15	-34.40	2.88e-16	-35.78
+4	results/xstreme2/meme_out/meme.xml	YSASKAAVRGLTRSL	MEME-2	YSASKAAVRGLTRSL	31	93.94	0	0.00	32	20	8.24e-17	-37.03	1.15e-15	-34.40	2.88e-16	-35.78
+5	results/xstreme2/streme_out/streme.xml	2-ALVTGAA	STREME-2	ALVTGAA	30	90.91	0	0.00	31	10	9.89e-16	-34.55	1.38e-14	-31.91	1.98e-15	-33.86
+6	results/xstreme2/streme_out/streme.xml	3-DVLVNNAGIL	STREME-3	DVLVNNAGIL	30	90.91	0	0.00	31	4.1	9.89e-16	-34.55	1.38e-14	-31.91	1.98e-15	-33.86
+7	results/xstreme2/meme_out/meme.xml	LGRLDVLVNNAGI	MEME-3	LGGLDVLVNNAGI	30	90.91	0	0.00	31	18	9.89e-16	-34.55	1.38e-14	-31.91	1.98e-15	-33.86
+8	results/xstreme2/streme_out/streme.xml	4-GRIVNVSS	STREME-4	GRIVNVSS	28	84.85	0	0.00	29	1.7	6.95e-14	-30.30	9.73e-13	-27.66	1.08e-13	-29.86
+9	results/xstreme2/meme_out/meme.xml	RRKSGRIVNVSSVAG	MEME-4	RRKSGRIVNVSSVAG	28	84.85	0	0.00	29	22	6.95e-14	-30.30	9.73e-13	-27.66	1.08e-13	-29.86
+10	results/xstreme2/meme_out/meme.xml	TGIRVNSVAPG	MEME-5	TGIRVNSVAPG	26	78.79	0	0.00	27	14	2.58e-12	-26.68	3.62e-11	-24.04	3.62e-12	-26.35
+11	results/xstreme2/streme_out/streme.xml	5-GIGKATAKAL	STREME-5	GIGKATAKAL	25	75.76	0	0.00	26	9.7	1.32e-11	-25.05	1.85e-10	-22.41	1.68e-11	-24.81
+12	results/xstreme2/meme_out/meme.xml	AKALAEAGAKVVVAD	MEME-9	AKALAAAGAKVVVAD	16	48.48	0	0.00	17	25	1.36e-6	-13.51	1.91e-5	-10.87	1.59e-6	-13.35
+13	results/xstreme2/meme_out/meme.xml	FLASDLASYITGQTI	MEME-7	FLASDLASYVTGQTI	13	39.39	0	0.00	14	30	2.80e-5	-10.48	3.92e-4	-7.84	3.02e-5	-10.41
+14	results/xstreme2/meme_out/meme.xml	IPJRRIGEPEEVAN	MEME-8	IPJRRIGTPZEVAN	10	30.30	0	0.00	11	30	4.39e-4	-7.73	6.14e-3	-5.09	4.39e-4	-7.73
+
+# SEA (Simple Enrichment Analysis): Version 5.5.4 compiled on Oct  3 2023 at 16:32:27
+# The format of this file is described at https://meme-suite.org/meme/doc/sea-output-format.html.
+# sea --verbosity 1 --oc results/xstreme2/sea_out --qvalue --thresh 1 --order 0 --bfile results/xstreme2/background --seed 0 --align center --motif-pseudo 0.01 --noseqs --m results/xstreme2/meme_out/meme.xml --m results/xstreme2/streme_out/streme.xml --p common/adh.s

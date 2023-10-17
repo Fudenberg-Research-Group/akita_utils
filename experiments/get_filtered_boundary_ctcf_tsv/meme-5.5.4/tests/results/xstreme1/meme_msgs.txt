@@ -1,0 +1,4 @@
+[1696376316.229499] [discovery1:221390:0]        ib_iface.c:1035 UCX  ERROR ibv_create_cq(cqe=4096) failed: Cannot allocate memory
+[discovery1.usc.edu:221390] pml_ucx.c:309  Error: Failed to create UCP worker
+Warning: Cannot convert EPS file to PNG as no install of Image Magick or Ghostscript is usable.
+Warning: Cannot convert EPS file to PNG as no install of Image Magick or Ghostscript is usable.

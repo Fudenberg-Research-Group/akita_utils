@@ -1,0 +1,16 @@
+motif_DB	motif_ID	motif_ALT_ID	seq_ID	seq_Score	seq_Class	is_holdout?
+results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	deop2	16.08	tp	0
+results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	ompa	15.84	tp	0
+results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	tnaa	15.45	tp	0
+results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	uxu1	15.02	tp	0
+results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	lac	15.00	tp	0
+results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	bglr1	14.74	tp	0
+results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	pbr322	14.37	tp	0
+results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	malk	14.19	tp	0
+results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	ara	14.07	tp	0
+results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	crp	13.82	tp	0
+results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	tdc	13.81	tp	0
+results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	male	12.76	tp	0
+results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	cya	12.61	tp	0
+results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	ce1cg	12.60	tp	0
+results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	malt	12.04	tp	0

@@ -1,0 +1,6 @@
+prim_db	prim_id	prim_alt	prim_cons	sec_db	sec_id	sec_alt	sec_cons	trim_left	trim_right	red_db	red_id	red_alt	E-value	gap	orient	count	total	adj_p-value	p-value
+meme.html	1	MEME	CHUGUAWAUA	meme.html	1	MEME	CHUGUAWAUA	0	0	.	.	.	9.89e-01	3	2	2	27	3.93e-01	9.89e-01
+
+# SpaMo (Spaced Motif Analysis Tool): Version 5.5.4 compiled on Aug 25 2023 at 07:02:27
+# The format of this file is described at https://meme-suite.org/meme/doc/spamo-output-format.html.
+# spamo -oc results/spamo6 -verbosity 1 -margin 40 -minscore 6 -keepprimary common/Puf3p-dna_encoded.s common/motif.Puf3p/meme.html common/motif.Puf3p/meme.html

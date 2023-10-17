@@ -1,0 +1,11 @@
+RANK	DB	ID	ALT_ID	CONSENSUS	TP	TP%	FP	FP%	ENR_RATIO	SCORE_THR	PVALUE	LOG_PVALUE	EVALUE	LOG_EVALUE	QVALUE	LOG_QVALUE
+1	results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	TGTGAYBYNKTTCACA	15	83.33	0	0.00	16	12	1.47e-7	-15.74	8.79e-7	-13.94	8.79e-7	-13.94
+2	results/xstreme1/streme_out/streme.xml	1-KTGTGAYRCVGWDCAMA	STREME-1	KTGTGAYRCVGWDCAMA	11	61.11	1	5.56	6	9.1	9.45e-4	-6.96	5.67e-3	-5.17	2.83e-3	-5.87
+3	results/xstreme1/streme_out/streme.xml	2-GAKCAWVSTCWYWTTTT	STREME-2	GAKCAWVSTCWYWTTTT	8	44.44	0	0.00	9	11	1.45e-3	-6.54	8.68e-3	-4.75	2.89e-3	-5.85
+4	results/xstreme1/streme_out/streme.xml	3-TWTRAAAWAASCATWKMATA	STREME-3	TWTRAAAWAASCATWKMATA	5	27.78	0	0.00	6	0.17	2.27e-2	-3.78	1.36e-1	-1.99	3.41e-2	-3.38
+5	results/xstreme1/streme_out/streme.xml	4-CWWKKTGDWMTTTWMDG	STREME-4	CWWKKTGDWMTTTWMDG	3	16.67	0	0.00	4	19	1.14e-1	-2.17	6.86e-1	-0.38	1.14e-1	-2.17
+6	results/xstreme1/streme_out/streme.xml	5-VTTRTWTRWAVCRVATC	STREME-5	VTTRTWTRWAVCRVATC	3	16.67	0	0.00	4	23	1.14e-1	-2.17	6.86e-1	-0.38	1.14e-1	-2.17
+
+# SEA (Simple Enrichment Analysis): Version 5.5.4 compiled on Oct  3 2023 at 16:32:27
+# The format of this file is described at https://meme-suite.org/meme/doc/sea-output-format.html.
+# sea --verbosity 1 --oc results/xstreme1/sea_disc_out --qvalue --thresh 1 --order 2 --bfile results/xstreme1/background --seed 0 --align center --motif-pseudo 0.01 --noseqs --m results/xstreme1/meme_out/meme.xml --m results/xstreme1/streme_out/streme.xml --p common/crp0.s

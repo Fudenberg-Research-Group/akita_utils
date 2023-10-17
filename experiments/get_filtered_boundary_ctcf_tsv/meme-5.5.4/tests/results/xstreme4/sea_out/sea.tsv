@@ -1,0 +1,24 @@
+RANK	DB	ID	ALT_ID	CONSENSUS	TP	TP%	FP	FP%	ENR_RATIO	SCORE_THR	PVALUE	LOG_PVALUE	EVALUE	LOG_EVALUE	QVALUE	LOG_QVALUE
+1	results/xstreme4/streme_out/streme.xml	1-Sm1BCMDS	STREME-1	Sm1BCMDS	969	58.13	78	4.68	12.3	9.3	5.86e-274	-629.14	1.52e-272	-625.88	1.52e-272	-625.88
+2	results/xstreme4/meme_out/meme.xml	Vm1DGV	MEME-3	Vm1DGV	962	57.71	97	5.82	9.83	9.6	3.64e-253	-581.26	9.47e-252	-578.00	4.74e-252	-578.70
+3	results/xstreme4/meme_out/meme.xml	m1SAGV	MEME-1	m1SAGV	1023	61.37	135	8.10	7.53	5.8	1.47e-250	-575.26	3.83e-249	-572.00	1.28e-249	-573.10
+4	results/xstreme4/meme_out/meme.xml	m1SCHNCH	MEME-2	m1SCHNCH	921	55.25	79	4.74	11.5	4.5	1.99e-250	-574.96	5.18e-249	-571.70	1.29e-249	-573.09
+5	results/xstreme4/streme_out/streme.xml	2-GCWGCWGC	STREME-2	GCWGCWGC	1120	67.19	372	22.32	3.01	5	2.95e-155	-355.82	7.66e-154	-352.56	1.53e-154	-354.17
+6	common/dna_with_covalent.meme	Gm7GCA	TGCx1C	Gm7GCA	357	21.42	18	1.08	18.8	4.8	1.13e-91	-209.41	2.95e-90	-206.15	4.91e-91	-207.94
+7	common/dna_with_covalent.meme	TGCm1C	Gm1GCA	TGCm1C	356	21.36	18	1.08	18.8	5.8	2.44e-91	-208.64	6.33e-90	-205.39	9.05e-91	-207.33
+8	common/dna_with_covalent.meme	GCAm7C	Gx1TGC	GCAm7C	325	19.50	15	0.90	20.4	4.8	2.69e-84	-192.43	6.99e-83	-189.17	8.73e-84	-191.25
+9	common/dna_with_covalent.meme	GCAm1C	Gm1TGC	GCAm1C	323	19.38	15	0.90	20.3	5.8	1.22e-83	-190.92	3.17e-82	-187.66	3.17e-83	-189.96
+10	common/dna_with_covalent.meme	Gm1TGC	GCAm1C	Gm1TGC	323	19.38	15	0.90	20.3	5.8	1.22e-83	-190.92	3.17e-82	-187.66	3.17e-83	-189.96
+11	common/dna_with_covalent.meme	GCAGCA	TGCTGC	GCAGCA	312	18.72	60	3.60	5.13	12	3.85e-47	-106.87	1.00e-45	-103.62	9.09e-47	-106.01
+12	common/dna_with_covalent.meme	GCm1C1	mGm1GC	GCm1C1	179	10.74	13	0.78	12.9	5.8	1.12e-40	-91.99	2.90e-39	-88.74	2.42e-40	-91.22
+13	common/Jaspar-subset.meme	MA0079.2	SP1	CCCCKCCCCC	1363	81.76	1058	63.47	1.29	0.12	6.45e-33	-74.12	1.68e-31	-70.86	1.29e-32	-73.43
+14	common/Jaspar-subset.meme	MA0091.1	TAL1::TCF3	NSAMCATCTGKT	238	14.28	61	3.66	3.85	4.2	2.16e-28	-63.70	5.61e-27	-60.45	4.01e-28	-63.08
+15	common/Jaspar-subset.meme	MA0079.1	SP1	KRGGCDGGGT	477	28.61	276	16.56	1.73	7.5	4.30e-17	-37.69	1.12e-15	-34.43	7.45e-17	-37.14
+16	common/Jaspar-subset.meme	MA0140.1	Tal1::Gata1	CTGBNNNNNDSAGATAAG	943	56.57	737	44.21	1.28	0.093	5.81e-13	-28.17	1.51e-11	-24.92	9.45e-13	-27.69
+17	common/dna_with_covalent.meme	TGCmGC	GC1GCA	TGCmGC	78	4.68	16	0.96	4.65	2.5	1.61e-11	-24.85	4.18e-10	-21.60	2.46e-11	-24.43
+18	common/dna_with_covalent.meme	CCTTCC	GGAAGG	CCTTCC	127	7.62	71	4.26	1.78	12	2.52e-5	-10.59	6.55e-4	-7.33	3.64e-5	-10.22
+19	common/Jaspar-subset.meme	MA0270.1	AFT2	SACACCCB	36	2.16	9	0.54	3.7	12	2.95e-5	-10.43	7.66e-4	-7.17	4.03e-5	-10.12
+
+# SEA (Simple Enrichment Analysis): Version 5.5.4 compiled on Oct  3 2023 at 16:32:27
+# The format of this file is described at https://meme-suite.org/meme/doc/sea-output-format.html.
+# sea --verbosity 1 --oc results/xstreme4/sea_out --thresh 0.05 --order 0 --bfile results/xstreme4/dna_with_covalent.bg --seed 0 --align center --motif-pseudo 0.01 --m results/xstreme4/meme_out/meme.xml --m results/xstreme4/streme_out/streme.xml --m common/Jaspar-subset.meme --m common/dna_with_covalent.meme --xalph results/xstreme4/dna_with_covalent.alph --p results/xstreme4/trimmed_primary_seqs
