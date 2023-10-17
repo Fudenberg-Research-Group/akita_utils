@@ -18,7 +18,7 @@ def smooth(y, box_pts):
     return y_smooth
 
 
-def ut_dense(preds_ut, diagonal_offset):
+def ut_dense(preds_ut, diagonal_offset=2):
     """Construct symmetric dense prediction matrices from upper triangular vectors.
 
     Parameters
