@@ -74,7 +74,7 @@ def main():
 
     if options.clean_dir:
         if suspicious_collected_h5_size(out_dir, options.h5_file_name, options.collected_to_sum_file_size_ths):
-            print("Please, check the collected file. Job-files have not been deleted yet since the sum of their sizes is suspiciously bigger than the size of the collected h5 file.")
+            raise Exception("Please, check the collected file. Job-files have not been deleted yet since the sum of their sizes is suspiciously bigger than the size of the collected h5 file.")
         else:
             print("Cleaning the directory...")
             clean_directory(out_dir, options.h5_file_name)
