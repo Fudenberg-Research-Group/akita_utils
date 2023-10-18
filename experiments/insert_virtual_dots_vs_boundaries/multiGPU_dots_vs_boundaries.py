@@ -27,17 +27,13 @@ Relies on slurm_gf.py to auto-generate slurm jobs.
 
 from optparse import OptionParser
 import os
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 import pickle
 import subprocess
 import sys
 
-import h5py
-import numpy as np
-
 import akita_utils.slurm_gf as slurm
-from akita_utils.h5_utils import job_completed
+from akita_utils.h5_utils import job_started
 
 ################################################################################
 # main
@@ -210,7 +206,7 @@ def main():
     # output directory
     if not options.restart:
         if os.path.isdir(options.out_dir):
-            print("Please remove %s" % options.out_dir, file=sys.stderr)
+            # print("Please remove %s" % options.out_dir, file=sys.stderr)
             exit(1)
         os.mkdir(options.out_dir)
 
@@ -224,15 +220,14 @@ def main():
     # launch worker threads
     jobs = []
     for pi in range(options.processes):
-        if not options.restart or not job_completed(options, pi):
+        if not options.restart or not job_started(options, pi):
             if options.cpu:
                 cmd = 'eval "$(conda shell.bash hook)";'
                 cmd += "conda activate basenji;"
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
             else:
                 cmd = 'eval "$(conda shell.bash hook)";'
-                cmd += "conda activate basenji-numba2;"      #changed
-                # cmd += "conda activate basenji;"      #changed
+                cmd += "conda activate basenji-numba2;"
                 cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
 
             cmd += " ${SLURM_SUBMIT_DIR}/virtual_symmetric_experiment_dots_vs_boundaries.py %s %s %d" % (
@@ -266,13 +261,10 @@ def main():
         jobs, max_proc=options.max_proc, verbose=False, launch_sleep=10, update_sleep=60
     )
 
-    #######################################################
-    # collect output
-    
-    # TO BE ADDED 
-
 ################################################################################
 # __main__
 ################################################################################
+
 if __name__ == "__main__":
     main()
+
