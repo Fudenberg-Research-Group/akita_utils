@@ -135,33 +135,6 @@ def multi_run(jobs, max_proc=None, verbose=False, launch_sleep=2, update_sleep=2
 
         active_jobs = active_jobs_new
     
-    # wait for all to finish
-    while active_jobs:
-        # sleep
-        time.sleep(update_sleep)
-
-        # update all statuses
-        multi_update_status(active_jobs)
-
-        # update active jobs
-        active_jobs_new = []
-        for i in range(len(active_jobs)):
-            if active_jobs[i].status in ["PENDING", "RUNNING"]:
-                active_jobs_new.append(active_jobs[i])
-            else:
-                if verbose:
-                    print(
-                        "%s %s" % (active_jobs[i].name, active_jobs[i].status),
-                        file=sys.stderr,
-                    )
-
-                running -= 1
-                finished += 1
-
-        active_jobs = active_jobs_new
-    
-    time.sleep(100)
-
 ################################################################################
 # multi_update_status
 #
