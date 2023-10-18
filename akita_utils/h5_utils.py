@@ -371,16 +371,16 @@ def save_maps(
         plt.close()
 
 
-# COLLECTING DATA FROM MULTIPLE HDF5 FILES & CHECKING JOBS COMPLETENESS
+# COLLECTING DATA FROM MULTIPLE HDF5 FILES & CHECKING START OF JOBS
 
 
-def job_completed(out_dir, job_index, h5_file_name="STATS_OUT.h5"):
+def job_started(out_dir, job_index, h5_file_name="STATS_OUT.h5"):
     """
-    Check if a specific job has completed and generated its output file.
+    Check if a specific job has started and generated its output file.
     
     This function verifies if the output file for a particular job exists. It constructs
     the path to the job's output file using the specified directory, job index, and file name.
-    Returns True if the file exists, indicating the job's completion, or False otherwise.
+    Returns True if the file exists, indicating the job's start, or False otherwise.
     
     Parameters
     ------------
