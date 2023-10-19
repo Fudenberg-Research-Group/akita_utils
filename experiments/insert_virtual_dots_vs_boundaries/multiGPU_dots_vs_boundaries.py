@@ -29,8 +29,6 @@ from optparse import OptionParser
 import os
 
 import pickle
-import subprocess
-import sys
 
 import akita_utils.slurm_gf as slurm
 from akita_utils.h5_utils import job_started
@@ -111,7 +109,7 @@ def main():
         type="int",
         help="Specify batch size",
     )
-    
+
     # insertion-specific options
     parser.add_option(
         "--background-file",
@@ -182,7 +180,10 @@ def main():
         help="time to run job. [Default: %default]",
     )
     parser.add_option(
-        "--gres", dest="gres", default="gpu", help="gpu resources. [Default: %default]"
+        "--gres",
+        dest="gres",
+        default="gpu",
+        help="gpu resources. [Default: %default]",
     )
     parser.add_option(
         "--constraint",
@@ -202,7 +203,7 @@ def main():
 
     #######################################################
     # prep work
-    
+
     # output directory
     if not options.restart:
         if os.path.isdir(options.out_dir):
@@ -215,7 +216,7 @@ def main():
     options_pkl = open(options_pkl_file, "wb")
     pickle.dump(options, options_pkl)
     options_pkl.close()
-    
+
     #######################################################
     # launch worker threads
     jobs = []
@@ -224,16 +225,23 @@ def main():
             if options.cpu:
                 cmd = 'eval "$(conda shell.bash hook)";'
                 cmd += "conda activate basenji;"
-                cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
+                cmd += (
+                    "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
+                )
             else:
                 cmd = 'eval "$(conda shell.bash hook)";'
                 cmd += "conda activate basenji-numba2;"
-                cmd += "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
+                cmd += (
+                    "module load gcc/8.3.0; module load cudnn/8.0.4.30-11.0;"
+                )
 
-            cmd += " ${SLURM_SUBMIT_DIR}/virtual_symmetric_experiment_dots_vs_boundaries.py %s %s %d" % (
-                options_pkl_file,
-                " ".join(args),
-                pi,
+            cmd += (
+                " ${SLURM_SUBMIT_DIR}/virtual_symmetric_experiment_dots_vs_boundaries.py %s %s %d"
+                % (
+                    options_pkl_file,
+                    " ".join(args),
+                    pi,
+                )
             )
 
             name = "%s_p%d" % (options.name, pi)
@@ -256,10 +264,15 @@ def main():
                 constraint=options.constraint,
             )
             jobs.append(j)
-    
+
     slurm.multi_run(
-        jobs, max_proc=options.max_proc, verbose=False, launch_sleep=10, update_sleep=60
+        jobs,
+        max_proc=options.max_proc,
+        verbose=False,
+        launch_sleep=10,
+        update_sleep=60,
     )
+
 
 ################################################################################
 # __main__
@@ -267,4 +280,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

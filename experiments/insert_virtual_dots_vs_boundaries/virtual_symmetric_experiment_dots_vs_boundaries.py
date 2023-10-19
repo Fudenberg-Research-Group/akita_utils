@@ -62,7 +62,6 @@ import os
 import pickle
 import random
 
-import numpy as np
 import pandas as pd
 import pysam
 
@@ -76,13 +75,18 @@ print(gpus)
 
 from basenji import seqnn, stream, dna_io
 
-from akita_utils.utils import ut_dense
 from akita_utils.seq_gens import (
     symmertic_insertion_seqs_gen,
     reference_seqs_gen,
 )
 from akita_utils.utils import split_df_equally
-from akita_utils.h5_utils import initialize_stat_output_h5, initialize_maps_output_h5_background, write_stat_metrics_to_h5, write_maps_to_h5
+from akita_utils.h5_utils import (
+    initialize_stat_output_h5,
+    initialize_maps_output_h5,
+    initialize_maps_output_references,
+    write_stat_metrics_to_h5,
+    write_maps_to_h5,
+)
 
 ################################################################################
 # main
@@ -191,7 +195,7 @@ def main():
     print("args")
     print(args)
     print("\n++++++++++++++++++\n")
-    
+
     if len(args) == 3:
         # single worker
         params_file = args[0]
@@ -212,6 +216,7 @@ def main():
         options_pkl.close()
 
         # update output directory
+        general_out_dir = options.out_dir
         options.out_dir = "%s/job%d" % (options.out_dir, worker_index)
 
     else:
@@ -225,19 +230,21 @@ def main():
         plot_dir = options.out_dir
     else:
         plot_dir = None
-    
+
     options.shifts = [int(shift) for shift in options.shifts.split(",")]
     stats = options.stats.split(",")
-    
+
     head_index = int(model_file.split("model")[-1][0])
     model_index = int(model_file.split("c0")[0][-1])
-    
+
     if options.background_file is None:
         if head_index == 1:
             options.background_file = f"/project/fudenber_735/tensorflow_models/akita/v2/analysis/mouse_backgrounds/m{model_index}_background_seqs.fa"
         else:
-            raise Exception("Please, provide a path to fasta file with human backgrounds")
-            
+            raise Exception(
+                "Please, provide a path to fasta file with human backgrounds"
+            )
+
     random.seed(44)
 
     #################################################################
@@ -269,9 +276,7 @@ def main():
     # dummy target info
     if options.targets_file is None:
         num_targets = seqnn_model.num_targets()
-        target_ids = [
-            ti for ti in range(num_targets)
-        ]
+        target_ids = [ti for ti in range(num_targets)]
         target_labels = [""] * len(target_ids)
 
     #################################################################
@@ -307,11 +312,11 @@ def main():
             if ">" in line:
                 continue
             background_seqs.append(dna_io.dna_1hot(line.strip()))
-            
+
+    num_backgrounds = len(background_seqs)
     max_bg_index = seq_coords_df["background_index"].max()
-    min_bg_index = seq_coords_df["background_index"].min()
-    
-    if len(background_seqs) < max_bg_index:
+
+    if num_backgrounds < max_bg_index:
         raise ValueError(
             "must provide a background file with at least as many"
             + "backgrounds as those specified in the insert seq_coords tsv."
@@ -321,48 +326,72 @@ def main():
     #################################################################
     # setup output
 
-    stat_h5_outfile = initialize_stat_output_h5(options.out_dir,
-                                                model_file,
-                                                stats,
-                                                seq_coords_df)
+    stat_h5_outfile = initialize_stat_output_h5(
+        options.out_dir, model_file, stats, seq_coords_df
+    )
 
     print("stat_h5_outfile initialized")
-    
+
     if options.save_maps:
-        maps_h5_outfile = initialize_maps_output_h5_background(options.out_dir,
-                                                        model_file,
-                                                        options.genome_fasta,
-                                                        seqnn_model,
-                                                        seq_coords_df)
-    
+
+        maps_h5_outfile = initialize_maps_output_h5(
+            options.out_dir, model_file, seqnn_model, seq_coords_df
+        )
         print("maps_h5_outfile initialized")
-    
+
+        if options.processes is not None:
+
+            if worker_index == 0:
+
+                refmaps_h5_outfile = initialize_maps_output_references(
+                    general_out_dir,
+                    model_file,
+                    seqnn_model,
+                    num_backgrounds=num_backgrounds,
+                )
+                print("refmaps_h5_outfile initialized")
+
+        else:
+            refmaps_h5_outfile = initialize_maps_output_references(
+                options.out_dir,
+                model_file,
+                seqnn_model,
+                num_backgrounds=num_backgrounds,
+            )
+            print("refmaps_h5_outfile initialized")
+
     #################################################################
 
     # initialize predictions stream for reference (background) sequences
     refs_stream = stream.PredStreamGen(
         seqnn_model, reference_seqs_gen(background_seqs), batch_size
-    )    
+    )
 
-    if options.save_maps:
-        # saving prediction vectors to the maps_h5_outfile
-        for background_index in range(min_bg_index, (max_bg_index+1)):
-            bg_prediction = refs_stream[background_index]
+    for background_index in range(num_backgrounds):
+        bg_prediction = refs_stream[background_index]
 
-            # save maps for background sequences
-            write_maps_to_h5(bg_prediction,
-                            maps_h5_outfile,
-                            background_index,
-                            head_index,
-                            model_index,
-                            reference=True
-            )
-            print(f"Maps for reference {background_index} saved")
-    
+        if options.save_maps:
+            # saving reference prediction vectors to the maps_h5_outfile
+            if (len(args) == 5 and worker_index == 0) or len(args) == 3:
+                # save maps for background sequences
+                write_maps_to_h5(
+                    bg_prediction,
+                    refmaps_h5_outfile,
+                    background_index,
+                    head_index,
+                    model_index,
+                    reference=True,
+                )
+                print(f"Maps for reference {background_index} saved")
+
     # initialize predictions stream for alternate (ctcf-inserted) sequences
-    preds_stream = stream.PredStreamGen(seqnn_model,
-                                        symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open),
-                                        batch_size)
+    preds_stream = stream.PredStreamGen(
+        seqnn_model,
+        symmertic_insertion_seqs_gen(
+            seq_coords_df, background_seqs, genome_open
+        ),
+        batch_size,
+    )
 
     # saving stat metrics
     for exp_index in range(num_experiments):
@@ -370,32 +399,37 @@ def main():
         preds_matrix = preds_stream[exp_index]
         background_index = seq_coords_df.iloc[exp_index].background_index
         ref_matrix = refs_stream[background_index]
-    
-        write_stat_metrics_to_h5(preds_matrix,
-                                ref_matrix,
-                                stat_h5_outfile,
-                                exp_index,
-                                head_index,
-                                model_index,
-                                diagonal_offset=2,
-                                stat_metrics=stats)
-    
+
+        write_stat_metrics_to_h5(
+            preds_matrix,
+            ref_matrix,
+            stat_h5_outfile,
+            exp_index,
+            head_index,
+            model_index,
+            diagonal_offset=2,
+            stat_metrics=stats,
+        )
+
         if options.save_maps:
 
             # save maps for inserted sequences
-            write_maps_to_h5(preds_matrix,
-                            maps_h5_outfile,
-                            exp_index,
-                            head_index,
-                            model_index,
-                            reference=False)
+            write_maps_to_h5(
+                preds_matrix,
+                maps_h5_outfile,
+                exp_index,
+                head_index,
+                model_index,
+                reference=False,
+            )
 
     stat_h5_outfile.close()
-    
+
     if options.save_maps:
         maps_h5_outfile.close()
 
     genome_open.close()
+
 
 ################################################################################
 # __main__
@@ -404,4 +438,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
