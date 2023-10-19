@@ -143,8 +143,8 @@ def initialize_stat_output_h5(
     return h5_outfile
 
 
-def initialize_maps_output_h5_background(
-    out_dir, model_file, genome_fasta, seqnn_model, seq_coords_df, num_backgrounds=10
+def initialize_maps_output_h5(
+    out_dir, model_file, seqnn_model, seq_coords_df
 ):
     """
     Initializes an h5 file to save vectors predicted by Akita.
@@ -155,8 +155,6 @@ def initialize_maps_output_h5_background(
         Path to the desired location of the output h5 file.
     model_file : str
         Path to the model file.
-    genome_fasta : str
-        Path to the genome file (mouse or human).
     seqnn_model : object
         Loaded model.
     seq_coords_df : dataFrame
@@ -191,6 +189,38 @@ def initialize_maps_output_h5_background(
         shape=(num_experiments, prediction_vector_length, num_targets),
         dtype="float16",
     )
+        
+    return h5_outfile
+
+def initialize_maps_output_references(
+    out_dir, model_file, seqnn_model, num_backgrounds=10
+):
+    """
+    Initializes an h5 file to save reference vectors predicted by Akita.
+
+    Parameters
+    ------------
+    out_dir : str
+        Path to the desired location of the output h5 file.
+    model_file : str
+        Path to the model file.
+    seqnn_model : object
+        Loaded model.
+    num_backgrounds : int
+        Number of reference maps to be saved.
+
+    Returns
+    ---------
+    h5_outfile : h5py object
+        An initialized h5 file.
+    """
+    head_index = int(model_file.split("model")[-1][0])
+    model_index = int(model_file.split("c0")[0][-1])
+    prediction_vector_length = seqnn_model.target_lengths[0]
+
+    h5_outfile = h5py.File(f"%s/REFMAPS_OUT_m{model_index}.h5" % out_dir, "w")
+    
+    num_targets = seqnn_model.num_targets()
     
     h5_outfile.create_dataset(
         f"refmap_h{head_index}_m{model_index}",
@@ -199,6 +229,7 @@ def initialize_maps_output_h5_background(
     )
     
     return h5_outfile
+
 
 # WRITING TO H5 FUNCTIONS
 
