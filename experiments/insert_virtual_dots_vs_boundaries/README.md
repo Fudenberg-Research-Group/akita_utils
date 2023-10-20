@@ -1,54 +1,41 @@
 
 # feature-specific impact of CTCF motifs
 
-# TEST with saving maps
-```python virtual_symmetric_experiment_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5 ./ctcf_tsv/mismatched_boundary.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /scratch2/smaruj/BIGTEST_boundaries --save-maps```
-```python virtual_symmetric_experiment_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5 ./ctcf_tsv/mismatched_dot.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /scratch2/smaruj/BIGTEST_dots --stats SCD,dot-score,cross-score,x-score --save-maps```
+This directory contains scripts and data for conducting the **feature-specific impact of CTCF motifs** experiment. Here's a brief guide to the logical sequence of steps and organization within this directory:
 
-# rerunning the experiment with all the ctcfs that went through filtering (without saving maps)
-# model 1
-multiGPU
-- boundaries
-```python multiGPU_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5 ./ctcf_tsv/filtered_base_mouse_ctcf_boundary.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /scratch2/smaruj/all_dots_vs_boundaries/boundaries_all_motifs_m1 --batch-size 8 -p 10 --max_proc 10```
+### 1. **Data Generation:**
 
-- dots
-```python multiGPU_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5 ./ctcf_tsv/filtered_base_mouse_ctcf_dot.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /scratch2/smaruj/all_dots_vs_boundaries/dots_all_motifs_m1 --stats SCD,dot-score,cross-score,x-score --batch-size 8 -p 10 --max_proc 10```
+- **Generating Input TSV:**
+  - Use `generate_tsv_dot_boundary_scenario.py` to generate a TSV file containing CTCF coordinates. This file serves as input for subsequent experiments.
+  - Output: TSV file with CTCF coordinates (found in `/input_data`).
 
-With maps:
-```python multiGPU_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5 ./ctcf_tsv/filtered_base_mouse_ctcf_boundary.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /scratch2/smaruj/all_dots_vs_boundaries/maps_boundaries_all_motifs_m1 --save-maps --batch-size 8 -p 20 --max_proc 20```
+### 2. **Virtual Symmetric Experiment:**
 
-- dots
-```python multiGPU_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5 ./ctcf_tsv/filtered_base_mouse_ctcf_dot.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /scratch2/smaruj/all_dots_vs_boundaries/maps_dots_all_motifs_m1 --save-maps --stats SCD,dot-score,cross-score,x-score --batch-size 8 -p 20 --max_proc 20```
+- **Running Virtual Symmetric Experiment:**
+  - Utilize `virtual_symmetric_experiment_dots_vs_boundaries.py` for the main experiment comparing dot-scores vs. boundary-scores.
+  - For multi-GPU setups, run `multiGPU_dots_vs_boundaries.py`.
+  - Experiment setup parameters (e.g., model indices) can be configured.
+  - Output: Dot and boundary scores in H5 format (located outside this directory).
 
+### 3. **Automated Experiment Execution:**
 
-# model 2
-multiGPU
-- boundaries
-```python multiGPU_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f2c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f2c0/train/model1_best.h5 ./ctcf_tsv/filtered_base_mouse_ctcf_boundary.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /scratch2/smaruj/all_dots_vs_boundaries/boundaries_all_motifs_m2 --batch-size 8 -p 20 --max_proc 20```
+- **Automated Experiment Scripts:**
+  - Execute experiments automatically using `generate_boundary_experiment.sh` for boundary scenarios (`sbatch generate_boundary_experiment.sh`).
+  - Run `generate_dot_experiment.sh` for dot scenarios (`sbatch generate_dot_experiment.sh`).
+  - Parameters and setups can be modified within these script files.
+  
+### 4. **Data Organization:**
 
-- dots
-```python multiGPU_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f2c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f2c0/train/model1_best.h5 ./ctcf_tsv/filtered_base_mouse_ctcf_dot.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /scratch2/smaruj/all_dots_vs_boundaries/dots_all_motifs_m2 --stats SCD,dot-score,cross-score,x-score --batch-size 8 -p 20 --max_proc 20```
+- **Input Data:**
+  - Raw input TSV files for both dot and boundary experiments are stored in `/input_data`.
 
+- **Processed Data:**
+  - Processed dot and boundary scores in TSV format can be found in `/processed_data`.
 
-# testing collect_h5 for small set of maps
-```python multiGPU_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5 ./ctcf_tsv/boundary_filtered_mismatched_ctcf.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /scratch2/smaruj/MAP_TEST_boundaries --save-maps --batch-size 8 -p 2 --max_proc 2 --name bou```
-```python multiGPU_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5 ./ctcf_tsv/dot_filtered_mismatched_ctcf.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /scratch2/smaruj/MAP_TEST_dots --save-maps --batch-size 8 -p 2 --max_proc 2 --name dot```
+### 5. **Data Analysis:**
 
+- **Data Analysis:**
+  - Navigate to the `/analysis` directory to perform data processing and analysis.
+  - Use the analysis scripts and notebooks for further investigation and visualization.
 
-```python multiGPU_dots_vs_boundaries.py /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/params.json /project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5 ./ctcf_tsv/dot_filtered_mismatched_ctcf.tsv -f /project/fudenber_735/genomes/mm10/mm10.fa -o /scratch2/smaruj/DUPA_dots --save-maps --batch-size 8 -p 2 --max_proc 2 --name dot```
-
-
-Jobs collecting:
-Stats:
-```python collect_jobs_and_clean.py /scratch2/smaruj/all_dots_vs_boundaries/dots_all_motifs_m1```
-
-Maps:
-```python collect_jobs_and_clean.py /scratch2/smaruj/DUPA_dots -s```
-
-
-
-
-
-
-
-
+For any questions or assistance, feel free to reach out. Happy experimenting!
