@@ -35,17 +35,17 @@ def main():
         help="Name of h5 files to collect [Default: %default]",
     )
     parser.add_option(
-        "-s",
-        dest="collecting_stats",
+        "-m",
+        dest="collecting_maps",
         default=True,
-        action="store_false",
-        help="Not collecting stat metrics [Default: %default]",
+        action="store_true",
+        help="Collecting maps [Default: %default]",
     )
     parser.add_option(
-        "-c",
-        dest="clean_dir",
-        default=True,
-        action="store_false",
+        "-l",
+        dest="leave_files",
+        default=False,
+        action="store_true",
         help="Don't clean the output directory [Default: %default]",
     )
     parser.add_option(
@@ -65,14 +65,14 @@ def main():
 
     # By default, stat metrics are collected. 
     # Otherwise, h5 files with maps are supposed to be collected with default file name MAPS_OUT.h5.
-    if (options.collecting_stats == False and options.h5_file_name == "STATS_OUT.h5"):
+    if (options.collecting_maps == True and options.h5_file_name == "STATS_OUT.h5"):
         options.h5_file_name = "MAPS_OUT.h5"
 
     # data collection
     print("Collecting h5 files...")
     collect_h5(out_dir, options.h5_file_name)
 
-    if options.clean_dir:
+    if not options.leave_files:
         if suspicious_collected_h5_size(out_dir, options.h5_file_name, options.collected_to_sum_file_size_ths):
             raise Exception("Please, check the collected file. Job-files have not been deleted yet since the sum of their sizes is suspiciously bigger than the size of the collected h5 file.")
         else:
