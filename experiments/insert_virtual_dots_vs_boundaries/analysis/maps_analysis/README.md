@@ -4,14 +4,6 @@
 
 Welcome to the map data analysis folder! This repository contains two Jupyter Notebooks designed to facilitate efficient exploration and analysis of our generated data. The new developmental decisions implemented in the data generation process are detailed below, providing a streamlined approach to handle extensive output data.
 
-### Developmental Decisions:
-
-1. **Job-Specific Output**: The output data is organized into job-specific directories (e.g., `/job0`) to maintain a structured data hierarchy, ensuring easier management and accessibility.
-
-2. **Selective Access with Sequence ID and Background ID**: Utilizing unique sequence IDs and background IDs, we can pinpoint the specific job containing the predicted map. This selective access enhances data retrieval efficiency.
-
-3. **Efficient Data Retrieval**: Instead of combining all map outputs into a single large file, we access only the necessary `MAPS_OUT.h5` file within the designated job directory, optimizing both time and computational resources.
-
 ## Notebooks
 
 ### 1. `plotting_maps_by_seqid.ipynb`
