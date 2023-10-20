@@ -1,6 +1,0 @@
-RANK	DB	ID	ALT_ID	CONSENSUS	TP	TP%	FP	FP%	ENR_RATIO	SCORE_THR	PVALUE	LOG_PVALUE	EVALUE	LOG_EVALUE	QVALUE	LOG_QVALUE
-1	results/xstreme1/meme_out/meme.xml	TGTGAYBYNKTTCACA	MEME-1	TGTGAYBYNKTTCACA	15	83.33	0	0.00	16	12	1.47e-7	-15.74	3.09e-5	-10.38	2.37e-5	-10.65
-
-# SEA (Simple Enrichment Analysis): Version 5.5.4 compiled on Oct  3 2023 at 16:32:27
-# The format of this file is described at https://meme-suite.org/meme/doc/sea-output-format.html.
-# sea --verbosity 1 --oc results/xstreme1/sea_out --thresh 0.05 --order 2 --bfile results/xstreme1/background --seed 0 --align center --motif-pseudo 0.01 --m results/xstreme1/meme_out/meme.xml --m results/xstreme1/streme_out/streme.xml --m meme-chip/JASPAR_CORE_2014_vertebrates.meme --p common/crp0.s

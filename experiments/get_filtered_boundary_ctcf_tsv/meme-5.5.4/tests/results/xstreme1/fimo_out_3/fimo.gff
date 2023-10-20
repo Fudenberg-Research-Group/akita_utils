@@ -1,4 +1,0 @@
-##gff-version 3
-ara	fimo	nucleotide_motif	37	53	70.4	-	.	Name=4-CWWKKTGDWMTTTWMDG_ara-;Alias=STREME-4;ID=4-CWWKKTGDWMTTTWMDG-STREME-4-1-ara;pvalue=9.01e-08;qvalue=0.000143;sequence=CAATGTGGACTTTTCTG;
-bglr1	fimo	nucleotide_motif	54	70	89.7	-	.	Name=4-CWWKKTGDWMTTTWMDG_bglr1-;Alias=STREME-4;ID=4-CWWKKTGDWMTTTWMDG-STREME-4-1-bglr1;pvalue=1.06e-09;qvalue=3.39e-06;sequence=CTTTGTGTAATTTTAGG;
-tdc	fimo	nucleotide_motif	17	33	65.6	+	.	Name=4-CWWKKTGDWMTTTWMDG_tdc+;Alias=STREME-4;ID=4-CWWKKTGDWMTTTWMDG-STREME-4-1-tdc;pvalue=2.73e-07;qvalue=0.00029;sequence=CTTGTTGATATTTAAAG;

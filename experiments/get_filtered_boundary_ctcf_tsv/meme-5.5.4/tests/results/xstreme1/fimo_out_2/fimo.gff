@@ -1,3 +1,0 @@
-##gff-version 3
-gale	fimo	nucleotide_motif	77	96	101	-	.	Name=3-TWTRAAAWAASCATWKMATA_gale-;Alias=STREME-3;ID=3-TWTRAAAWAASCATWKMATA-STREME-3-1-gale;pvalue=8.14e-11;qvalue=2.49e-07;sequence=TATGAAATAACCATAGCATA;
-tnaa	fimo	nucleotide_motif	38	57	88.7	+	.	Name=3-TWTRAAAWAASCATWKMATA_tnaa+;Alias=STREME-3;ID=3-TWTRAAAWAASCATWKMATA-STREME-3-1-tnaa;pvalue=1.36e-09;qvalue=2.07e-06;sequence=TTTAAAAAAAGCATTTAATA;

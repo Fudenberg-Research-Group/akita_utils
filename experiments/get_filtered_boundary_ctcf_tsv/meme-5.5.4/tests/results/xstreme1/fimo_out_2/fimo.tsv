@@ -1,7 +1,0 @@
-motif_id	motif_alt_id	sequence_name	start	stop	strand	score	p-value	q-value	matched_sequence
-3-TWTRAAAWAASCATWKMATA	STREME-3	gale	77	96	-	28.8062	8.14e-11	2.49e-07	TATGAAATAACCATAGCATA
-3-TWTRAAAWAASCATWKMATA	STREME-3	tnaa	38	57	+	26.9875	1.36e-09	2.07e-06	TTTAAAAAAAGCATTTAATA
-
-# FIMO (Find Individual Motif Occurrences): Version 5.5.4 compiled on Oct  3 2023 at 16:32:18
-# The format of this file is described at https://meme-suite.org/meme/doc/fimo-output-format.html#tsv_results.
-# fimo --verbosity 1 --oc results/xstreme1/fimo_out_2 --bgfile results/xstreme1/background --motif 3-TWTRAAAWAASCATWKMATA results/xstreme1/streme_out/streme.xml common/crp0.s
