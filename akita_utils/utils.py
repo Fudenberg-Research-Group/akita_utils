@@ -18,7 +18,7 @@ def smooth(y, box_pts):
     return y_smooth
 
 
-def ut_dense(preds_ut, diagonal_offset):
+def ut_dense(preds_ut, diagonal_offset=2):
     """Construct symmetric dense prediction matrices from upper triangular vectors.
 
     Parameters
@@ -62,7 +62,7 @@ def ut_dense(preds_ut, diagonal_offset):
 def split_df_equally(df, num_chunks, chunk_idx):
     df_len = len(df)  # but indices are 0 -> 198
     chunks_bounds = np.linspace(0, df_len, num_chunks + 1, dtype="int")
-    df_chunk = df.loc[chunks_bounds[chunk_idx] : (chunks_bounds[chunk_idx + 1] - 1), :]
+    df_chunk = df.loc[
+        chunks_bounds[chunk_idx] : (chunks_bounds[chunk_idx + 1] - 1), :
+    ]
     return df_chunk
-
-

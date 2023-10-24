@@ -20,16 +20,21 @@ def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
         .copy()
     )
     if concat:
-        return pd.concat([sites, sites_spans_split], axis=1,)
+        return pd.concat(
+            [sites, sites_spans_split],
+            axis=1,
+        )
 
     else:
         return sites_spans_split
 
-    
+
 def calculate_mean(dataframe, stat):
     filtered_df = pd.DataFrame()
     if any(stat in col for col in dataframe.columns):
-        filtered_df = filtered_df.append(dataframe.loc[:, dataframe.columns.str.contains(stat)].copy())
+        filtered_df = filtered_df.append(
+            dataframe.loc[:, dataframe.columns.str.contains(stat)].copy()
+        )
     else:
         print(f"No columns matching '{stat}' found in the DataFrame.")
     return filtered_df.mean(axis=1)
@@ -46,10 +51,12 @@ def filter_boundary_ctcfs_from_h5(
     ## load scores from boundary mutagenesis, average chosen score across models
     dfs = []
     for h5_file in glob.glob(h5_dirs):
-        dfs.append(akita_utils.format_io.h5_to_df(h5_file, drop_duplicates_key=None))
+        dfs.append(
+            akita_utils.format_io.h5_to_df(h5_file, drop_duplicates_key=None)
+        )
     df = dfs[0].copy()
     df[score_key] = np.mean([df[score_key] for df in dfs], axis=0)
-    
+
     # append scores for full mut and all ctcf mut to table
     print("annotating each site with boundary-wide scores")
     score_10k = np.zeros((len(df),))
@@ -109,7 +116,9 @@ def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
     chromend_zones["start"] = chromend_zones["end"] - buffer_bp
     chromstart_zones = view_df.copy()
     chromstart_zones["end"] = chromstart_zones["start"] + buffer_bp
-    filter_zones = pd.concat([chromend_zones, chromstart_zones]).reset_index(drop=True)
+    filter_zones = pd.concat([chromend_zones, chromstart_zones]).reset_index(
+        drop=True
+    )
     df_filtered = bioframe.setdiff(df, filter_zones)
     return df_filtered
 
@@ -148,7 +157,6 @@ def filter_dataframe_by_column(
 
     """
 
-
     if filter_mode not in ("head", "tail", "uniform", "random"):
         raise ValueError(
             "a filter_mode has to be one from: head, tail, uniform, random"
@@ -166,7 +174,7 @@ def filter_dataframe_by_column(
         .drop_duplicates(subset=[column_name])
         .sort_values(column_name, ascending=False)
     )
-    
+
     if num_rows != None:
         assert num_rows <= len(
             filtered_df
@@ -213,10 +221,11 @@ def filter_by_overlap_num(
     working_df,
     filter_df,
     expand_window=60,
-    working_df_cols=["chrom","start","end"],
-    filter_df_cols=["chrom","start","end"],
-    max_overlap_num=0):
-    
+    working_df_cols=["chrom", "start", "end"],
+    filter_df_cols=["chrom", "start", "end"],
+    max_overlap_num=0,
+):
+
     """
     Filter out rows from working_df that overlap entries in filter_df above given threshold.
 
@@ -234,23 +243,25 @@ def filter_by_overlap_num(
         Columns specifying genomic intervals in the filter_df.
     max_overlap_num : int
         All the rows with number of overlaps above this threshold will be filtered out.
-        
+
     Returns
     --------
 
     working_df : dataFrame
         Subset of working_df that do not have overlaps with filter_df above given threshold.
     """
-    
+
     filter_df = bioframe.expand(filter_df, pad=expand_window)
-    
-    working_df = bioframe.count_overlaps(working_df, filter_df[filter_df_cols], cols1=working_df_cols)
-    
+
+    working_df = bioframe.count_overlaps(
+        working_df, filter_df[filter_df_cols], cols1=working_df_cols
+    )
+
     working_df = working_df.iloc[working_df["count"].values <= max_overlap_num]
     working_df.reset_index(inplace=True, drop=True)
-    
+
     working_df = working_df.drop(columns=["count"])
-    
+
     return working_df
 
 
@@ -361,7 +372,9 @@ def add_orientation(seq_coords_df, orientation_strings, all_permutations):
             orientation = orientation_strings[ind]
             orientation_ls = orientation_ls + [orientation] * df_len
             if len(seq_coords_df) != len(orientation_ls):
-                seq_coords_df = pd.concat([seq_coords_df, rep_unit], ignore_index=True)
+                seq_coords_df = pd.concat(
+                    [seq_coords_df, rep_unit], ignore_index=True
+                )
 
         seq_coords_df["orientation"] = orientation_ls
 
@@ -424,7 +437,8 @@ def add_diff_flanks_and_const_spacer(
     spacer_ls = []
 
     seq_coords_df = pd.concat(
-        [rep_unit for i in range(flank_end - flank_start + 1)], ignore_index=True,
+        [rep_unit for i in range(flank_end - flank_start + 1)],
+        ignore_index=True,
     )
 
     for flank in range(flank_start, flank_end + 1):
@@ -503,7 +517,9 @@ def add_background(seq_coords_df, background_indices_list):
         background_ls = background_ls + [background_ind] * df_len
 
         if len(seq_coords_df) != len(background_ls):
-            seq_coords_df = pd.concat([seq_coords_df, rep_unit], ignore_index=True)
+            seq_coords_df = pd.concat(
+                [seq_coords_df, rep_unit], ignore_index=True
+            )
 
     seq_coords_df["background_index"] = background_ls
 
@@ -543,7 +559,9 @@ def generate_ctcf_motifs_list(
     - A list of strings representing genomic coordinates of putative CTCF binding sites in the following format: "chrom,start,end,strand#score_key=score_value".
     """
     sites = akita_utils.tsv_gen_utils.filter_boundary_ctcfs_from_h5(
-        h5_dirs=h5_dirs, score_key=score_key, threshold_all_ctcf=5,
+        h5_dirs=h5_dirs,
+        score_key=score_key,
+        threshold_all_ctcf=5,
     )
 
     sites = akita_utils.tsv_gen_utils.filter_by_rmsk(
@@ -577,11 +595,16 @@ def generate_ctcf_motifs_list(
     )
 
     seq_coords_df.reset_index(drop=True, inplace=True)
-    return generate_locus_specification_list(dataframe=seq_coords_df, unique_identifier=unique_identifier)
+    return generate_locus_specification_list(
+        dataframe=seq_coords_df, unique_identifier=unique_identifier
+    )
 
 
 def generate_locus_specification_list(
-    dataframe, filter_out_ctcf_motifs=False, specification_list=None, unique_identifier="",
+    dataframe,
+    filter_out_ctcf_motifs=False,
+    specification_list=None,
+    unique_identifier="",
 ):
     """
     Generate a list of locus specifications from a dataframe of genomic features.
@@ -602,11 +625,13 @@ def generate_locus_specification_list(
     if filter_out_ctcf_motifs is True:
         dataframe = filter_by_ctcf(dataframe, cols1=None)
         dataframe = dataframe.rename(columns={"count": "num_of_ctcf_motifs"})
-    
+
     if "strand" not in dataframe.columns:  # some inserts dont have this column
         dataframe["strand"] = "+"
 
-    dataframe = _dataframe_cleaning(dataframe=dataframe, unique_identifier=unique_identifier)
+    dataframe = _dataframe_cleaning(
+        dataframe=dataframe, unique_identifier=unique_identifier
+    )
 
     # Generate list of locus specifications
     if specification_list is not None:
@@ -619,7 +644,9 @@ def generate_locus_specification_list(
     return locus_specifications
 
 
-def parameter_dataframe_reorganisation(parameters_combo_dataframe, insert_names_list):
+def parameter_dataframe_reorganisation(
+    parameters_combo_dataframe, insert_names_list
+):
     """
     Reorganizes a parameter combination dataframe to have separate columns for each insert and its
     associated parameters. It also splits the dataframe to have the crucial columns alone and others kept as trailers with the respective identifiers.
@@ -646,23 +673,30 @@ def parameter_dataframe_reorganisation(parameters_combo_dataframe, insert_names_
     """
     for col_name in parameters_combo_dataframe.columns:
         if "locus_specification" in col_name:
-            split_df = parameters_combo_dataframe[col_name].str.split("#", expand=True)
+            split_df = parameters_combo_dataframe[col_name].str.split(
+                "#", expand=True
+            )
             parameters_combo_dataframe = parameters_combo_dataframe.drop(
                 columns=[col_name]
             )
-            column_names = [col_name] + [x.split("=")[0] for x in split_df.iloc[0, 1:]]
+            column_names = [col_name] + [
+                x.split("=")[0] for x in split_df.iloc[0, 1:]
+            ]
             split_df.columns = column_names
 
             # Update the values in each cell of the split dataframe
             for column in column_names[1:]:
-                split_df[column] = split_df[column].apply(lambda x: x.split("=")[1])
+                split_df[column] = split_df[column].apply(
+                    lambda x: x.split("=")[1]
+                )
 
             new_df = pd.concat([parameters_combo_dataframe, split_df], axis=1)
             parameters_combo_dataframe = new_df
 
     for insert_name in insert_names_list:
         assert (
-            f"{insert_name}_locus_specification" in parameters_combo_dataframe.columns
+            f"{insert_name}_locus_specification"
+            in parameters_combo_dataframe.columns
         ), f"{insert_name}_locus_specification not found in dataframe columns."
         assert (
             f"{insert_name}_flank_bp" in parameters_combo_dataframe.columns
@@ -693,8 +727,8 @@ def parameter_dataframe_reorganisation(parameters_combo_dataframe, insert_names_
 
 
 def _dataframe_cleaning(dataframe, unique_identifier=""):
-    
-        # Generate locus specification column
+
+    # Generate locus specification column
     dataframe["locus_specification"] = (
         dataframe["chrom"].astype(str)
         + ","
@@ -711,7 +745,11 @@ def _dataframe_cleaning(dataframe, unique_identifier=""):
     )
     for col in extra_cols:
         dataframe["locus_specification"] += (
-            "#" + f"{unique_identifier}_" + col + "=" + dataframe[col].astype(str)
+            "#"
+            + f"{unique_identifier}_"
+            + col
+            + "="
+            + dataframe[col].astype(str)
         )
-        
+
     return dataframe
