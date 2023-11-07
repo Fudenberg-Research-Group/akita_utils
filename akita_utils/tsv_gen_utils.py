@@ -2,9 +2,8 @@ import pandas as pd
 import numpy as np
 import akita_utils
 import glob
-import bioframe
+import bioframe as bf
 import itertools
-from io import StringIO
 import akita_utils.format_io
 
 
@@ -110,8 +109,8 @@ def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
     if (type(chrmsizes) is not dict) and (
         type(chrmsizes) is not pd.core.frame.DataFrame
     ):
-        chrmsizes = bioframe.read_chromsizes(chrmsizes)
-    view_df = bioframe.from_any(chrmsizes)
+        chrmsizes = bf.read_chromsizes(chrmsizes)
+    view_df = bf.from_any(chrmsizes)
     chromend_zones = view_df.copy()
     chromend_zones["start"] = chromend_zones["end"] - buffer_bp
     chromstart_zones = view_df.copy()
@@ -119,8 +118,29 @@ def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
     filter_zones = pd.concat([chromend_zones, chromstart_zones]).reset_index(
         drop=True
     )
-    df_filtered = bioframe.setdiff(df, filter_zones)
+    df_filtered = bf.setdiff(df, filter_zones)
     return df_filtered
+
+
+def filter_by_chromID(df, chrID_to_drop=["chrX", "chrY", "chrM"]):
+    """
+    Filter a DataFrame based on chromosome IDs.
+
+    This function takes a pandas DataFrame and a list of chromosome IDs
+    to drop from the DataFrame. It filters out rows where the 'chrom' column
+    matches any of the provided chromosome IDs.
+
+    Parameters:
+    - df (pandas.DataFrame): Input DataFrame containing a 'chrom' column
+                            representing chromosome IDs.
+    - chrID_to_drop (list): List of chromosome IDs to be filtered out from the DataFrame.
+
+    Returns:
+    pandas.DataFrame: A new DataFrame with rows removed where the 'chrom' column
+                      matches any of the chromosome IDs in chrID_to_drop.
+    """
+    filtered_df = df[~df.chrom.isin(chrID_to_drop)]
+    return filtered_df
 
 
 def filter_dataframe_by_column(
@@ -175,7 +195,7 @@ def filter_dataframe_by_column(
         .sort_values(column_name, ascending=False)
     )
 
-    if num_rows != None:
+    if num_rows is not None:
         assert num_rows <= len(
             filtered_df
         ), "length of dataframe is smaller than requested number of sites, change contraints"
@@ -251,9 +271,9 @@ def filter_by_overlap_num(
         Subset of working_df that do not have overlaps with filter_df above given threshold.
     """
 
-    filter_df = bioframe.expand(filter_df, pad=expand_window)
+    filter_df = bf.expand(filter_df, pad=expand_window)
 
-    working_df = bioframe.count_overlaps(
+    working_df = bf.count_overlaps(
         working_df, filter_df[filter_df_cols], cols1=working_df_cols
     )
 
@@ -603,6 +623,7 @@ def generate_ctcf_motifs_list(
 def generate_locus_specification_list(
     dataframe,
     filter_out_ctcf_motifs=False,
+    jasper_df_path="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
     specification_list=None,
     unique_identifier="",
 ):
@@ -623,8 +644,10 @@ def generate_locus_specification_list(
     """
 
     if filter_out_ctcf_motifs is True:
-        dataframe = filter_by_ctcf(dataframe, cols1=None)
-        dataframe = dataframe.rename(columns={"count": "num_of_ctcf_motifs"})
+        jaspar_df = bf.read_table(jasper_df_path, schema="jaspar", skiprows=1)
+        dataframe = bf.overlap(
+            dataframe, jaspar_df, suffixes=("", "_2"), return_index=False
+        )
 
     if "strand" not in dataframe.columns:  # some inserts dont have this column
         dataframe["strand"] = "+"
