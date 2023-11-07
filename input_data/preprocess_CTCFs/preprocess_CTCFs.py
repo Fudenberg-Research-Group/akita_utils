@@ -28,7 +28,11 @@ import bioframe as bf
 import numpy as np
 import pandas as pd
 import os
-from akita_utils.tsv_gen_utils import filter_by_chrmlen, filter_by_overlap_num
+from akita_utils.tsv_gen_utils import (
+    filter_by_chrmlen,
+    filter_by_overlap_num,
+    filter_by_chromID,
+)
 from akita_utils.format_io import read_jaspar_to_numpy, read_rmsk
 
 
@@ -40,13 +44,33 @@ def main():
         "--model-params-file",
         dest="model_params_file",
         default="/project/fudenber_735/tensorflow_models/akita/v2/models/f0c0/train/params.json",
-        help=" [Default: %default]",
+        help="Parameters of model to be used[Default: %default]",
     )
     parser.add_option(
         "--jaspar-file",
         dest="jaspar_file",
         default="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
+        help="Jaspar file with ctcf sites coordinates [Default: %default]",
+    )
+    parser.add_option(
+        "--ctcf-filter-expand-window",
+        dest="ctcf_filter_expand_window",
+        default=60,
+        type=int,
+        help="window size for the ctcf-filtering [Default: %default]",
+    )
+    parser.add_option(
+        "--rmsk-file",
+        dest="rmsk_file",
+        default="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz",
         help=" [Default: %default]",
+    )
+    parser.add_option(
+        "--rmsk-filter-expand-window",
+        dest="rmsk_filter_expand_window",
+        default=20,
+        type=int,
+        help="window size for the rmsk-filtering [Default: %default]",
     )
     parser.add_option(
         "--chrom-sizes-file",
@@ -81,12 +105,22 @@ def main():
         type="str",
         help="Output path [Default: %default]",
     )
-    
+    parser.add_option(
+        "--autosomes-only",
+        dest="autosomes_only",
+        default=True,
+        action="store_true",
+        help="Drop the sex chromosomes and mitochondrial DNA [Default: %default]",
+    )
+
     (options, args) = parser.parse_args()
+
+    if options.autosomes_only:
+        chromID_to_drop = ["chrX", "chrY", "chrM"]
 
     if os.path.exists(options.output_tsv_path) is True:
         raise ValueError("boundary file already exists!")
-    
+
     # get model seq_length
     with open(options.model_params_file) as params_open:
         params_model = json.load(params_open)["model"]
@@ -96,41 +130,53 @@ def main():
 
     # load jaspar CTCF motifs
     jaspar_df = bf.read_table(options.jaspar_file, schema="jaspar", skiprows=1)
-    jaspar_df = jaspar_df[~jaspar_df.chrom.isin(["chrX", "chrY", "chrM"])]
+    if options.autosomes_only:
+        jaspar_df = filter_by_chromID(jaspar_df, chromID_to_drop)
     jaspar_df.reset_index(drop=True, inplace=True)
 
     # read rmsk file
-    rmsk_file = "/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz"
-    rmsk_df = read_rmsk(rmsk_file)
-    
+    rmsk_df = read_rmsk(options.rmsk_file)
+
     # load boundaries and use standard filters for their strength
     boundaries = pd.read_csv(options.boundary_file, sep="\t")
-    
+
     window_size = options.boundary_file.split("window_")[1].split(".")[0]
-    boundary_key, insulation_key = (f"boundary_strength_{window_size}",f"log2_insulation_score_{window_size}")
-    
+    boundary_key, insulation_key = (
+        f"boundary_strength_{window_size}",
+        f"log2_insulation_score_{window_size}",
+    )
+
     boundaries = boundaries.iloc[
         (boundaries[boundary_key].values > options.boundary_strength_thresh)
-        * (boundaries[insulation_key].values < options.boundary_insulation_thresh)
+        * (
+            boundaries[insulation_key].values
+            < options.boundary_insulation_thresh
+        )
     ]
-    
-    boundaries = boundaries[~boundaries.chrom.isin(["chrX", "chrY", "chrM"])]
+
+    if options.autosomes_only:
+        boundaries = filter_by_chromID(boundaries, chromID_to_drop)
+
     boundaries = filter_by_chrmlen(
         boundaries,
         options.chrom_sizes_file,
         seq_length,
     )
-    
+
     boundaries.reset_index(drop=True, inplace=True)
 
     # overlapping CTCF df with boundaries df
-    df_overlap = bf.overlap(boundaries, jaspar_df, suffixes=("", "_2"), return_index=False)
+    df_overlap = bf.overlap(
+        boundaries, jaspar_df, suffixes=("", "_2"), return_index=False
+    )
 
     # removing rows with no start and end info
     df_overlap = df_overlap[pd.notnull(df_overlap["start_2"])]
     df_overlap = df_overlap[pd.notnull(df_overlap["end_2"])]
 
-    df_overlap["span"] = (df_overlap["start"].astype(str) + "-" + df_overlap["end"].astype(str))
+    df_overlap["span"] = (
+        df_overlap["start"].astype(str) + "-" + df_overlap["end"].astype(str)
+    )
 
     df_keys = [
         "chrom",
@@ -142,32 +188,43 @@ def main():
         insulation_key,
         boundary_key,
     ]
-    
+
     df_overlap = df_overlap[df_keys]
 
     # renaming
-    df_overlap = df_overlap.rename(columns={"span": "boundary_span", 
-                               "score_2": "jaspar_score", 
-                               "start_2": "start", 
-                               "end_2": "end", 
-                               "strand_2": "strand"})
+    df_overlap = df_overlap.rename(
+        columns={
+            "span": "boundary_span",
+            "score_2": "jaspar_score",
+            "start_2": "start",
+            "end_2": "end",
+            "strand_2": "strand",
+        }
+    )
 
     # filtering by CTCF
-    filtered_df = filter_by_overlap_num(df_overlap,
-                    filter_df=jaspar_df,
-                     max_overlap_num=1)
+    filtered_df = filter_by_overlap_num(
+        df_overlap,
+        filter_df=jaspar_df,
+        expand_window=options.ctcf_filter_expand_window,
+        max_overlap_num=1,
+    )
 
     # filtering by rmsk
-    filtered_df = filter_by_overlap_num(filtered_df,
-                        rmsk_df,
-                        expand_window=20,
-                        working_df_cols = ["chrom","start","end"])
+    filtered_df = filter_by_overlap_num(
+        filtered_df,
+        rmsk_df,
+        expand_window=options.rmsk_filter_expand_window,
+        working_df_cols=["chrom", "start", "end"],
+    )
 
     # adding seq_id
-    filtered_df["seq_id"] = [seq_index for seq_index in range(len(filtered_df))]
+    filtered_df["seq_id"] = [
+        seq_index for seq_index in range(len(filtered_df))
+    ]
 
     # saving
-    filtered_df.to_csv(options.output_tsv_path, sep = "\t", index=False)
+    filtered_df.to_csv(options.output_tsv_path, sep="\t", index=False)
 
 
 ################################################################################
