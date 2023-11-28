@@ -175,7 +175,7 @@ def calculate_INS(map_matrix, window=10):
     scores : num_targets-long vector with ISN-window scores
     """
 
-    num_targets = mats.shape[-1]
+    num_targets = map_matrix.shape[-1]
     scores = np.zeros((num_targets,))
     for target_index in range(num_targets):
         scores[target_index] = _single_map_insulation(
