@@ -2,17 +2,7 @@ import pytest
 import numpy as np
 from .Toy_genome import ToyGenomeOpen
 from akita_utils.dna_utils import dna_1hot, dna_1hot_to_seq, dna_seq_rc
-from akita_utils.seq_gens import (
-    _insert_casette,
-    mask_spans,
-    mask_spans_from_start_positions,
-    permute_spans,
-    mask_central_seq,
-    permute_central_seq,
-    fetch_centered_padded_seq_and_new_start_position,
-    randomise_spans_from_start_positions,
-    permute_spans_from_start_positions,
-)
+from akita_utils.seq_gens import _insert_casette
 
 
 genome_data = {
