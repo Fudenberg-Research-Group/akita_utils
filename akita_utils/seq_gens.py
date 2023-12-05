@@ -4,12 +4,7 @@ import akita_utils.format_io
 import pandas as pd
 import logging
 import math
-
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-log = logging.getLogger(__name__)
-
+from akita_utils.dna_utils import permute_seq_k
 
 def _insert_casette(
     seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string
@@ -205,7 +200,7 @@ def reference_seqs_gen(background_seqs):
         yield seq_1hot
 
 
-def central_permutation_seqs_gen(seq_coords_df, genome_open, chrom_sizes_table):
+def central_permutation_seqs_gen(seq_coords_df, genome_open, chrom_sizes_table, seq_length=1310720):
 
     """
     Generate sequences for a given set of coordinates performing central permutations.
@@ -221,6 +216,7 @@ def central_permutation_seqs_gen(seq_coords_df, genome_open, chrom_sizes_table):
     - genome_open (GenomeFileHandler): A file handler for the genome to fetch sequences.
     - chrom_sizes_table (pandas.DataFrame): DataFrame with columns 'chrom' and 'size' representing
                                             the sizes of chromosomes in the genome.
+    - seq_length: int; the length of generated sequence (usually, the standard length of Akita's input).
 
     Yields:
     numpy.ndarray: One-hot encoded DNA sequences with central permutations around the specified
