@@ -480,10 +480,10 @@ def calculate_scores(stat_metrics, map_matrix, reference_map_matrix=None, **kwar
     if np.any((["INS" in stat.split("-")[0] for stat in stat_metrics])):
         for stat in stat_metrics:
             if stat.split("-")[0] == "INS":
-                window = stat.split("-")[1]
+                window = int(stat.split("-")[1])
                 INS = calculate_INS(map_matrix, window)
                 refINS = calculate_INS(reference_map_matrix, window)
-                scores[stat] = INS
+                scores[f"alt_{stat}"] = INS
                 scores[f"ref_{stat}"] = refINS
 
     if ("dot-score" in stat_metrics) or ("cross-score" in stat_metrics) or ("x-score" in stat_metrics):
