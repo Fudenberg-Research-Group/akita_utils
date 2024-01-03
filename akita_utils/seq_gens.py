@@ -1,15 +1,11 @@
 from akita_utils.dna_utils import hot1_rc, dna_1hot
-import numpy as np
 import akita_utils.format_io
-import pandas as pd
-import logging
-import math
 from akita_utils.dna_utils import permute_seq_k
+
 
 def _insert_casette(
     seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string
 ):
-
     """
     Insert a casette sequence into a given one-hot encoded DNA sequence.
 
@@ -33,7 +29,7 @@ def _insert_casette(
     AssertionError: If the insertion offset is outside the valid range or if the length
                     of the insert and inter-insert spacing leads to an invalid offset.
     """
-    
+
     seq_length = seq_1hot.shape[0]
     insert_bp = len(seq_1hot_insertion)
     num_inserts = len(orientation_string)
@@ -99,7 +95,6 @@ def _multi_insert_offsets_casette(
         insertion_offset = offsets_bp[insertion_index]
 
         if insertion_orientation_arrow == ">":
-
             insert_limits += [
                 (
                     insertion_start_bp + insertion_offset,
@@ -114,7 +109,6 @@ def _multi_insert_offsets_casette(
                 + insert_bp
             ] = seq_1hot_insertions[insertion_index]
         else:
-
             insert_limits += [
                 (
                     insertion_start_bp + insertion_offset,
@@ -200,8 +194,9 @@ def reference_seqs_gen(background_seqs):
         yield seq_1hot
 
 
-def central_permutation_seqs_gen(seq_coords_df, genome_open, chrom_sizes_table, seq_length=1310720):
-
+def central_permutation_seqs_gen(
+    seq_coords_df, genome_open, chrom_sizes_table, seq_length=1310720
+):
     """
     Generate sequences for a given set of coordinates performing central permutations.
 
@@ -227,46 +222,51 @@ def central_permutation_seqs_gen(seq_coords_df, genome_open, chrom_sizes_table, 
     Exception: If the prediction window for a given span cannot be centered within the chromosome.
     ```
     """
-    
+
     for s in seq_coords_df.itertuples():
-
         list_1hot = []
-        
-        chrom, start, end, strand = s.chrom, s.start, s.end, s.strand
 
+        chrom, start, end = s.chrom, s.start, s.end
         if abs(end - start) % 2 != 0:
             start = start - 1
-        
+
         span_length = abs(end - start)
         length_diff = seq_length - span_length
-        
         up_length = down_length = length_diff // 2
 
         # start and end in genomic coordinates
-        up_start = start - up_length
-        down_end = end + down_length
+        up_start, down_end = start - up_length, end + down_length
 
         # relative start and end of the span of interest in the prediction window
         relative_start = up_length + 1
         relative_end = relative_start + span_length
-        
+
         # checking if a genomic prediction can be centered around the span
-        chr_size = int(chrom_sizes_table[chrom_sizes_table["chrom"] == chrom]["size"])
+        chr_size = int(
+            chrom_sizes_table[chrom_sizes_table["chrom"] == chrom]["size"]
+        )
         if up_start < 0 or down_end > chr_size:
-            raise Exception("The prediction window for the following span: ", chrom, start, end, strand, "cannot be centered.")
-        
-        seq_1hot = dna_1hot(genome_open.fetch(chrom, up_start, down_end).upper())
-        if strand == "-":
-            seq_1hot = hot1_rc(seq_1hot)
-        list_1hot.append(seq_1hot)
-        
-        permuted_span = permute_seq_k(seq_1hot[relative_start:relative_end], k=1)
-        seq_1hot[relative_start:relative_end] = permuted_span
-        list_1hot.append(seq_1hot)
+            raise Exception(
+                "The prediction window for the following span: ",
+                chrom,
+                start,
+                end,
+                strand,
+                "cannot be centered.",
+            )
+
+        wt_seq_1hot = dna_1hot(
+            genome_open.fetch(chrom, up_start, down_end).upper()
+        )
+        list_1hot.append(wt_seq_1hot.copy())
+
+        alt_seq_1hot = wt_seq_1hot.copy()
+        permuted_span = permute_seq_k(
+            alt_seq_1hot[relative_start:relative_end], k=1
+        )
+        alt_seq_1hot[relative_start:relative_end] = permuted_span
+        list_1hot.append(alt_seq_1hot)
 
         # yielding first the reference, then the permuted sequence
-        for seq_1hot in list_1hot:
-            yield seq_1hot
-
-
-
+        for sequence in list_1hot:
+            yield sequence
