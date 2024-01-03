@@ -18,10 +18,15 @@
 ###################################################
 
 import os
+
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 from optparse import OptionParser
-from akita_utils.h5_utils import collect_h5, suspicious_collected_h5_size, clean_directory
+from akita_utils.h5_utils import (
+    collect_h5,
+    suspicious_collected_h5_size,
+    clean_directory,
+)
 
 
 def main():
@@ -35,6 +40,20 @@ def main():
         help="Name of h5 files to collect [Default: %default]",
     )
     parser.add_option(
+        "-v",
+        dest="virtual_experiment",
+        default=True,
+        action="store_true",
+        help="True, if virtual experiment [Default: %default]",
+    )
+    parser.add_option(
+        "-g",
+        dest="genomic_experiment",
+        default=True,
+        action="store_true",
+        help="True, if genomic experiment [Default: %default]",
+    )
+    parser.add_option(
         "-m",
         dest="collecting_maps",
         default=True,
@@ -42,11 +61,25 @@ def main():
         help="Collecting maps [Default: %default]",
     )
     parser.add_option(
+        "-n",
+        dest="not_collecting_maps",
+        default=True,
+        action="store_true",
+        help="Not collecting maps [Default: %default]",
+    )
+    parser.add_option(
         "-l",
         dest="leave_files",
-        default=False,
+        default=True,
         action="store_true",
         help="Don't clean the output directory [Default: %default]",
+    )
+    parser.add_option(
+        "-c",
+        dest="not_leave_files",
+        default=True,
+        action="store_true",
+        help="Clean the output directory [Default: %default]",
     )
     parser.add_option(
         "-t",
@@ -57,27 +90,51 @@ def main():
     )
 
     (options, args) = parser.parse_args()
-    
+
     if len(args) == 1:
         out_dir = args[0]
     else:
-        raise Exception("Too many arguments have been provided. Check the command, please.")
+        raise Exception(
+            "Too many arguments have been provided. Check the command, please."
+        )
 
-    # By default, stat metrics are collected. 
+    if options.not_collecting_maps == True:
+        options.collecting_maps = False
+
+    if options.genomic_experiment == True:
+        options.virtual_experiment = False
+
+    if options.not_leave_files == True:
+        options.leave_files == False
+
+    # By default, stat metrics are collected.
     # Otherwise, h5 files with maps are supposed to be collected with default file name MAPS_OUT.h5.
-    if (options.collecting_maps == True and options.h5_file_name == "STATS_OUT.h5"):
+    if (
+        options.collecting_maps == True
+        and options.h5_file_name == "STATS_OUT.h5"
+    ):
         options.h5_file_name = "MAPS_OUT.h5"
 
     # data collection
     print("Collecting h5 files...")
-    collect_h5(out_dir, options.h5_file_name)
 
-    if not options.leave_files:
-        if suspicious_collected_h5_size(out_dir, options.h5_file_name, options.collected_to_sum_file_size_ths):
-            raise Exception("Please, check the collected file. Job-files have not been deleted yet since the sum of their sizes is suspiciously bigger than the size of the collected h5 file.")
+    collect_h5(
+        out_dir, options.h5_file_name, virtual_exp=options.virtual_experiment
+    )
+
+    if options.leave_files:
+        if suspicious_collected_h5_size(
+            out_dir,
+            options.h5_file_name,
+            options.collected_to_sum_file_size_ths,
+        ):
+            raise Exception(
+                "Please, check the collected file. Job-files have not been deleted yet since the sum of their sizes is suspiciously bigger than the size of the collected h5 file."
+            )
         else:
             print("Cleaning the directory...")
             clean_directory(out_dir, options.h5_file_name)
+
 
 if __name__ == "__main__":
     main()
