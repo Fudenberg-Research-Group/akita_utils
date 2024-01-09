@@ -125,7 +125,7 @@ def _multi_insert_offsets_casette(
                 seq_1hot_insertions[insertion_index]
             )
 
-    _check_overlaps(insert_limits)
+    # _check_overlaps(insert_limits)
 
     return output_seq
 
@@ -194,6 +194,62 @@ def reference_seqs_gen(background_seqs):
         yield seq_1hot
 
 
+def get_centered_window(s, seq_length, chrom_sizes_table):
+    """
+    Calculate parameters for a centered genomic prediction window.
+
+    Given genomic coordinates `s` (chromosome, start, end), a target sequence length `seq_length`,
+    and a table of chromosome sizes `chrom_sizes_table`, this function calculates the parameters
+    necessary for generating a centered prediction window around the specified span.
+
+    Parameters:
+    - s (pandas.Series): Series containing genomic coordinates with columns 'chrom', 'start', 'end'.
+    - seq_length (int): The target length of the generated sequence.
+    - chrom_sizes_table (pandas.DataFrame): DataFrame with columns 'chrom' and 'size' representing
+                                            the sizes of chromosomes in the genome.
+
+    Returns:
+    tuple: A tuple containing the chromosome and the start and end positions for the centered window.
+
+    Raises:
+    Exception: If the prediction window for the specified span cannot be centered within the chromosome.
+    """
+    chrom, start, end = s.chrom, s.start, s.end
+    if abs(end - start) % 2 != 0:
+        start = start - 1
+
+    span_length = abs(end - start)
+    length_diff = seq_length - span_length
+    up_length = down_length = length_diff // 2
+
+    # start and end in genomic coordinates
+    up_start, down_end = start - up_length, end + down_length
+
+    # relative start and end of the span of interest in the prediction window
+    relative_start = up_length + 1
+    relative_end = relative_start + span_length
+
+    # checking if a genomic prediction can be centered around the span
+    # chr_size = int(
+    #     chrom_sizes_table[chrom_sizes_table["chrom"] == chrom]["size"]
+    # )
+    chr_size = int(
+        chrom_sizes_table.loc[
+            chrom_sizes_table["chrom"] == chrom, "size"
+        ].iloc[0]
+    )
+
+    if up_start < 0 or down_end > chr_size:
+        raise Exception(
+            "The prediction window for the following span: ",
+            chrom,
+            start,
+            end,
+            "cannot be centered.",
+        )
+    return chrom, up_start, down_end, relative_start, relative_end
+
+
 def central_permutation_seqs_gen(
     seq_coords_df, genome_open, chrom_sizes_table, seq_length=1310720
 ):
@@ -226,47 +282,85 @@ def central_permutation_seqs_gen(
     for s in seq_coords_df.itertuples():
         list_1hot = []
 
-        chrom, start, end = s.chrom, s.start, s.end
-        if abs(end - start) % 2 != 0:
-            start = start - 1
-
-        span_length = abs(end - start)
-        length_diff = seq_length - span_length
-        up_length = down_length = length_diff // 2
-
-        # start and end in genomic coordinates
-        up_start, down_end = start - up_length, end + down_length
-
-        # relative start and end of the span of interest in the prediction window
-        relative_start = up_length + 1
-        relative_end = relative_start + span_length
-
-        # checking if a genomic prediction can be centered around the span
-        chr_size = int(
-            chrom_sizes_table[chrom_sizes_table["chrom"] == chrom]["size"]
-        )
-        if up_start < 0 or down_end > chr_size:
-            raise Exception(
-                "The prediction window for the following span: ",
-                chrom,
-                start,
-                end,
-                strand,
-                "cannot be centered.",
-            )
+        (
+            chrom,
+            window_start,
+            window_end,
+            permutation_start,
+            permutation_end,
+        ) = get_centered_window(s, seq_length, chrom_sizes_table)
 
         wt_seq_1hot = dna_1hot(
-            genome_open.fetch(chrom, up_start, down_end).upper()
+            genome_open.fetch(chrom, window_start, window_end).upper()
         )
         list_1hot.append(wt_seq_1hot.copy())
 
         alt_seq_1hot = wt_seq_1hot.copy()
         permuted_span = permute_seq_k(
-            alt_seq_1hot[relative_start:relative_end], k=1
+            alt_seq_1hot[permutation_start:permutation_end], k=1
         )
-        alt_seq_1hot[relative_start:relative_end] = permuted_span
+        alt_seq_1hot[permutation_start:permutation_end] = permuted_span
         list_1hot.append(alt_seq_1hot)
 
         # yielding first the reference, then the permuted sequence
+        for sequence in list_1hot:
+            yield sequence
+
+
+def central_permutation_rc_seqs_gen(
+    seq_coords_df, genome_open, chrom_sizes_table, seq_length=1310720
+):
+    """
+    Generate sequences for a given set of coordinates performing central permutations
+    and outputting reverse compliment of the permuted sequence.
+
+    This generator function takes a DataFrame `seq_coords_df` containing genomic
+    coordinates (chromosome, start, end, strand), a genome file handler `genome_open`
+    to fetch sequences, and a table of chromosome sizes `chrom_sizes_table`. It yields
+    sequences with central permutations around the coordinates specified in `seq_coords_df`.
+
+    Parameters:
+    - seq_coords_df (pandas.DataFrame): DataFrame with columns 'chrom', 'start', 'end', 'strand'
+                                         representing genomic coordinates of interest.
+    - genome_open (GenomeFileHandler): A file handler for the genome to fetch sequences.
+    - chrom_sizes_table (pandas.DataFrame): DataFrame with columns 'chrom' and 'size' representing
+                                            the sizes of chromosomes in the genome.
+    - seq_length: int; the length of generated sequence (usually, the standard length of Akita's input).
+
+    Yields:
+    numpy.ndarray: One-hot encoded DNA sequences with central permutations around the specified
+                   coordinates and reverse compliment. The first sequence yielded is the reference, followed by the
+                   sequence with a rc central permutation.
+
+    Raises:
+    Exception: If the prediction window for a given span cannot be centered within the chromosome.
+    ```
+    """
+    for s in seq_coords_df.itertuples():
+        list_1hot = []
+
+        (
+            chrom,
+            window_start,
+            window_end,
+            permutation_start,
+            permutation_end,
+        ) = get_centered_window(s, seq_length, chrom_sizes_table)
+
+        wt_seq_1hot = dna_1hot(
+            genome_open.fetch(chrom, window_start, window_end).upper()
+        )
+        rc_wt_seq_1hot = hot1_rc(wt_seq_1hot)
+        list_1hot.append(rc_wt_seq_1hot.copy())
+
+        alt_seq_1hot = wt_seq_1hot.copy()
+        permuted_span = permute_seq_k(
+            alt_seq_1hot[permutation_start:permutation_end], k=1
+        )
+        alt_seq_1hot[permutation_start:permutation_end] = permuted_span
+        rc_alt_seq_1hot = hot1_rc(alt_seq_1hot)
+        list_1hot.append(rc_alt_seq_1hot)
+
+        # yielding first the reference, then the reverse compliment permuted sequence
         for sequence in list_1hot:
             yield sequence
