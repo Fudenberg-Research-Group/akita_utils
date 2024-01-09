@@ -230,9 +230,6 @@ def get_centered_window(s, seq_length, chrom_sizes_table):
     relative_end = relative_start + span_length
 
     # checking if a genomic prediction can be centered around the span
-    # chr_size = int(
-    #     chrom_sizes_table[chrom_sizes_table["chrom"] == chrom]["size"]
-    # )
     chr_size = int(
         chrom_sizes_table.loc[
             chrom_sizes_table["chrom"] == chrom, "size"
@@ -248,6 +245,63 @@ def get_centered_window(s, seq_length, chrom_sizes_table):
             "cannot be centered.",
         )
     return chrom, up_start, down_end, relative_start, relative_end
+
+
+def get_shifted_window(s, shift, seq_length, chrom_sizes_table):
+    """
+    Calculate parameters for a shifted genomic prediction window.
+
+    Given genomic coordinates `s` (chromosome, start, end), a shift value `shift`,
+    a target sequence length `seq_length`, and a table of chromosome sizes `chrom_sizes_table`,
+    this function calculates the parameters necessary for generating a shifted prediction window
+    around the specified span.
+
+    Parameters:
+    - s (pandas.Series): Series containing genomic coordinates with columns 'chrom', 'start', 'end'.
+    - shift (int): The amount of shift to be applied to the prediction window.
+    - seq_length (int): The target length of the generated sequence.
+    - chrom_sizes_table (pandas.DataFrame): DataFrame with columns 'chrom' and 'size' representing
+                                            the sizes of chromosomes in the genome.
+
+    Returns:
+    tuple: A tuple containing the chromosome, the shifted start and end positions,
+           and the relative start and end positions for the shifted window.
+
+    Raises:
+    Exception: If the shifted genomic prediction window cannot be centered and shifted around the span.
+    """
+    chrom, start, end = s.chrom, s.start, s.end
+    if abs(end - start) % 2 != 0:
+        start = start - 1
+
+    span_length = abs(end - start)
+    length_diff = seq_length - span_length
+    up_length = down_length = length_diff // 2
+
+    # start and end in genomic coordinates
+    up_start, down_end = start - up_length, end + down_length
+    shifted_up_start, shifted_down_end = up_start - shift, down_end - shift
+    
+    # relative start and end of the span of interest in the prediction window
+    relative_start = up_length + 1 + shift
+    relative_end = relative_start + span_length
+
+    # checking if a genomic prediction can be centered around the span
+    chr_size = int(
+        chrom_sizes_table.loc[
+            chrom_sizes_table["chrom"] == chrom, "size"
+        ].iloc[0]
+    )
+
+    if shifted_up_start < 0 or shifted_down_end > chr_size:
+        raise Exception(
+            "The prediction window for the following span: ",
+            chrom,
+            start,
+            end,
+            "cannot be centered.",
+        )
+    return chrom, shifted_up_start, shifted_down_end, relative_start, relative_end
 
 
 def central_permutation_seqs_gen(
@@ -362,5 +416,61 @@ def central_permutation_rc_seqs_gen(
         list_1hot.append(rc_alt_seq_1hot)
 
         # yielding first the reference, then the reverse compliment permuted sequence
+        for sequence in list_1hot:
+            yield sequence
+
+
+def shifted_central_permutation_seqs_gen(
+    seq_coords_df, shift, genome_open, chrom_sizes_table, seq_length=1310720
+):
+    """
+    Generate sequences with shifted central permutations around specified genomic coordinates.
+
+    This generator function takes a DataFrame `seq_coords_df` containing genomic
+    coordinates (chromosome, start, end, strand), a shift value `shift`, a genome file handler
+    `genome_open` to fetch sequences, and a table of chromosome sizes `chrom_sizes_table`.
+    It yields sequences with central permutations shifted around the coordinates specified in `seq_coords_df`.
+
+    Parameters:
+    - seq_coords_df (pandas.DataFrame): DataFrame with columns 'chrom', 'start', 'end', 'strand'
+                                         representing genomic coordinates of interest.
+    - shift (int): The amount of shift to be applied to the prediction window.
+    - genome_open (GenomeFileHandler): A file handler for the genome to fetch sequences.
+    - chrom_sizes_table (pandas.DataFrame): DataFrame with columns 'chrom' and 'size' representing
+                                            the sizes of chromosomes in the genome.
+    - seq_length (int): The length of the generated sequence (usually, the standard length of Akita's input).
+
+    Yields:
+    numpy.ndarray: One-hot encoded DNA sequences with shifted central permutations around the specified
+                   coordinates. The first sequence yielded is the reference, followed by the
+                   sequence with a shifted central permutation.
+
+    Raises:
+    Exception: If the shifted prediction window for a given span cannot be centered within the chromosome.
+    """
+    for s in seq_coords_df.itertuples():
+        list_1hot = []
+
+        (
+            chrom,
+            window_start,
+            window_end,
+            permutation_start,
+            permutation_end,
+        ) = get_shifted_window(s, shift, seq_length, chrom_sizes_table)
+
+        wt_seq_1hot = dna_1hot(
+            genome_open.fetch(chrom, window_start, window_end).upper()
+        )
+        list_1hot.append(wt_seq_1hot.copy())
+
+        alt_seq_1hot = wt_seq_1hot.copy()
+        permuted_span = permute_seq_k(
+            alt_seq_1hot[permutation_start:permutation_end], k=1
+        )
+        alt_seq_1hot[permutation_start:permutation_end] = permuted_span
+        list_1hot.append(alt_seq_1hot)
+
+        # yielding first the reference, then the permuted sequence
         for sequence in list_1hot:
             yield sequence
