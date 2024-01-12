@@ -274,15 +274,20 @@ def write_stat_metrics_to_h5(
 
     # increase dtype
     prediction_matrix = prediction_matrix.astype("float32")
-    reference_prediction_matrix = reference_prediction_matrix.astype("float32")
+    if reference_prediction_matrix is not None:
+        reference_prediction_matrix = reference_prediction_matrix.astype("float32")
 
     # convert prediction vectors to maps
     map_matrix = ut_dense(prediction_matrix, diagonal_offset)
-    ref_map_matrix = ut_dense(reference_prediction_matrix, diagonal_offset)
+    if reference_prediction_matrix is not None:
+        ref_map_matrix = ut_dense(reference_prediction_matrix, diagonal_offset)
 
     # getting desired scores
-    scores = calculate_scores(stat_metrics, map_matrix, ref_map_matrix)
-
+    if reference_prediction_matrix is not None:
+        scores = calculate_scores(stat_metrics, map_matrix, ref_map_matrix)
+    else:
+        scores = calculate_scores(stat_metrics, map_matrix)
+        
     for key in scores:
         h5_outfile[f"{key}_h{head_index}_m{model_index}"][
             experiment_index
