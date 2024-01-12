@@ -474,3 +474,65 @@ def shifted_central_permutation_seqs_gen(
         # yielding first the reference, then the permuted sequence
         for sequence in list_1hot:
             yield sequence
+
+
+def background_exploration_seqs_gen(seq_coords_df, genome_open, jasper_motif_file=None):
+    """
+    Generates mutated DNA sequences from genomic coordinates following given parameters like mutation method, shuffle parameter, ctcf detection threshold etc. if a mutation method provided is about motifs then make sure corresponding parameters are provided as well i.e if mask_motif method is used, then ctcf detection threshold is needed.
+
+    Parameters:
+    -----------
+    seq_coords_df: pandas.DataFrame
+        DataFrame containing genomic coordinates and mutation methods for generating mutated DNA sequences.
+        The DataFrame must have the following columns:
+        - locus_specification: string specifying the genomic coordinates in the format "chromosome,start,end".
+        - mutation_method: string specifying the type of mutation to apply to the DNA sequence.
+        - other parameters to help implement the mutation method
+
+    genome_open: object
+        An object with a fetch method that can retrieve DNA sequences from genomic coordinates.
+
+    jasper_motif_file: str, optional
+        Path to a JASPAR motif file for the transcription factor motif to mask or permute.
+        If None, the default CTCF motif is used.
+
+    Yields:
+    -------
+    numpy.ndarray
+        Mutated DNA sequence in one-hot encoded format, generated according to the specified mutation method.
+    """
+
+    if jasper_motif_file is not None:
+        motif = read_jaspar_to_numpy(jasper_motif_file)
+    else:
+        print("CTCF motif jasper file was not provided, using default if available")
+        motif = akita_utils.format_io.read_jaspar_to_numpy()
+    
+    for s in seq_coords_df.itertuples():
+        chrom, start, end = s.locus_specification.split(",")
+        seq_dna = genome_open.fetch(chrom, int(start), int(end))
+        wt_seq_1hot = dna_1hot(seq_dna)
+        alt_seq_1hot = wt_seq_1hot.copy()
+        mutation_method = s.mutation_method
+        
+        # if mutation_method == "mask_motif":
+        #     motif_positions = generate_spans_start_positions(
+        #     wt_1hot, motif, s.ctcf_detection_threshold)
+        #     motif_window = 2 ** (math.floor(math.log2(len(motif))))
+        #     yield mask_spans_from_start_positions(wt_1hot, motif_positions, motif_window)
+        # elif mutation_method == "permute_motif":
+        #     motif_positions = generate_spans_start_positions(
+        #     wt_1hot, motif, s.ctcf_detection_threshold)
+        #     motif_window = 2 ** (math.floor(math.log2(len(motif))))
+        #     yield permute_spans_from_start_positions(wt_1hot, motif_positions, motif_window, s.shuffle_parameter)
+        # elif mutation_method == "randomise_motif":
+        #     motif_positions = generate_spans_start_positions(
+        #     wt_1hot, motif, s.ctcf_detection_threshold)
+        #     motif_window = 2 ** (math.floor(math.log2(len(motif))))
+        #     yield randomise_spans_from_start_positions(wt_1hot, motif_positions, motif_window)
+        if mutation_method == "permute_whole_seq":
+            permuted_alt_seq_1hot = permute_seq_k(alt_seq_1hot, k=s.shuffle_parameter)
+            yield permuted_alt_seq_1hot
+        # elif mutation_method == "randomise_whole_seq":
+        #     yield random_seq_permutation(alt_seq_1hot)
+
