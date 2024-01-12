@@ -208,7 +208,7 @@ def filter_dataframe_by_column(
             filtered_df["binned"] = pd.cut(
                 filtered_df[column_name], bins=num_rows
             )
-            filtered_df = filtered_df.groupby("binned").apply(
+            filtered_df = filtered_df.groupby("binned", observed=False).apply(
                 lambda x: x.head(1)
             )
         else:
