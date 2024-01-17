@@ -221,7 +221,7 @@ def calculate_SCD(map_matrix, reference_map_matrix=None):
 
     Returns
     ---------
-    num_targets-long vector with SCD score calculated for each target.
+    num_targets-long vector with SCD score cf"map{exp_index}alculated for each target.
     """
 
     if type(reference_map_matrix) != np.ndarray:

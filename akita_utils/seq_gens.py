@@ -505,11 +505,11 @@ def background_exploration_seqs_gen(seq_coords_df, genome_open, jasper_motif_fil
     if jasper_motif_file is not None:
         motif = read_jaspar_to_numpy(jasper_motif_file)
     else:
-        print("CTCF motif jasper file was not provided, using default if available")
+        # print("CTCF motif jasper file was not provided, using default if available")
         motif = akita_utils.format_io.read_jaspar_to_numpy()
     
     for s in seq_coords_df.itertuples():
-        chrom, start, end = s.locus_specification.split(",")
+        chrom, start, end = s.chrom, s.start, s.end
         seq_dna = genome_open.fetch(chrom, int(start), int(end))
         wt_seq_1hot = dna_1hot(seq_dna)
         alt_seq_1hot = wt_seq_1hot.copy()

@@ -274,16 +274,16 @@ def write_stat_metrics_to_h5(
 
     # increase dtype
     prediction_matrix = prediction_matrix.astype("float32")
-    if reference_prediction_matrix is not None:
+    if type(reference_prediction_matrix) == np.ndarray:
         reference_prediction_matrix = reference_prediction_matrix.astype("float32")
 
     # convert prediction vectors to maps
     map_matrix = ut_dense(prediction_matrix, diagonal_offset)
-    if reference_prediction_matrix is not None:
+    if type(reference_prediction_matrix) == np.ndarray:
         ref_map_matrix = ut_dense(reference_prediction_matrix, diagonal_offset)
 
     # getting desired scores
-    if reference_prediction_matrix is not None:
+    if type(reference_prediction_matrix) == np.ndarray:
         scores = calculate_scores(stat_metrics, map_matrix, ref_map_matrix)
     else:
         scores = calculate_scores(stat_metrics, map_matrix)
