@@ -1,99 +1,64 @@
 import numpy as np
-import pandas as pd
 import pysam
 from akita_utils.dna_utils import dna_1hot, permute_seq_k
 
 
-def create_flat_seqs_gen(
-    seqnn_model,
-    genome_fasta,
-    dataframe,
-    max_iters=25,
-    batch_size=8
-):
-    """This function creates flat sequences by permutating experimental sequences
-
-    Args:
-        seqnn_model : model used to make predictions
-        genome_fasta(str) : path to fasta file
-        dataframe : dataframe of experimental sequences' parameters
-        max_iters (int, optional): maximum iterations in making permutations. Defaults to 25.
-        batch_size (int, optional): batch size used in model predictions. Defaults to 6.
-
-    Returns:
-        flat_seqs : list of flat sequences
-    """
-    max_iters = int(max_iters) # fix this from above
-    flat_seqs = []
-    num_seqs = dataframe.shape[0]
-    genome_open = pysam.Fastafile(genome_fasta)
-    for ind in range(num_seqs):
-        print(f"Working on seq number {ind}")
-        chrom, start, end, shuffle_k, ctcf_thresh, scores_thresh = dataframe.iloc[ind][["chrom", "start", "end","shuffle_parameter","ctcf_detection_threshold","map_score_threshold"]]
-        seq = genome_open.fetch(chrom, int(start), int(end)).upper()
-        seq_1hot = dna_1hot(seq)
-        num_iters = 0
-        while num_iters < max_iters:
-            print(f"\t - iteration {num_iters}")
-            seq_1hot_batch = _seq_batch_generator_shuffled_seqs(seq_1hot, shuffle_k, batch_size)
-            predictions = seqnn_model.predict(seq_1hot_batch, batch_size=batch_size)
-            num_iters, scores = _check_and_append_satisfying_seqs(seq_1hot_batch=seq_1hot_batch, 
-                                                                                                   predictions=predictions, 
-                                                                                                   scores_thresh=scores_thresh,
-                                                                                                   flat_seqs_storage_list=flat_seqs, 
-                                                                                                   num_iters=num_iters, 
-                                                                                                   max_iters=max_iters
-                                                                                                  )
-            num_iters += 1
-            
-    return flat_seqs
-
-
-def _seq_batch_generator_shuffled_seqs(seq_1hot, shuffle_k, batch_size):
-    seq_1hot_batch = []
-    for _ in range(batch_size):
-        seq_1hot_batch.append(permute_seq_k(seq_1hot, k=shuffle_k))
-    return np.array(seq_1hot_batch)
-
-
 def _calculate_scores_from_predictions(predictions):
     """
-    Calculates SCD scores, MPS scores, and custom scores for each sequence in `predictions`.
+    Computes a specific score from a set of prediction vectors.
 
-    Args:
-        predictions (numpy.ndarray): A numpy array of shape `(num_sequences, sequence_length, num_classes)`
-            containing the predicted probabilities for each class for each position in each sequence.
+    This function takes an array of prediction vectors and calculates a score for each vector.
+    The score is based on the square root of the sum of squares of the prediction vector. The function returns
+    the maximum score from each prediction vector.
+
+    Parameters:
+    - predictions (numpy.ndarray): A 3D numpy array where each entry along the first dimension
+                                   represents a prediction vector for a sequence. The array should
+                                   have the shape (number_of_sequences, features, positions).
 
     Returns:
-        tuple: A tuple containing three numpy arrays: `scores` (maximum_of_SCD scores) of shape `(num_sequences,)`.
+    - list: A list of scores, one for each prediction vector in the input array. Each score is
+            the maximum value calculated from the square root of the sum of squares of the
+            prediction vector across its features.
     """
     scores = []
     for seq_num in range(predictions.shape[0]):
-        ref_preds=predictions[seq_num,:,:]
+        ref_preds = predictions[seq_num, :, :]
         ref_preds = ref_preds.astype("float32")
 
         # there is no division by 2, since it's calculated based on the prediction vector, not a map
-        scores += [np.max(np.sqrt((ref_preds**2).sum(axis=0)))] # maximum_of_SCD
-        
+        scores += [
+            np.max(np.sqrt((ref_preds**2).sum(axis=0)))
+        ]  # maximum_of_SCD
+
     return scores
 
 
-def _check_and_append_satisfying_seqs(seq_1hot_batch, predictions, scores_thresh, flat_seqs_storage_list, num_iters, max_iters):
+def _check_and_append_satisfying_seqs(
+    seq_1hot_batch,
+    predictions,
+    scores_thresh,
+    flat_seqs_storage_list,
+    num_iters,
+    max_iters,
+):
     """
-    Check which sequences in a batch of predictions satisfy certain score thresholds.
+    Evaluates prediction scores against a threshold and appends sequences meeting criteria to a storage list.
 
-    Args:
-        seq_1hot_batch (list): A list of one-hot encoded sequences.
-        predictions (list): A list of predictions to calculate scores for.
-        scores_thresh (float): A threshold for the SCD score.
-        flat_seqs_storage_list (list): A list to store flat seq data in.
-        num_iters (int): The current number of iterations.
-        max_iters (int): The maximum number of iterations allowed.
+    This function takes batches of one-hot encoded sequences and their corresponding prediction scores,
+    assesses these scores against a predefined threshold, and appends sequences with scores below the threshold
+    to a storage list. It also updates the number of iterations if the condition is met.
+
+    Parameters:
+    - seq_1hot_batch (numpy.ndarray): A batch of one-hot encoded sequences.
+    - predictions (numpy.ndarray): An array of prediction scores corresponding to the sequences.
+    - scores_thresh (float): A threshold score. Sequences with scores below this threshold are considered satisfactory.
+    - flat_seqs_storage_list (list): A list to store sequences that meet the criteria.
+    - num_iters (int): The current number of iterations processed.
+    - max_iters (int): The maximum number of iterations allowed.
 
     Returns:
-        int: The updated number of iterations (max_iters) if the predictions satisfy the conditions, and the satisfying sequences are appended to flat_seqs_storage_list.
-        OR,
-        int: The current number of iterations (num_iters) if the predictions do not satisfy the conditions.
+    - tuple: A tuple containing the updated number of iterations and a list of scores for each sequence in the batch.
     """
     scores = _calculate_scores_from_predictions(predictions)
 
@@ -108,3 +73,96 @@ def _check_and_append_satisfying_seqs(seq_1hot_batch, predictions, scores_thresh
 
     return num_iters, scores
 
+
+def _seq_batch_generator_shuffled_seqs(seq_1hot, shuffle_k, batch_size):
+    """
+    Generates a batch of shuffled sequences from a given one-hot encoded sequence.
+
+    This function takes a one-hot encoded sequence and produces a batch of shuffled versions of this sequence.
+    Each sequence in the batch is generated by randomly shuffling the original sequence with a specified
+    permutation intensity. This process is repeated to create a batch of the desired size.
+
+    Parameters:
+    - seq_1hot (numpy.ndarray): A one-hot encoded sequence.
+    - shuffle_k (int): The permutation intensity, indicating the extent of shuffling applied to the original sequence.
+    - batch_size (int): The number of shuffled sequences to generate for the batch.
+
+    Returns:
+    - numpy.ndarray: An array of one-hot encoded sequences, where each sequence is a shuffled version
+                     of the input sequence.
+    """
+    seq_1hot_batch = []
+    for _ in range(batch_size):
+        seq_1hot_batch.append(permute_seq_k(seq_1hot, k=shuffle_k))
+    return np.array(seq_1hot_batch)
+
+
+def create_flat_seqs_gen(
+    seqnn_model, genome_fasta, dataframe, max_iters=25, batch_size=8
+):
+    """
+    Generates a collection of sequences that meet specific criteria.
+
+    This function iterates over genomic coordinates provided in a DataFrame, extracts sequences, generates
+    shuffled versions of these sequences, and uses a neural network model (seqnn_model) to predict their
+    properties. Sequences that satisfy specified thresholds are stored. The process is iterative and continues
+    until a maximum number of iterations is reached or the criteria are met.
+
+    Parameters:
+    - seqnn_model (Model): A neural network model used for sequence prediction.
+    - genome_fasta (str): File path to the genome fasta file for sequence extraction.
+    - dataframe (pandas.DataFrame): DataFrame containing genomic coordinates and parameters for sequence generation.
+                                    Columns should include 'chrom', 'start', 'end', 'shuffle_parameter',
+                                    'ctcf_detection_threshold', and 'map_score_threshold'.
+    - max_iters (int, optional): The maximum number of iterations to perform for each sequence. Default is 25.
+    - batch_size (int, optional): The number of sequences to process in each batch. Default is 8.
+
+    Returns:
+    - list: A list of sequences that meet the specified criteria. Each element in the list is a tuple containing
+            the one-hot encoded sequence, its prediction, and its score.
+    """
+    max_iters = int(max_iters)
+    flat_seqs = []
+    num_seqs = dataframe.shape[0]
+    genome_open = pysam.Fastafile(genome_fasta)
+    for ind in range(num_seqs):
+        print(f"Working on seq number {ind}")
+        (
+            chrom,
+            start,
+            end,
+            shuffle_k,
+            ctcf_thresh,
+            scores_thresh,
+        ) = dataframe.iloc[ind][
+            [
+                "chrom",
+                "start",
+                "end",
+                "shuffle_parameter",
+                "ctcf_detection_threshold",
+                "map_score_threshold",
+            ]
+        ]
+        seq = genome_open.fetch(chrom, int(start), int(end)).upper()
+        seq_1hot = dna_1hot(seq)
+        num_iters = 0
+        while num_iters < max_iters:
+            print(f"\t - iteration {num_iters}")
+            seq_1hot_batch = _seq_batch_generator_shuffled_seqs(
+                seq_1hot, shuffle_k, batch_size
+            )
+            predictions = seqnn_model.predict(
+                seq_1hot_batch, batch_size=batch_size
+            )
+            num_iters, scores = _check_and_append_satisfying_seqs(
+                seq_1hot_batch=seq_1hot_batch,
+                predictions=predictions,
+                scores_thresh=scores_thresh,
+                flat_seqs_storage_list=flat_seqs,
+                num_iters=num_iters,
+                max_iters=max_iters,
+            )
+            num_iters += 1
+
+    return flat_seqs
