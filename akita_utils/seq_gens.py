@@ -1,5 +1,4 @@
 from akita_utils.dna_utils import hot1_rc, dna_1hot
-import akita_utils.format_io
 from akita_utils.dna_utils import permute_seq_k
 
 
@@ -55,77 +54,6 @@ def _insert_casette(
                 output_seq[offset : offset + insert_bp] = hot1_rc(
                     seq_1hot_insertion
                 )
-
-    return output_seq
-
-
-def _multi_insert_offsets_casette(
-    seq_1hot, seq_1hot_insertions, offsets_bp, orientation_string
-):
-    """Insert multiple DNA sequences into a given DNA sequence.
-
-    Args:
-        seq_1hot (numpy.ndarray): The DNA sequence to be modified, in one-hot encoding format.
-        seq_1hot_insertions (list of numpy.ndarray): A list of DNA sequences to be inserted into `seq_1hot`.
-        offsets_bp (list of int): A list of offsets (in base pairs) for each insertion site.
-        orientation_string (str): A string of ">" and "<" characters indicating the orientation of each insertion.
-
-    Returns:
-        numpy.ndarray: The modified DNA sequence, in one-hot encoding format, with all insertions included.
-
-    Raises:
-        ValueError: If any of the inserted sequences overlap with each other.
-
-    This function takes in a DNA sequence in one-hot encoding format, along with a list of other DNA sequences to be inserted into it.
-    The function inserts each of the given sequences into the given sequence at specified locations, according to the given orientation and offset.
-    The function then returns the modified DNA sequence in one-hot encoding format.
-
-    If any of the inserted sequences overlap with each other, the function raises a `ValueError` with a message indicating which pairs of sequences overlap.
-    """
-    assert (
-        len(seq_1hot_insertions) == len(orientation_string) == len(offsets_bp)
-    ), "insertions, orientations and/or offsets dont match, please check"
-    seq_length = seq_1hot.shape[0]
-    output_seq = seq_1hot.copy()
-    insertion_start_bp = seq_length // 2
-    insert_limits = []
-    for insertion_index, insertion in enumerate(seq_1hot_insertions):
-        insert_bp = len(seq_1hot_insertions[insertion_index])
-        insertion_orientation_arrow = orientation_string[insertion_index]
-        insertion_offset = offsets_bp[insertion_index]
-
-        if insertion_orientation_arrow == ">":
-            insert_limits += [
-                (
-                    insertion_start_bp + insertion_offset,
-                    insertion_start_bp + insertion_offset + insert_bp,
-                )
-            ]
-
-            output_seq[
-                insertion_start_bp
-                + insertion_offset : insertion_start_bp
-                + insertion_offset
-                + insert_bp
-            ] = seq_1hot_insertions[insertion_index]
-        else:
-            insert_limits += [
-                (
-                    insertion_start_bp + insertion_offset,
-                    insertion_start_bp + insertion_offset + insert_bp,
-                )
-            ]
-
-            output_seq[
-                insertion_start_bp
-                + insertion_offset : insertion_start_bp
-                + insertion_offset
-                + insert_bp
-            ] = akita_utils.dna_utils.hot1_rc(
-                seq_1hot_insertions[insertion_index]
-            )
-
-    # _check_overlaps(insert_limits)
 
     return output_seq
 
@@ -194,25 +122,27 @@ def reference_seqs_gen(background_seqs):
         yield seq_1hot
 
 
-def get_centered_window(s, seq_length, chrom_sizes_table):
+def expand_and_check_window(s, chrom_sizes_table, shift=0, seq_length=1310720):
     """
-    Calculate parameters for a centered genomic prediction window.
+    Expands a genomic window to a specified sequence length and checks its validity against chromosome sizes.
 
-    Given genomic coordinates `s` (chromosome, start, end), a target sequence length `seq_length`,
-    and a table of chromosome sizes `chrom_sizes_table`, this function calculates the parameters
-    necessary for generating a centered prediction window around the specified span.
+    Given a genomic window (defined by chromosome, start, and end), this function expands the window to a specified
+    sequence length. It ensures that the expanded window is symmetric around the original window and optionally
+    applies a shift. It then checks if the expanded window is valid (i.e., within the bounds of the chromosome).
 
     Parameters:
-    - s (pandas.Series): Series containing genomic coordinates with columns 'chrom', 'start', 'end'.
-    - seq_length (int): The target length of the generated sequence.
-    - chrom_sizes_table (pandas.DataFrame): DataFrame with columns 'chrom' and 'size' representing
-                                            the sizes of chromosomes in the genome.
+    - s (Series): A pandas Series or similar object containing the original genomic window, with 'chrom', 'start',
+      and 'end' fields.
+    - chrom_sizes_table (DataFrame): A pandas DataFrame containing chromosome sizes with 'chrom' and 'size' columns.
+    - shift (int, optional): The number of base pairs to shift the center of the window. Default is 0.
+    - seq_length (int, optional): The desired total length of the expanded window. Default is 1310720.
 
     Returns:
-    tuple: A tuple containing the chromosome and the start and end positions for the centered window.
+    - tuple: A tuple (chrom, up_start, down_end) representing the chromosome, the start, and the end of the
+      expanded and potentially shifted window.
 
-    Raises:
-    Exception: If the prediction window for the specified span cannot be centered within the chromosome.
+    Note: If the shift is too large or if the expanded window extends beyond the chromosome boundaries, an
+    Exception is raised.
     """
     chrom, start, end = s.chrom, s.start, s.end
     if abs(end - start) % 2 != 0:
@@ -222,12 +152,17 @@ def get_centered_window(s, seq_length, chrom_sizes_table):
     length_diff = seq_length - span_length
     up_length = down_length = length_diff // 2
 
-    # start and end in genomic coordinates
-    up_start, down_end = start - up_length, end + down_length
+    if shift > up_length:
+        raise Exception(
+            "For the following window of interest: ",
+            chrom,
+            start,
+            end,
+            "shift excludes the window of interest from the prediction window.",
+        )
 
-    # relative start and end of the span of interest in the prediction window
-    relative_start = up_length + 1
-    relative_end = relative_start + span_length
+    # start and end in genomic coordinates (optionally shifted)
+    up_start, down_end = start - up_length - shift, end + down_length - shift
 
     # checking if a genomic prediction can be centered around the span
     chr_size = int(
@@ -238,301 +173,169 @@ def get_centered_window(s, seq_length, chrom_sizes_table):
 
     if up_start < 0 or down_end > chr_size:
         raise Exception(
-            "The prediction window for the following span: ",
+            "The prediction window for the following window of interest: ",
             chrom,
             start,
             end,
             "cannot be centered.",
         )
-    return chrom, up_start, down_end, relative_start, relative_end
+    return chrom, up_start, down_end
 
 
-def get_shifted_window(s, shift, seq_length, chrom_sizes_table):
+def get_relative_window_coordinates(s, shift=0, seq_length=1310720):
     """
-    Calculate parameters for a shifted genomic prediction window.
+    Calculates the relative coordinates of a genomic window within an expanded and optionally shifted sequence.
 
-    Given genomic coordinates `s` (chromosome, start, end), a shift value `shift`,
-    a target sequence length `seq_length`, and a table of chromosome sizes `chrom_sizes_table`,
-    this function calculates the parameters necessary for generating a shifted prediction window
-    around the specified span.
+    This function takes a genomic window (defined by start and end positions) and calculates its relative
+    position within an expanded sequence of a specified length. The expansion is symmetric around the original
+    window, and an optional shift can be applied. The function returns the relative start and end positions
+    of the original window within this expanded sequence.
 
     Parameters:
-    - s (pandas.Series): Series containing genomic coordinates with columns 'chrom', 'start', 'end'.
-    - shift (int): The amount of shift to be applied to the prediction window.
-    - seq_length (int): The target length of the generated sequence.
-    - chrom_sizes_table (pandas.DataFrame): DataFrame with columns 'chrom' and 'size' representing
-                                            the sizes of chromosomes in the genome.
+    - s (Series): A pandas Series or similar object containing the original genomic window, with 'start'
+      and 'end' fields.
+    - shift (int, optional): The number of base pairs to shift the center of the window. Default is 0.
+    - seq_length (int, optional): The total length of the expanded sequence. Default is 1310720.
 
     Returns:
-    tuple: A tuple containing the chromosome, the shifted start and end positions,
-           and the relative start and end positions for the shifted window.
-
-    Raises:
-    Exception: If the shifted genomic prediction window cannot be centered and shifted around the span.
+    - tuple: A tuple (relative_start, relative_end) representing the relative start and end positions
+      of the original window within the expanded sequence.
     """
-    chrom, start, end = s.chrom, s.start, s.end
+    start, end = s.start, s.end
     if abs(end - start) % 2 != 0:
         start = start - 1
 
     span_length = abs(end - start)
     length_diff = seq_length - span_length
-    up_length = down_length = length_diff // 2
+    up_length = length_diff // 2
 
-    # start and end in genomic coordinates
-    up_start, down_end = start - up_length, end + down_length
-    shifted_up_start, shifted_down_end = up_start - shift, down_end - shift
-    
     # relative start and end of the span of interest in the prediction window
     relative_start = up_length + 1 + shift
     relative_end = relative_start + span_length
 
-    # checking if a genomic prediction can be centered around the span
-    chr_size = int(
-        chrom_sizes_table.loc[
-            chrom_sizes_table["chrom"] == chrom, "size"
-        ].iloc[0]
-    )
-
-    if shifted_up_start < 0 or shifted_down_end > chr_size:
-        raise Exception(
-            "The prediction window for the following span: ",
-            chrom,
-            start,
-            end,
-            "cannot be centered.",
-        )
-    return chrom, shifted_up_start, shifted_down_end, relative_start, relative_end
+    return relative_start, relative_end
 
 
 def central_permutation_seqs_gen(
-    seq_coords_df, genome_open, chrom_sizes_table, seq_length=1310720
+    seq_coords_df,
+    genome_open,
+    chrom_sizes_table,
+    permutation_window_shift=0,
+    revcomp=False,
+    seq_length=1310720,
 ):
     """
-    Generate sequences for a given set of coordinates performing central permutations.
+    Generates sequences for a set of genomic coordinates, applying central permutations and optionally
+    operating on reverse complements, with an additional option for shifting the permutation window.
 
-    This generator function takes a DataFrame `seq_coords_df` containing genomic
-    coordinates (chromosome, start, end, strand), a genome file handler `genome_open`
-    to fetch sequences, and a table of chromosome sizes `chrom_sizes_table`. It yields
-    sequences with central permutations around the coordinates specified in `seq_coords_df`.
+    This generator function takes a DataFrame `seq_coords_df` containing genomic coordinates
+    (chromosome, start, end, strand), a genome file handler `genome_open` to fetch sequences, and
+    a table of chromosome sizes `chrom_sizes_table`. It yields sequences with central permutations
+    around the coordinates specified in `seq_coords_df`, considering an optional shift for the
+    permutation window. If `rc` is True, the reverse complement of these sequences is generated.
 
     Parameters:
-    - seq_coords_df (pandas.DataFrame): DataFrame with columns 'chrom', 'start', 'end', 'strand'
-                                         representing genomic coordinates of interest.
+    - seq_coords_df (pandas.DataFrame): DataFrame with columns 'chrom', 'start', 'end', 'strand',
+                                        representing genomic coordinates of interest.
     - genome_open (GenomeFileHandler): A file handler for the genome to fetch sequences.
-    - chrom_sizes_table (pandas.DataFrame): DataFrame with columns 'chrom' and 'size' representing
+    - chrom_sizes_table (pandas.DataFrame): DataFrame with columns 'chrom' and 'size', representing
                                             the sizes of chromosomes in the genome.
-    - seq_length: int; the length of generated sequence (usually, the standard length of Akita's input).
+    - permutation_window_shift (int, optional): The number of base pairs to shift the center of the
+                                                 permutation window. Default is 0.
+    - rc (bool, optional): If True, operates on reverse complement of the sequences. Default is False.
+    - seq_length (int, optional): The total length of the sequence to be generated. Default is 1310720.
 
     Yields:
-    numpy.ndarray: One-hot encoded DNA sequences with central permutations around the specified
-                   coordinates. The first sequence yielded is the reference, followed by the
-                   sequence with a central permutation.
+    numpy.ndarray: One-hot encoded DNA sequences. Each sequence is either the original or its central
+                   permutation, with or without reverse complement as specified by `rc`.
 
     Raises:
     Exception: If the prediction window for a given span cannot be centered within the chromosome.
-    ```
     """
 
     for s in seq_coords_df.itertuples():
         list_1hot = []
 
-        (
-            chrom,
-            window_start,
-            window_end,
-            permutation_start,
-            permutation_end,
-        ) = get_centered_window(s, seq_length, chrom_sizes_table)
+        chrom, window_start, window_end = expand_and_check_window(
+            s, chrom_sizes_table, shift=permutation_window_shift
+        )
+        permutation_start, permutation_end = get_relative_window_coordinates(
+            s, shift=permutation_window_shift
+        )
 
         wt_seq_1hot = dna_1hot(
             genome_open.fetch(chrom, window_start, window_end).upper()
         )
-        list_1hot.append(wt_seq_1hot.copy())
+        if revcomp:
+            rc_wt_seq_1hot = hot1_rc(wt_seq_1hot)
+            list_1hot.append(rc_wt_seq_1hot.copy())
+        else:
+            list_1hot.append(wt_seq_1hot.copy())
 
         alt_seq_1hot = wt_seq_1hot.copy()
         permuted_span = permute_seq_k(
             alt_seq_1hot[permutation_start:permutation_end], k=1
         )
         alt_seq_1hot[permutation_start:permutation_end] = permuted_span
-        list_1hot.append(alt_seq_1hot)
+
+        if revcomp:
+            rc_alt_seq_1hot = hot1_rc(alt_seq_1hot.copy())
+            list_1hot.append(rc_alt_seq_1hot)
+        else:
+            list_1hot.append(alt_seq_1hot)
 
         # yielding first the reference, then the permuted sequence
         for sequence in list_1hot:
             yield sequence
 
 
-def central_permutation_rc_seqs_gen(
-    seq_coords_df, genome_open, chrom_sizes_table, seq_length=1310720
-):
+def shuffled_sequences_gen(seq_coords_df, genome_open, jasper_motif_file=None):
     """
-    Generate sequences for a given set of coordinates performing central permutations
-    and outputting reverse compliment of the permuted sequence.
+    Generates sequences with shuffled backgrounds based on the input sequences' coordinates.
 
-    This generator function takes a DataFrame `seq_coords_df` containing genomic
-    coordinates (chromosome, start, end, strand), a genome file handler `genome_open`
-    to fetch sequences, and a table of chromosome sizes `chrom_sizes_table`. It yields
-    sequences with central permutations around the coordinates specified in `seq_coords_df`.
+    This generator function takes a DataFrame of sequence coordinates, an open genome file,
+    and an optional JASPAR motif file. It iterates through each row in the DataFrame,
+    fetches the corresponding DNA sequence from the genome, converts it into a one-hot encoding,
+    and then applies a shuffling mutation method as specified by the 'mutation_method' column
+    in the DataFrame. The function currently supports only the "permute_whole_seq" mutation method.
+    If the 'jasper_motif_file' parameter is provided, the function raises a NotImplementedError
+    as the handling for this parameter has not been included.
 
     Parameters:
-    - seq_coords_df (pandas.DataFrame): DataFrame with columns 'chrom', 'start', 'end', 'strand'
-                                         representing genomic coordinates of interest.
-    - genome_open (GenomeFileHandler): A file handler for the genome to fetch sequences.
-    - chrom_sizes_table (pandas.DataFrame): DataFrame with columns 'chrom' and 'size' representing
-                                            the sizes of chromosomes in the genome.
-    - seq_length: int; the length of generated sequence (usually, the standard length of Akita's input).
+    - seq_coords_df (DataFrame): A pandas DataFrame containing the sequence coordinates.
+      It must have the columns 'chrom', 'start', 'end', and 'mutation_method'. Optionally,
+      a 'shuffle_parameter' column is required for the "permute_whole_seq" mutation method.
+    - genome_open (file-like): An open file-like object of the genome sequences, supporting
+      the fetch method to retrieve DNA sequences given chromosome, start, and end positions.
+    - jasper_motif_file (str, optional): Path to a JASPAR motif file. Currently, the use of this
+      file is not implemented, and providing it will raise a NotImplementedError.
 
     Yields:
-    numpy.ndarray: One-hot encoded DNA sequences with central permutations around the specified
-                   coordinates and reverse compliment. The first sequence yielded is the reference, followed by the
-                   sequence with a rc central permutation.
+    - numpy.ndarray: A one-hot encoded numpy array representing the shuffled sequence.
 
     Raises:
-    Exception: If the prediction window for a given span cannot be centered within the chromosome.
-    ```
-    """
-    for s in seq_coords_df.itertuples():
-        list_1hot = []
-
-        (
-            chrom,
-            window_start,
-            window_end,
-            permutation_start,
-            permutation_end,
-        ) = get_centered_window(s, seq_length, chrom_sizes_table)
-
-        wt_seq_1hot = dna_1hot(
-            genome_open.fetch(chrom, window_start, window_end).upper()
-        )
-        rc_wt_seq_1hot = hot1_rc(wt_seq_1hot)
-        list_1hot.append(rc_wt_seq_1hot.copy())
-
-        alt_seq_1hot = wt_seq_1hot.copy()
-        permuted_span = permute_seq_k(
-            alt_seq_1hot[permutation_start:permutation_end], k=1
-        )
-        alt_seq_1hot[permutation_start:permutation_end] = permuted_span
-        rc_alt_seq_1hot = hot1_rc(alt_seq_1hot)
-        list_1hot.append(rc_alt_seq_1hot)
-
-        # yielding first the reference, then the reverse compliment permuted sequence
-        for sequence in list_1hot:
-            yield sequence
-
-
-def shifted_central_permutation_seqs_gen(
-    seq_coords_df, shift, genome_open, chrom_sizes_table, seq_length=1310720
-):
-    """
-    Generate sequences with shifted central permutations around specified genomic coordinates.
-
-    This generator function takes a DataFrame `seq_coords_df` containing genomic
-    coordinates (chromosome, start, end, strand), a shift value `shift`, a genome file handler
-    `genome_open` to fetch sequences, and a table of chromosome sizes `chrom_sizes_table`.
-    It yields sequences with central permutations shifted around the coordinates specified in `seq_coords_df`.
-
-    Parameters:
-    - seq_coords_df (pandas.DataFrame): DataFrame with columns 'chrom', 'start', 'end', 'strand'
-                                         representing genomic coordinates of interest.
-    - shift (int): The amount of shift to be applied to the prediction window.
-    - genome_open (GenomeFileHandler): A file handler for the genome to fetch sequences.
-    - chrom_sizes_table (pandas.DataFrame): DataFrame with columns 'chrom' and 'size' representing
-                                            the sizes of chromosomes in the genome.
-    - seq_length (int): The length of the generated sequence (usually, the standard length of Akita's input).
-
-    Yields:
-    numpy.ndarray: One-hot encoded DNA sequences with shifted central permutations around the specified
-                   coordinates. The first sequence yielded is the reference, followed by the
-                   sequence with a shifted central permutation.
-
-    Raises:
-    Exception: If the shifted prediction window for a given span cannot be centered within the chromosome.
-    """
-    for s in seq_coords_df.itertuples():
-        list_1hot = []
-
-        (
-            chrom,
-            window_start,
-            window_end,
-            permutation_start,
-            permutation_end,
-        ) = get_shifted_window(s, shift, seq_length, chrom_sizes_table)
-
-        wt_seq_1hot = dna_1hot(
-            genome_open.fetch(chrom, window_start, window_end).upper()
-        )
-        list_1hot.append(wt_seq_1hot.copy())
-
-        alt_seq_1hot = wt_seq_1hot.copy()
-        permuted_span = permute_seq_k(
-            alt_seq_1hot[permutation_start:permutation_end], k=1
-        )
-        alt_seq_1hot[permutation_start:permutation_end] = permuted_span
-        list_1hot.append(alt_seq_1hot)
-
-        # yielding first the reference, then the permuted sequence
-        for sequence in list_1hot:
-            yield sequence
-
-
-def background_exploration_seqs_gen(seq_coords_df, genome_open, jasper_motif_file=None):
-    """
-    Generates mutated DNA sequences from genomic coordinates following given parameters like mutation method, shuffle parameter, ctcf detection threshold etc. if a mutation method provided is about motifs then make sure corresponding parameters are provided as well i.e if mask_motif method is used, then ctcf detection threshold is needed.
-
-    Parameters:
-    -----------
-    seq_coords_df: pandas.DataFrame
-        DataFrame containing genomic coordinates and mutation methods for generating mutated DNA sequences.
-        The DataFrame must have the following columns:
-        - locus_specification: string specifying the genomic coordinates in the format "chromosome,start,end".
-        - mutation_method: string specifying the type of mutation to apply to the DNA sequence.
-        - other parameters to help implement the mutation method
-
-    genome_open: object
-        An object with a fetch method that can retrieve DNA sequences from genomic coordinates.
-
-    jasper_motif_file: str, optional
-        Path to a JASPAR motif file for the transcription factor motif to mask or permute.
-        If None, the default CTCF motif is used.
-
-    Yields:
-    -------
-    numpy.ndarray
-        Mutated DNA sequence in one-hot encoded format, generated according to the specified mutation method.
+    - NotImplementedError: If 'jasper_motif_file' is provided or if a mutation method other
+      than "permute_whole_seq" is encountered.
     """
 
     if jasper_motif_file is not None:
-        motif = read_jaspar_to_numpy(jasper_motif_file)
-    else:
-        # print("CTCF motif jasper file was not provided, using default if available")
-        motif = akita_utils.format_io.read_jaspar_to_numpy()
-    
+        raise NotImplementedError(
+            "The background generation methods using jaspar_motif_file have not been included."
+        )
+
     for s in seq_coords_df.itertuples():
         chrom, start, end = s.chrom, s.start, s.end
         seq_dna = genome_open.fetch(chrom, int(start), int(end))
         wt_seq_1hot = dna_1hot(seq_dna)
         alt_seq_1hot = wt_seq_1hot.copy()
         mutation_method = s.mutation_method
-        
-        # if mutation_method == "mask_motif":
-        #     motif_positions = generate_spans_start_positions(
-        #     wt_1hot, motif, s.ctcf_detection_threshold)
-        #     motif_window = 2 ** (math.floor(math.log2(len(motif))))
-        #     yield mask_spans_from_start_positions(wt_1hot, motif_positions, motif_window)
-        # elif mutation_method == "permute_motif":
-        #     motif_positions = generate_spans_start_positions(
-        #     wt_1hot, motif, s.ctcf_detection_threshold)
-        #     motif_window = 2 ** (math.floor(math.log2(len(motif))))
-        #     yield permute_spans_from_start_positions(wt_1hot, motif_positions, motif_window, s.shuffle_parameter)
-        # elif mutation_method == "randomise_motif":
-        #     motif_positions = generate_spans_start_positions(
-        #     wt_1hot, motif, s.ctcf_detection_threshold)
-        #     motif_window = 2 ** (math.floor(math.log2(len(motif))))
-        #     yield randomise_spans_from_start_positions(wt_1hot, motif_positions, motif_window)
-        if mutation_method == "permute_whole_seq":
-            permuted_alt_seq_1hot = permute_seq_k(alt_seq_1hot, k=s.shuffle_parameter)
-            yield permuted_alt_seq_1hot
-        # elif mutation_method == "randomise_whole_seq":
-        #     yield random_seq_permutation(alt_seq_1hot)
 
+        if mutation_method == "permute_whole_seq":
+            permuted_alt_seq_1hot = permute_seq_k(
+                alt_seq_1hot, k=s.shuffle_parameter
+            )
+            yield permuted_alt_seq_1hot
+        else:
+            raise NotImplementedError(
+                "Other background generation methods have not been included."
+            )
