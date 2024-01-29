@@ -150,6 +150,7 @@ def filter_dataframe_by_column(
     lower_threshold=0,
     filter_mode="uniform",
     num_rows=None,
+    drop_duplicates=True
 ):
     """
     Given a dataframe of CTCF-binding sites returns a subset of its rows.
@@ -190,11 +191,12 @@ def filter_dataframe_by_column(
             (df[column_name] >= lower_thresh)
             & (df[column_name] <= upper_thresh)
         ]
-        .copy()
-        .drop_duplicates(subset=[column_name])
-        .sort_values(column_name, ascending=False)
-    )
+        .copy())
 
+    if drop_duplicates == True:
+        filtered_df = filtered_df.drop_duplicates(subset=[column_name])
+    filtered_df = filtered_df.sort_values(column_name, ascending=False)
+    
     if num_rows is not None:
         assert num_rows <= len(
             filtered_df
