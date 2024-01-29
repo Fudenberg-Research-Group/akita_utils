@@ -153,29 +153,38 @@ def filter_dataframe_by_column(
     drop_duplicates=True
 ):
     """
-    Given a dataframe of CTCF-binding sites returns a subset of its rows.
+    Filters a pandas dataframe by a specified column, considering given thresholds, filter mode, and other parameters. Optionally, removes duplicate rows based on the specified column.
 
     Parameters
     -----------
-    df : dataframe
-        An imput pandas dataframe with a column specified by column_name.
-    column_name : str
-        Column that filtering is done by.
-    upper_threshold : float
-        Float in a range (0,100); all the rows with column_name's values above this percentile will be removed from further analysis.
-    lower_threshold : float
-        Float in a range (0,100); all the rows with column_name's values above this percentile will be removed from further analysis.
-    filter_mode : str
-        Specification which part of a filtered dataframe is of a user's interest: if "head" - first rows are returned, if "tail" - last rows are returned, if "random" - a set of random rows is returned.
+    df : DataFrame
+        An input pandas dataframe with a column specified by column_name.
+    column_name : str, default "SCD"
+        Column that filtering is based on.
+    upper_threshold : float, default 100
+        Float in a range (0,100); rows with column_name's values above this percentile are removed.
+    lower_threshold : float, default 0
+        Float in a range (0,100); rows with column_name's values below this percentile are removed.
+    filter_mode : str, default "uniform"
+        Specifies the subset of interest in the filtered dataframe. 
+        "head" returns the first rows, "tail" returns the last rows, "random" returns a random set of rows. 
         Otherwise, rows are sampled uniformly with respect to their column_name's values.
-    num_rows : int
-        A requested number of rows. If type of num_rows is None, the function returns the unchanged input dataframe.
+    num_rows : int, optional
+        The number of rows to return. If None, the function returns the full filtered dataframe.
+    drop_duplicates : bool, default True
+        If True, duplicate rows based on the column_name are dropped.
 
     Returns
     --------
-    filtered_df : dataframe
-        An output dataframe filtered with respect to the given column name.
+    filtered_df : DataFrame
+        The resulting dataframe after applying filters and removing duplicates if specified.
 
+    Raises
+    ------
+    ValueError
+        If filter_mode is not one of "head", "tail", "uniform", "random".
+    AssertionError
+        If num_rows is more than the length of the filtered dataframe.
     """
 
     if filter_mode not in ("head", "tail", "uniform", "random"):
