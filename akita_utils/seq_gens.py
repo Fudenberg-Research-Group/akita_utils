@@ -57,8 +57,8 @@ def _insert_casette(
 
     return output_seq
 
-
-def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
+# @pool_decorator
+def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open, nproc=1, map=map):
     """
     Generate sequences with symmetric insertions for a given set of coordinates.
 
@@ -78,7 +78,38 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open):
     numpy.ndarray: One-hot encoded DNA sequence with symmetric insertions.
     """
 
+
+    # def one_hot_process_func(s):
+    #     flank_bp = s.flank_bp
+    #     spacer_bp = s.spacer_bp
+    #     orientation_string = s.orientation
+
+    #     seq_1hot_insertion = dna_1hot(
+    #         genome_open.fetch(
+    #             s.chrom, s.start - flank_bp, s.end + flank_bp
+    #         ).upper()
+    #     )
+
+    #     if s.strand == "-":
+    #         seq_1hot_insertion = hot1_rc(seq_1hot_insertion)
+    #         # now, all motifs are standarized to this orientation ">"
+
+    #     seq_1hot = background_seqs[s.background_index].copy()
+
+    #     seq_1hot = _insert_casette(
+    #         seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string
+    #     )
+        
+    #     return seq_1hot
+    
+    # result = map(one_hot_process_func, seq_coords_df.itertuples())
+    # return result
+    
+    
+    
+    
     for s in seq_coords_df.itertuples():
+
         flank_bp = s.flank_bp
         spacer_bp = s.spacer_bp
         orientation_string = s.orientation
