@@ -506,6 +506,7 @@ def collect_h5(out_dir, h5_file_name="STATS_OUT.h5", virtual_exp=True):
     final_h5_file = "%s/%s" % (out_dir, h5_file_name)
     final_h5_open = h5py.File(final_h5_file, "w")
 
+    print("Getting keys from job 0")
     job0_h5_file = "%s/job0/%s" % (out_dir, h5_file_name)
     job0_h5_open = h5py.File(job0_h5_file, "r")
 
