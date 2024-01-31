@@ -331,79 +331,79 @@ def write_maps_to_h5(
         ] += vector_matrix[:, target_index]
 
 
-# def save_maps(
-#     prediction_matrix,
-#     experiment_index,
-#     head_index,
-#     model_index,
-#     diagonal_offset=2,
-#     plot_dir=None,
-#     plot_lim_min=0.1,
-#     plot_freq=100,
-# ):
-#     """
-#     Writes to an h5 file saving statistical metrics calculated from Akita's predicftions.
+def save_maps(
+    prediction_matrix,
+    experiment_index,
+    head_index,
+    model_index,
+    diagonal_offset=2,
+    plot_dir=None,
+    plot_lim_min=0.1,
+    plot_freq=100,
+):
+    """
+    Writes to an h5 file saving statistical metrics calculated from Akita's predicftions.
 
-#     Parameters
-#     ------------
-#     prediction_matrix : numpy matrix
-#         Matrix collecting Akita's predictions.
-#     experiment_index : int
-#         Index identifying one experiment.
-#     head_index : int
-#         Head index used to get a prediction (Mouse: head_index=1; Human: head_index=0).
-#     model_index : int
-#         Index of one of 8 models that has been used to make predictions (an index between 0 and 7).
-#     diagonal_offset : int
-#         Number of diagonals that are added as zeros in the conversion.
-#         Typically 2 diagonals are ignored in Hi-C data processing.
-#     plot_dir : str
-#         Path to the desired location of the output plots (plots will not be saved if plot_dir == None).
-#     plot_lim_min : float
-#         Negative minimum and positive maximum values that will be used to plot maps.
-#     plot_freq : int
-#         A plot of one out of plot_freq number of predictions is saved.
-#     """
+    Parameters
+    ------------
+    prediction_matrix : numpy matrix
+        Matrix collecting Akita's predictions.
+    experiment_index : int
+        Index identifying one experiment.
+    head_index : int
+        Head index used to get a prediction (Mouse: head_index=1; Human: head_index=0).
+    model_index : int
+        Index of one of 8 models that has been used to make predictions (an index between 0 and 7).
+    diagonal_offset : int
+        Number of diagonals that are added as zeros in the conversion.
+        Typically 2 diagonals are ignored in Hi-C data processing.
+    plot_dir : str
+        Path to the desired location of the output plots (plots will not be saved if plot_dir == None).
+    plot_lim_min : float
+        Negative minimum and positive maximum values that will be used to plot maps.
+    plot_freq : int
+        A plot of one out of plot_freq number of predictions is saved.
+    """
 
-#     if (plot_dir is not None) and (np.mod(experiment_index, plot_freq) == 0):
-#         print("plotting prediction: ", experiment_index)
+    if (plot_dir is not None) and (np.mod(experiment_index, plot_freq) == 0):
+        print("plotting prediction: ", experiment_index)
 
-#         # increase dtype
-#         prediction_matrix = prediction_matrix.astype("float32")
+        # increase dtype
+        prediction_matrix = prediction_matrix.astype("float32")
 
-#         # convert prediction vectors to maps
-#         map_matrix = ut_dense(prediction_matrix, diagonal_offset)
+        # convert prediction vectors to maps
+        map_matrix = ut_dense(prediction_matrix, diagonal_offset)
 
-#         _, axs = plt.subplots(1, prediction_matrix.shape[-1], figsize=(24, 4))
+        _, axs = plt.subplots(1, prediction_matrix.shape[-1], figsize=(24, 4))
 
-#         for target_index in range(prediction_matrix.shape[-1]):
-#             map_target = map_matrix[..., target_index]
-#             map_target = block_reduce(map_target, (2, 2), np.mean)
-#             vmin = min(map_target.min(), map_target.min())
-#             vmax = max(map_target.max(), map_target.max())
-#             vmin = min(-plot_lim_min, vmin)
-#             vmax = max(plot_lim_min, vmax)
-#             sns.heatmap(
-#                 map_target,
-#                 ax=axs[target_index],
-#                 center=0,
-#                 vmin=vmin,
-#                 vmax=vmax,
-#                 cmap="RdBu_r",
-#                 xticklabels=False,
-#                 yticklabels=False,
-#             )
+        for target_index in range(prediction_matrix.shape[-1]):
+            map_target = map_matrix[..., target_index]
+            map_target = block_reduce(map_target, (2, 2), np.mean)
+            vmin = min(map_target.min(), map_target.min())
+            vmax = max(map_target.max(), map_target.max())
+            vmin = min(-plot_lim_min, vmin)
+            vmax = max(plot_lim_min, vmax)
+            sns.heatmap(
+                map_target,
+                ax=axs[target_index],
+                center=0,
+                vmin=vmin,
+                vmax=vmax,
+                cmap="RdBu_r",
+                xticklabels=False,
+                yticklabels=False,
+            )
 
-#         plt.tight_layout()
+        plt.tight_layout()
 
-#         # TODO: we can save SCD or other scores in the name of plots
-#         # we should let user change which metric
-#         # such that they can sort plots by name
+        # TODO: we can save SCD or other scores in the name of plots
+        # we should let user change which metric
+        # such that they can sort plots by name
 
-#         plt.savefig(
-#             f"e{experiment_index}_h{head_index}_m{model_index}_t{target_index}.pdf"
-#         )
-#         plt.close()
+        plt.savefig(
+            f"e{experiment_index}_h{head_index}_m{model_index}_t{target_index}.pdf"
+        )
+        plt.close()
 
 
 # COLLECTING DATA FROM MULTIPLE HDF5 FILES & CHECKING START OF JOBS
