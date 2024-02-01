@@ -494,7 +494,14 @@ def collect_h5(out_dir, h5_file_name="STATS_OUT.h5", virtual_exp=True):
         # open job
         job_h5_file = "%s/job%d/%s" % (out_dir, job_index, h5_file_name)
         job_h5_open = h5py.File(job_h5_file, "r")
-        num_experiments += len(job_h5_open["chrom"])
+        
+        if "chrom" in job_h5_open.keys():
+            num_experiments += len(job_h5_open["chrom"])
+        elif "chrom_core" in job_h5_open.keys():
+            num_experiments += len(job_h5_open["chrom_core"])
+        else:
+            raise Exception("Neither chrom, nor chrom_core in h5 file keys")
+            
         if virtual_exp:
             max_bg_index = max(list(set(job_h5_open["background_index"])))
             if max_bg_index > num_backgrounds:
