@@ -1,3 +1,6 @@
+
+import numpy as np
+
 from akita_utils.dna_utils import hot1_rc, dna_1hot
 from akita_utils.dna_utils import permute_seq_k
 
@@ -370,3 +373,59 @@ def shuffled_sequences_gen(seq_coords_df, genome_open, jasper_motif_file=None):
             raise NotImplementedError(
                 "Other background generation methods have not been included."
             )
+
+
+def flank_core_compatibility_seqs_gen(seq_coords_df, background_seqs, genome_open):
+
+    """
+    Generates sequences by flanking a core sequence with upstream and downstream sequences.
+
+    This function iterates over each row in the provided `seq_coords_df` DataFrame, and for each row:
+        1. Retrieves the core sequence and its flanks from the genome.
+        2. Converts these sequences into one-hot encoded representations.
+        3. If necessary, reverses the sequences based on the strand information.
+        4. Concatenates the upstream flank, core, and downstream flank sequences.
+        5. Inserts this concatenated sequence into a background sequence.
+
+    Parameters
+    ----------
+    seq_coords_df : pandas.DataFrame
+        A DataFrame containing the coordinates and other relevant information for each sequence.
+        Expected columns include chrom_core, start_core, end_core, strand_core, chrom_flank, 
+        start_flank, end_flank, strand_flank, flank_bp, background_index, spacer_bp, and orientation.
+    background_seqs : list or array-like
+        A list or array of background sequences (in one-hot encoded format) into which the 
+        concatenated sequences will be inserted.
+    genome_open : object
+        An open genome file object that allows fetching sequences from specific chromosomal coordinates.
+
+    Yields
+    ------
+    numpy.ndarray
+        A one-hot encoded numpy array representing the final sequence after insertion into the background sequence.
+    """
+    
+    for s in seq_coords_df.itertuples():
+
+        flank_bp = s.flank_bp
+
+        # getting core
+        seq_1hot_core = dna_1hot(genome_open.fetch(s.chrom_core, s.start_core, s.end_core).upper())
+        if s.strand_core == "-":
+            seq_1hot_core = hot1_rc(seq_1hot_core)
+
+        # getting flanks
+        seq_1hot_flank = dna_1hot(genome_open.fetch(s.chrom_flank, s.start_flank - flank_bp, s.end_flank + flank_bp).upper())
+        if s.strand_flank == "-":
+            seq_1hot_flank = hot1_rc(seq_1hot_flank)
+
+        seq_1hot_flank_upstream = seq_1hot_flank[:flank_bp,:]
+        seq_1hot_flank_downstream = seq_1hot_flank[-flank_bp:,:]
+        
+        # joining all the chunks together
+        seq_1hot_insertion = np.concatenate((seq_1hot_flank_upstream, seq_1hot_core, seq_1hot_flank_downstream), axis=0)
+        seq_1hot = background_seqs[s.background_index].copy()
+        seq_1hot = _insert_casette(seq_1hot, seq_1hot_insertion, s.spacer_bp, s.orientation)
+
+        yield seq_1hot
+
