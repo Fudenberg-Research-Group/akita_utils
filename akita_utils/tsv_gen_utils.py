@@ -122,7 +122,7 @@ def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
     return df_filtered
 
 
-def filter_by_chromID(df, chrID_to_drop=["chrX", "chrY", "chrM"]):
+def filter_by_chromID(df, chrom_column = "chrom", chrID_to_drop=["chrX", "chrY", "chrM"]):
     """
     Filter a DataFrame based on chromosome IDs.
 
@@ -139,7 +139,7 @@ def filter_by_chromID(df, chrID_to_drop=["chrX", "chrY", "chrM"]):
     pandas.DataFrame: A new DataFrame with rows removed where the 'chrom' column
                       matches any of the chromosome IDs in chrID_to_drop.
     """
-    filtered_df = df[~df.chrom.isin(chrID_to_drop)]
+    filtered_df = df[~df[chrom_column].isin(chrID_to_drop)]
     return filtered_df
 
 
