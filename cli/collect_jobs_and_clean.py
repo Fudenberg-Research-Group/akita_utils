@@ -18,6 +18,7 @@
 ###################################################
 
 import os
+import pandas as pd
 
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
@@ -38,6 +39,13 @@ def main():
         default="STATS_OUT.h5",
         type="str",
         help="Name of h5 files to collect [Default: %default]",
+    )
+    parser.add_option(
+        "-d",
+        dest="tsv_path",
+        default=None,
+        type="str",
+        help="Path to the table with experiments specification [Default: %default]",
     )
     parser.add_option(
         "-v",
@@ -90,7 +98,7 @@ def main():
     )
 
     (options, args) = parser.parse_args()
-
+    
     if len(args) == 1:
         out_dir = args[0]
     else:
@@ -98,6 +106,10 @@ def main():
             "Too many arguments have been provided. Check the command, please."
         )
 
+    exp_dataframe = pd.read_csv(options.tsv_path, sep="\t")
+    if "Unnamed: 0" in exp_dataframe.columns:
+        exp_dataframe = exp_dataframe.drop(columns=["Unnamed: 0"])
+        
     if options.not_collecting_maps == True:
         options.collecting_maps = False
 
@@ -119,10 +131,10 @@ def main():
     print("Collecting h5 files...")
 
     collect_h5(
-        out_dir, options.h5_file_name, virtual_exp=options.virtual_experiment
+        out_dir, exp_dataframe, options.h5_file_name, virtual_exp=options.virtual_experiment
     )
 
-    if options.leave_files:
+    if not options.leave_files:
         if suspicious_collected_h5_size(
             out_dir,
             options.h5_file_name,

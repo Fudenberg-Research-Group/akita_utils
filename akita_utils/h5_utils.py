@@ -108,9 +108,15 @@ def initialize_stat_output_h5(
 
     for key in seq_coords_df:
         if seq_coords_df_dtypes[key] is np.dtype("O"):
+            # Find the maximum string length in the column
+            max_length = seq_coords_df[key].str.len().max()
+            dtype_str = f"S{max_length}"
+
+            # Create the dataset with the determined dtype
             h5_outfile.create_dataset(
-                key, data=seq_coords_df[key].values.astype("S")
+                key, data=seq_coords_df[key].values.astype(dtype_str)
             )
+            
         else:
             h5_outfile.create_dataset(key, data=seq_coords_df[key])
 
@@ -464,61 +470,78 @@ def infer_num_jobs(out_dir):
     return num_job
 
 
-def collect_h5(out_dir, h5_file_name="STATS_OUT.h5", virtual_exp=True):
+def collect_h5(out_dir, seq_coords_df, h5_file_name="STATS_OUT.h5", virtual_exp=True):
     """
-    Collects statistics from multiple job-specific HDF5 files into a final HDF5 file.
+    Aggregates data from multiple job-specific HDF5 files into a single consolidated HDF5 file.
 
-    This function collects statistics from individual job-specific HDF5 files stored
-    in directories named "jobX" within the specified directory. It combines the data
-    into a single HDF5 file, considering different dimensions (1D, 2D, 3D) of the
-    statistics matrices.
+    This function processes a series of job-specific HDF5 files located within subdirectories
+    named "jobX" (where X is the job index) under the specified output directory. It extracts
+    and combines statistical data and sequences coordinates from these files into one comprehensive
+    HDF5 file. The function handles different dimensions of data, including 1D (e.g., single metrics),
+    2D (e.g., statistical matrices), and 3D (e.g., prediction vectors), and organizes them accordingly
+    in the final HDF5 file. It dynamically sets the data type for string datasets based on the maximum
+    string length found in the `seq_coords_df` DataFrame to optimize storage.
 
-    Parameters
-    ------------
+    Parameters:
+    -----------
     out_dir : str
-        Path to the directory containing job-specific HDF5 files.
+        The path to the directory containing the job-specific HDF5 files.
+    seq_coords_df : DataFrame
+        A pandas DataFrame containing the initial sequence coordinates and possibly other related
+        data before distribution among the job-specific files. It is used to initialize datasets in
+        the final HDF5 file, especially for string-type data where the maximum length is determined dynamically.
     h5_file_name : str, optional
-        Name of the output HDF5 file. Default is "STATS_OUT.h5".
+        The name for the output HDF5 file where the aggregated data will be stored. Defaults to "STATS_OUT.h5".
+    virtual_exp : bool, optional
+        A flag indicating whether the experiment is virtual. This affects how certain data are structured,
+        particularly in how reference maps are handled. Defaults to True, meaning each background sequence
+        might have a unique reference, as opposed to being compared against every genomic sequence.
 
-    Returns
-    ---------
-        None
+    Returns:
+    --------
+    None
+        The function does not return any value. It creates or overwrites an HDF5 file at the specified
+        location with the combined data from the individual job-specific files.
+
+    Raises:
+    -------
+    Exception
+        If an unexpected 3-dimensional key is encountered, indicating an inconsistency in the expected
+        data structure.
+
     """
     num_jobs = infer_num_jobs(out_dir)
 
-    # count experiments (number of sites x number of brackground if applies)
-    num_experiments = 0
-    num_backgrounds = 0
+    num_experiments = len(seq_coords_df)
+    num_backgrounds = len(seq_coords_df["background_index"].unique())
 
-    for job_index in range(num_jobs):
-        # open job
-        job_h5_file = "%s/job%d/%s" % (out_dir, job_index, h5_file_name)
-        job_h5_open = h5py.File(job_h5_file, "r")
-        
-        if "chrom" in job_h5_open.keys():
-            num_experiments += len(job_h5_open["chrom"])
-        elif "chrom_core" in job_h5_open.keys():
-            num_experiments += len(job_h5_open["chrom_core"])
-        else:
-            raise Exception("Neither chrom, nor chrom_core in h5 file keys")
-            
-        if virtual_exp:
-            max_bg_index = max(list(set(job_h5_open["background_index"])))
-            if max_bg_index > num_backgrounds:
-                num_backgrounds = max_bg_index + 1
-
-        job_h5_open.close()
+    seq_coords_df_dtypes = seq_coords_df.dtypes
 
     # initialize final final h5 based on the 0th-job file
     final_h5_file = "%s/%s" % (out_dir, h5_file_name)
     final_h5_open = h5py.File(final_h5_file, "w")
 
+    # initializing
+    for key in seq_coords_df:
+        if seq_coords_df_dtypes[key] is np.dtype("O"):
+            # Find the maximum string length in the column
+            max_length = seq_coords_df[key].str.len().max()
+            dtype_str = f"S{max_length}"
+
+            # Create the dataset with the determined dtype
+            final_h5_open.create_dataset(
+                key, data=seq_coords_df[key].values.astype(dtype_str)
+            )
+            
+        else:
+            final_h5_open.create_dataset(key, data=seq_coords_df[key])
+    
     print("Getting keys from job 0")
     job0_h5_file = "%s/job0/%s" % (out_dir, h5_file_name)
     job0_h5_open = h5py.File(job0_h5_file, "r")
-
+    
     for key in job0_h5_open.keys():
-        if job0_h5_open[key].ndim == 1:
+        if (job0_h5_open[key].ndim == 1) and (key not in final_h5_open):
             final_h5_open.create_dataset(
                 key, shape=(num_experiments,), dtype=job0_h5_open[key].dtype
             )
@@ -580,10 +603,6 @@ def collect_h5(out_dir, h5_file_name="STATS_OUT.h5", virtual_exp=True):
 
             else:
                 raise Exception(f"Unexpected 3-dimensional key: {key}")
-        else:
-            raise Exception(
-                f"Unexpected dimension = {job0_h5_open[key].ndim} of the following key: {key}"
-            )
 
     job0_h5_open.close()
 
