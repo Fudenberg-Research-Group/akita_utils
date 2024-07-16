@@ -590,7 +590,142 @@ def calculate_dot_cross_score(
     return dot_score - cross_score
 
 
-# 4) flames score
+# 4) Sliding INS Score
+
+def slide_diagonal_insulation(target_map, window=10):
+    """
+    Calculate insulation by sliding a window along the diagonal of the target map.
+
+    Parameters
+    ------------
+    target_map : numpy array
+        Array with contact change maps predicted by Akita, usually of a size (512 x 512)
+    window : int
+        Size of the sliding window.
+
+    Returns
+    ---------
+    scores : list
+        List of ISN-window scores for each position along the diagonal.
+    """
+
+    map_size = target_map.shape[0]
+    scores = np.empty((map_size,))
+    scores[:] = np.nan
+    
+    for mid in range(window, (map_size - window)):
+        lo = max(0, mid+1-window)
+        hi = min(map_size, mid + window)
+        score = np.nanmean(target_map[lo:(mid+1), mid:hi])
+        scores[mid] = score
+
+    return scores
+
+
+def extract_window_from_vector(vector, window=10, width=3):
+    """
+    Extract a window of size 3*window centered around the center of the vector.
+
+    Parameters
+    ------------
+    vector : list or numpy array
+        Input vector.
+    window : int, optional
+        Size of the window. Default is 16.
+
+    Returns
+    ---------
+    window_vector : list or numpy array
+        Extracted window of size 3*window.
+    """
+    center_index = len(vector) // 2
+    start_index = max(center_index - width*window, 0)
+    end_index = min(center_index + width*window, len(vector))
+    window_vector = vector[start_index:end_index]
+    return window_vector
+
+
+def min_insulation_offset_from_center(target_map, window=10, crop_around_center=True, crop_width=3):
+    """
+    Calculate the offset from the center position for the position along the diagonal
+    with the minimum insulation score for a sliding window along the diagonal.
+
+    Parameters
+    ------------
+    target_map : numpy array
+        Array with contact change maps predicted by Akita, usually of a size (512 x 512).
+    window : int, optional
+        Size of the sliding window for insulation calculation. Default is 10.
+
+    Returns
+    ---------
+    offset_from_center : int
+        Offset from the center position based on the position with the minimum insulation score.
+    """
+    map_size = target_map.shape[0]
+    center_position = map_size // 2
+    bin_shift = 0
+    
+    insulation_scores = slide_diagonal_insulation(target_map, window)
+    
+    if crop_around_center:
+        bin_shift = max(center_position - crop_width*window, 0)
+        insulation_scores = extract_window_from_vector(insulation_scores, window=window, width=3)
+    
+    min_score = np.nanmin(insulation_scores)  
+
+    # Find indices with min_score
+    indices_tuple = np.where(insulation_scores == min_score)
+    indices_list = list(indices_tuple[0])
+
+    # in case there are more than one index with min_score
+    # Calculate midpoint of the array
+    midpoint = len(insulation_scores) // 2
+    
+    # Find index closest to the midpoint among indices with the same score
+    closest_index = None
+    min_difference = float('inf')
+    for index in indices_list:
+        difference = abs(index - midpoint)
+        if difference < min_difference:
+            closest_index = index
+            min_difference = difference
+
+    closest_index = closest_index + bin_shift
+    offset_from_center = closest_index - center_position
+    return offset_from_center
+
+
+def calculate_offset_INS(map_matrix, window=10, crop_around_center=True, crop_width=3):
+    """
+    Calculate insulation in a window-size diamond around the central pixel
+    for a set of num_targets contact difference maps.
+
+    Parameters
+    ------------
+    map_matrix : numpy array
+        Array with contact change maps predicted by Akita, usually of a size (512 x 512 x num_targets)
+    window : int
+        Size of a diamond taken into account in a metric calculation.
+
+    Returns
+    ---------
+    scores : num_targets-long vector with ISN-window offset
+    """
+
+    num_targets = map_matrix.shape[-1]
+    map_size = map_matrix.shape[0]
+    scores = np.zeros((num_targets,))
+    for target_index in range(num_targets):
+        offset_from_center = min_insulation_offset_from_center(map_matrix[:, :, target_index], 
+                                                               window=window, 
+                                                               crop_around_center=crop_around_center, 
+                                                               crop_width=crop_width)
+        scores[target_index] = offset_from_center
+    return scores
+
+
+# 5) flames score
 
 
 def calculate_flames_score(map_matrix):
@@ -622,6 +757,13 @@ def calculate_scores(
                 scores[f"alt_{stat}"] = INS
                 scores[f"ref_{stat}"] = refINS
 
+    if np.any((["OFF" in stat.split("-")[0] for stat in stat_metrics])):
+        for stat in stat_metrics:
+            if stat.split("-")[0] == "OFF":
+                window = int(stat.split("-")[1])
+                OFF = calculate_offset_INS(map_matrix, window, crop_around_center=True, crop_width=3)
+                scores[f"{stat}"] = OFF
+                
     if (
         ("dot-score" in stat_metrics)
         or ("cross-score" in stat_metrics)

@@ -513,7 +513,8 @@ def collect_h5(out_dir, seq_coords_df, h5_file_name="STATS_OUT.h5", virtual_exp=
     num_jobs = infer_num_jobs(out_dir)
 
     num_experiments = len(seq_coords_df)
-    num_backgrounds = len(seq_coords_df["background_index"].unique())
+    if virtual_exp==True:
+        num_backgrounds = len(seq_coords_df["background_index"].unique())
 
     seq_coords_df_dtypes = seq_coords_df.dtypes
 

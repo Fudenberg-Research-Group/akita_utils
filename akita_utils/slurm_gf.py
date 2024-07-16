@@ -190,6 +190,7 @@ class Job:
         out_file=None,
         err_file=None,
         sb_file=None,
+        # account=None,
         queue="standard",
         cpu=1,
         mem=None,
@@ -203,6 +204,7 @@ class Job:
         self.out_file = out_file
         self.err_file = err_file
         self.sb_file = sb_file
+        # self.account = account
         self.queue = queue
         self.cpu = cpu
         self.mem = mem
@@ -249,6 +251,7 @@ class Job:
         sbatch_out = open(sbatch_file, "w")
 
         print("#!/bin/bash\n", file=sbatch_out)
+        # print("#SBATCH --account %s" % self.account, file=sbatch_out)
         if self.gpu > 0:
             gres_str = "--gres=%s" % self.gres
             print("#SBATCH -p %s" % self.queue, file=sbatch_out)

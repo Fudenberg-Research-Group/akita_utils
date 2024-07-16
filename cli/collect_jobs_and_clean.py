@@ -112,7 +112,7 @@ def main():
         
     if options.not_collecting_maps == True:
         options.collecting_maps = False
-
+    
     if options.genomic_experiment == True:
         options.virtual_experiment = False
 
