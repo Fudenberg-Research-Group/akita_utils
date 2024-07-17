@@ -4,7 +4,7 @@ from akita_utils.tsv_utils import (
     filter_dataframe_by_column,
     generate_all_orientation_strings,
     filter_by_overlap_num,
-    test_split_df_equally
+    split_df_equally
 )
 
 
