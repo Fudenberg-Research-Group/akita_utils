@@ -1,11 +1,22 @@
-# kita utilities
-
 import numpy as np
 
 # numeric utilites
 def absmaxND(a, axis=None):
     """
-    https://stackoverflow.com/a/39152275
+    Compute the element-wise maximum absolute value along the specified axis.
+
+    Parameters
+    ----------
+    a : numpy.ndarray
+        Input array.
+    axis : int or tuple of ints, optional
+        Axis or axes along which to compute the maximum absolute values.
+        If None, compute over all elements of the input array (default).
+
+    Returns
+    -------
+    numpy.ndarray
+        Array containing the maximum absolute values along the specified axis.
     """
     amax = a.max(axis)
     amin = a.min(axis)
@@ -13,6 +24,21 @@ def absmaxND(a, axis=None):
 
 
 def smooth(y, box_pts):
+    """
+    Smooth the input array `y` using a moving average window defined by `box_pts`.
+
+    Parameters
+    ----------
+    y : numpy.ndarray
+        Input array to be smoothed.
+    box_pts : int
+        Size of the moving average window (number of points).
+
+    Returns
+    -------
+    numpy.ndarray
+        Smoothed array with the same shape as `y`.
+    """
     box = np.ones(box_pts) / box_pts
     y_smooth = np.convolve(y, box, mode="same")
     return y_smooth
@@ -57,12 +83,3 @@ def ut_dense(preds_ut, diagonal_offset=2):
     preds_dense += np.transpose(preds_dense, axes=[1, 0, 2])
 
     return preds_dense
-
-
-def split_df_equally(df, num_chunks, chunk_idx):
-    df_len = len(df)  # but indices are 0 -> 198
-    chunks_bounds = np.linspace(0, df_len, num_chunks + 1, dtype="int")
-    df_chunk = df.loc[
-        chunks_bounds[chunk_idx] : (chunks_bounds[chunk_idx + 1] - 1), :
-    ]
-    return df_chunk

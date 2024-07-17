@@ -1,8 +1,30 @@
-
 import numpy as np
-
 from akita_utils.dna_utils import (hot1_rc, dna_1hot, permute_seq_k, dna_rc)
 
+
+# reference (wild type)
+
+def reference_seqs_gen(background_seqs):
+    """
+    Generate one-hot encoded reference sequences from a list of background DNA sequences.
+
+    This iterator function takes a list of background DNA sequences `background_seqs`
+    and yields one-hot encoded reference sequences that can be used as input to Akita
+    via PredStreamGen.
+
+    Parameters:
+    - background_seqs (List[str]): List of background DNA sequences.
+
+    Yields:
+    numpy.ndarray: One-hot encoded DNA reference sequence.
+    """
+
+    for background_index in range(len(background_seqs)):
+        seq_1hot = background_seqs[background_index].copy()
+        yield seq_1hot
+
+
+# insertion experiment
 
 def _insert_casette(
     seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string
@@ -59,7 +81,7 @@ def _insert_casette(
 
     return output_seq
 
-# @pool_decorator
+
 def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open, nproc=1, map=map):
     """
     Generate sequences with symmetric insertions for a given set of coordinates.
@@ -78,38 +100,7 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open, np
 
     Yields:
     numpy.ndarray: One-hot encoded DNA sequence with symmetric insertions.
-    """
-
-
-    # def one_hot_process_func(s):
-    #     flank_bp = s.flank_bp
-    #     spacer_bp = s.spacer_bp
-    #     orientation_string = s.orientation
-
-    #     seq_1hot_insertion = dna_1hot(
-    #         genome_open.fetch(
-    #             s.chrom, s.start - flank_bp, s.end + flank_bp
-    #         ).upper()
-    #     )
-
-    #     if s.strand == "-":
-    #         seq_1hot_insertion = hot1_rc(seq_1hot_insertion)
-    #         # now, all motifs are standarized to this orientation ">"
-
-    #     seq_1hot = background_seqs[s.background_index].copy()
-
-    #     seq_1hot = _insert_casette(
-    #         seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string
-    #     )
-        
-    #     return seq_1hot
-    
-    # result = map(one_hot_process_func, seq_coords_df.itertuples())
-    # return result
-    
-    
-    
-    
+    """    
     for s in seq_coords_df.itertuples():
 
         flank_bp = s.flank_bp
@@ -135,25 +126,7 @@ def symmertic_insertion_seqs_gen(seq_coords_df, background_seqs, genome_open, np
         yield seq_1hot
 
 
-def reference_seqs_gen(background_seqs):
-    """
-    Generate one-hot encoded reference sequences from a list of background DNA sequences.
-
-    This iterator function takes a list of background DNA sequences `background_seqs`
-    and yields one-hot encoded reference sequences that can be used as input to Akita
-    via PredStreamGen.
-
-    Parameters:
-    - background_seqs (List[str]): List of background DNA sequences.
-
-    Yields:
-    numpy.ndarray: One-hot encoded DNA reference sequence.
-    """
-
-    for background_index in range(len(background_seqs)):
-        seq_1hot = background_seqs[background_index].copy()
-        yield seq_1hot
-
+# disruption experiment
 
 def expand_and_check_window(s, chrom_sizes_table, shift=0, seq_length=1310720):
     """
@@ -322,6 +295,56 @@ def central_permutation_seqs_gen(
             yield sequence
 
 
+def sliding_disruption_seq_gen(seq_coords_df, genome_open, split=10, bin_size=2048, seq_length=1310720):
+    """
+    Generates wild-type and permuted sequences in one-hot encoding format for given genomic coordinates.
+    
+    This function iterates over a DataFrame containing genomic coordinates, fetches the wild-type sequence from 
+    a genome file, and generates permuted versions of the sequence by disrupting specific regions. The sequences 
+    are then returned in a one-hot encoding format.
+
+    Args:
+        seq_coords_df (pd.DataFrame): DataFrame containing genomic coordinates with columns 'chr', 'start', 'end', and 'genome_window_start'.
+        genome_open (pysam.Fasta): Open genome file from which sequences will be fetched.
+        split (int, optional): Number of splits to create for permutation within each sequence window. Default is 10.
+        bin_size (int, optional): Size of the bins used for permutation. Default is 2048.
+        seq_length (int, optional): Length of the sequence to be fetched from the genome. Default is 1310720.
+    
+    Yields:
+        np.ndarray: One-hot encoded representation of the wild-type sequence and permuted sequences.    
+    """
+    
+    rel_start_permutation_bin = (seq_length // 2) - bin_size
+    
+    for s in seq_coords_df.itertuples():
+        list_1hot = []
+        window_start = s.genome_window_start
+        chrom = s.chr
+        
+        # wild type
+        wt_seq_1hot = dna_1hot(
+                    genome_open.fetch(chrom, window_start, window_start+seq_length).upper()
+                )
+        list_1hot.append(wt_seq_1hot)
+    
+        for perm_index in range(split):
+            permutation_start = rel_start_permutation_bin + (bin_size // split) * perm_index
+            permutation_end = rel_start_permutation_bin + (bin_size // split) * (perm_index+1)
+    
+            alt_seq_1hot = wt_seq_1hot.copy()
+            permuted_span = permute_seq_k(
+                    alt_seq_1hot[permutation_start:permutation_end], k=1
+                )
+            alt_seq_1hot[permutation_start:permutation_end] = permuted_span
+            list_1hot.append(alt_seq_1hot)
+            
+        # yielding first the reference, then the permuted sequence
+        for sequence in list_1hot:
+            yield sequence
+
+
+# generating shuffled sequences (once!)
+
 def shuffled_sequences_gen(seq_coords_df, genome_open, jasper_motif_file=None):
     """
     Generates sequences with shuffled backgrounds based on the input sequences' coordinates.
@@ -374,173 +397,7 @@ def shuffled_sequences_gen(seq_coords_df, genome_open, jasper_motif_file=None):
             )
 
 
-def flank_core_compatibility_seqs_gen(seq_coords_df, background_seqs, genome_open):
-
-    """
-    Generates sequences by flanking a core sequence with upstream and downstream sequences.
-
-    This function iterates over each row in the provided `seq_coords_df` DataFrame, and for each row:
-        1. Retrieves the core sequence and its flanks from the genome.
-        2. Converts these sequences into one-hot encoded representations.
-        3. If necessary, reverses the sequences based on the strand information.
-        4. Concatenates the upstream flank, core, and downstream flank sequences.
-        5. Inserts this concatenated sequence into a background sequence.
-
-    Parameters
-    ----------
-    seq_coords_df : pandas.DataFrame
-        A DataFrame containing the coordinates and other relevant information for each sequence.
-        Expected columns include chrom_core, start_core, end_core, strand_core, chrom_flank, 
-        start_flank, end_flank, strand_flank, flank_bp, background_index, spacer_bp, and orientation.
-    background_seqs : list or array-like
-        A list or array of background sequences (in one-hot encoded format) into which the 
-        concatenated sequences will be inserted.
-    genome_open : object
-        An open genome file object that allows fetching sequences from specific chromosomal coordinates.
-
-    Yields
-    ------
-    numpy.ndarray
-        A one-hot encoded numpy array representing the final sequence after insertion into the background sequence.
-    """
-    
-    for s in seq_coords_df.itertuples():
-
-        flank_bp = s.flank_bp
-
-        # getting core
-        seq_1hot_core = dna_1hot(genome_open.fetch(s.chrom_core, s.start_core, s.end_core).upper())
-        if s.strand_core == "-":
-            seq_1hot_core = hot1_rc(seq_1hot_core)
-
-        # getting flanks
-        seq_1hot_flank = dna_1hot(genome_open.fetch(s.chrom_flank, s.start_flank - flank_bp, s.end_flank + flank_bp).upper())
-        if s.strand_flank == "-":
-            seq_1hot_flank = hot1_rc(seq_1hot_flank)
-
-        seq_1hot_flank_upstream = seq_1hot_flank[:flank_bp,:]
-        seq_1hot_flank_downstream = seq_1hot_flank[-flank_bp:,:]
-        
-        # joining all the chunks together
-        seq_1hot_insertion = np.concatenate((seq_1hot_flank_upstream, seq_1hot_core, seq_1hot_flank_downstream), axis=0)
-        seq_1hot = background_seqs[s.background_index].copy()
-        seq_1hot = _insert_casette(seq_1hot, seq_1hot_insertion, s.spacer_bp, s.orientation)
-
-        yield seq_1hot
-
-
-def single_mutagenesis_seqs_gen(seq_coords_df, background_seqs, genome_open):
-    """
-    Generate sequences with single mutagenesis applied, based on specified sequence coordinates,
-    background sequences, and a reference genome.
-
-    This function iterates through a DataFrame of sequence coordinates (seq_coords_df), applying
-    single mutagenesis to each sequence. For each sequence, it adjusts for flanking regions,
-    retrieves the sequence from a reference genome, applies specified mutations, and then
-    incorporates the mutated sequence into a background sequence.
-
-    Parameters:
-    - seq_coords_df (pandas.DataFrame): A DataFrame containing the sequence coordinates and
-      mutation details. Expected columns include 'start', 'end', 'flank_bp', 'chrom', 'position',
-      'original_nucleotide', 'mutated_nucleotide', 'strand', 'background_index', 'spacer_bp', and
-      'orientation'.
-    - background_seqs (list): A list of background sequences (e.g., as one-hot encoded arrays)
-      into which the mutated sequences will be inserted.
-    - genome_open (pysam.FastaFile): An open FastaFile object of the reference genome from which
-      sequences will be fetched.
-
-    Yields:
-    - numpy.array: A one-hot encoded array representing the background sequence with the
-      mutated sequence inserted at the specified position and orientation.
-    """
-
-    for s in seq_coords_df.itertuples():
-        # Adjust start and end positions to include flanking regions
-        start_adj = s.start - s.flank_bp
-        end_adj = s.end + s.flank_bp
-        
-        # Fetch the sequence from the genome
-        sequence = genome_open.fetch(s.chrom, start_adj, end_adj).upper()
-
-        # Apply mutations
-        # Adjust position to be relative to the fetched sequence, considering flanking regions
-        pos_adj = s.position + s.flank_bp
-        
-        if s.strand == "-":
-            # Reverse complement the sequence for negative strand
-            sequence = dna_rc(sequence).upper()
-
-        # Mutate the sequence at specified position
-        sequence_list = list(sequence)
-        sequence_list[pos_adj] = s.mutated_nucleotide
-        mutated_sequence = ''.join(sequence_list)
-
-        seq_1hot_insertion = dna_1hot(mutated_sequence)
-        seq_1hot = background_seqs[s.background_index].copy()
-        seq_1hot = _insert_casette(
-            seq_1hot, seq_1hot_insertion, s.spacer_bp, s.orientation
-        )
-
-        yield seq_1hot
-
-
-def pairwise_mutagenesis_seqs_gen(seq_coords_df, background_seqs, genome_open):
-
-    """
-    Generate sequences with pairwise mutagenesis applied, based on specified sequence coordinates,
-    background sequences, and a reference genome.
-
-    This function iterates through a DataFrame of sequence coordinates (seq_coords_df), applying
-    pairwise mutagenesis to each sequence. For each sequence, it adjusts for flanking regions,
-    retrieves the sequence from a reference genome, applies specified mutations, and then
-    incorporates the mutated sequence into a background sequence.
-
-    Parameters:
-    - seq_coords_df (pandas.DataFrame): A DataFrame containing the sequence coordinates and
-      mutation details. Expected columns include 'start', 'end', 'flank_bp', 'chrom', 'pos1',
-      'pos2', 'MutatedNuc1', 'MutatedNuc2', 'strand', 'background_index', 'spacer_bp', and
-      'orientation'.
-    - background_seqs (list): A list of background sequences (e.g., as one-hot encoded arrays)
-      into which the mutated sequences will be inserted.
-    - genome_open (pysam.FastaFile): An open FastaFile object of the reference genome from which
-      sequences will be fetched.
-
-    Yields:
-    - numpy.array: A one-hot encoded array representing the background sequence with the
-      mutated sequence inserted at the specified position and orientation.
-    """
-    
-    for s in seq_coords_df.itertuples():
-        # Adjust start and end positions to include flanking regions
-        start_adj = s.start - s.flank_bp
-        end_adj = s.end + s.flank_bp
-        
-        # Fetch the sequence from the genome
-        sequence = genome_open.fetch(s.chrom, start_adj, end_adj).upper()
-
-        # Apply mutations
-        # Adjust positions to be relative to the fetched sequence, considering flanking regions
-        pos1_adj = s.pos1 + s.flank_bp
-        pos2_adj = s.pos2 + s.flank_bp
-        
-        if s.strand == "-":
-            # Reverse complement the sequence for negative strand
-            sequence = dna_rc(sequence).upper()
-
-        # Mutate the sequence at specified positions
-        sequence_list = list(sequence)
-        sequence_list[pos1_adj] = s.MutatedNuc1
-        sequence_list[pos2_adj] = s.MutatedNuc2
-        mutated_sequence = ''.join(sequence_list)
-
-        seq_1hot_insertion = dna_1hot(mutated_sequence)
-        seq_1hot = background_seqs[s.background_index].copy()
-        seq_1hot = _insert_casette(
-            seq_1hot, seq_1hot_insertion, s.spacer_bp, s.orientation
-        )
-
-        yield seq_1hot
-
+# tests on shuffling and its impact on insertion score
 
 def unshuffled_insertion_gen(seq_coords_df, genome_open, ctcf_site_coordinates, flank_bp=30, orientation=">"):
 
@@ -666,51 +523,173 @@ def shuffled_insertion_gen(seq_coords_df, genome_open, ctcf_site_coordinates, fl
             yield seq
 
 
-def sliding_disruption_seq_gen(seq_coords_df, genome_open, split=10, bin_size=2048, seq_length=1310720):
-    """
-    Generates wild-type and permuted sequences in one-hot encoding format for given genomic coordinates.
-    
-    This function iterates over a DataFrame containing genomic coordinates, fetches the wild-type sequence from 
-    a genome file, and generates permuted versions of the sequence by disrupting specific regions. The sequences 
-    are then returned in a one-hot encoding format.
+# flank-core compatibility
 
-    Args:
-        seq_coords_df (pd.DataFrame): DataFrame containing genomic coordinates with columns 'chr', 'start', 'end', and 'genome_window_start'.
-        genome_open (pysam.Fasta): Open genome file from which sequences will be fetched.
-        split (int, optional): Number of splits to create for permutation within each sequence window. Default is 10.
-        bin_size (int, optional): Size of the bins used for permutation. Default is 2048.
-        seq_length (int, optional): Length of the sequence to be fetched from the genome. Default is 1310720.
-    
-    Yields:
-        np.ndarray: One-hot encoded representation of the wild-type sequence and permuted sequences.    
+def flank_core_compatibility_seqs_gen(seq_coords_df, background_seqs, genome_open):
+
     """
-    
-    rel_start_permutation_bin = (seq_length // 2) - bin_size
+    Generates sequences by flanking a core sequence with upstream and downstream sequences.
+
+    This function iterates over each row in the provided `seq_coords_df` DataFrame, and for each row:
+        1. Retrieves the core sequence and its flanks from the genome.
+        2. Converts these sequences into one-hot encoded representations.
+        3. If necessary, reverses the sequences based on the strand information.
+        4. Concatenates the upstream flank, core, and downstream flank sequences.
+        5. Inserts this concatenated sequence into a background sequence.
+
+    Parameters
+    ----------
+    seq_coords_df : pandas.DataFrame
+        A DataFrame containing the coordinates and other relevant information for each sequence.
+        Expected columns include chrom_core, start_core, end_core, strand_core, chrom_flank, 
+        start_flank, end_flank, strand_flank, flank_bp, background_index, spacer_bp, and orientation.
+    background_seqs : list or array-like
+        A list or array of background sequences (in one-hot encoded format) into which the 
+        concatenated sequences will be inserted.
+    genome_open : object
+        An open genome file object that allows fetching sequences from specific chromosomal coordinates.
+
+    Yields
+    ------
+    numpy.ndarray
+        A one-hot encoded numpy array representing the final sequence after insertion into the background sequence.
+    """
     
     for s in seq_coords_df.itertuples():
-        list_1hot = []
-        window_start = s.genome_window_start
-        chrom = s.chr
+
+        flank_bp = s.flank_bp
+
+        # getting core
+        seq_1hot_core = dna_1hot(genome_open.fetch(s.chrom_core, s.start_core, s.end_core).upper())
+        if s.strand_core == "-":
+            seq_1hot_core = hot1_rc(seq_1hot_core)
+
+        # getting flanks
+        seq_1hot_flank = dna_1hot(genome_open.fetch(s.chrom_flank, s.start_flank - flank_bp, s.end_flank + flank_bp).upper())
+        if s.strand_flank == "-":
+            seq_1hot_flank = hot1_rc(seq_1hot_flank)
+
+        seq_1hot_flank_upstream = seq_1hot_flank[:flank_bp,:]
+        seq_1hot_flank_downstream = seq_1hot_flank[-flank_bp:,:]
         
-        # wild type
-        wt_seq_1hot = dna_1hot(
-                    genome_open.fetch(chrom, window_start, window_start+seq_length).upper()
-                )
-        list_1hot.append(wt_seq_1hot)
-    
-        for perm_index in range(split):
-            permutation_start = rel_start_permutation_bin + (bin_size // split) * perm_index
-            permutation_end = rel_start_permutation_bin + (bin_size // split) * (perm_index+1)
-    
-            alt_seq_1hot = wt_seq_1hot.copy()
-            permuted_span = permute_seq_k(
-                    alt_seq_1hot[permutation_start:permutation_end], k=1
-                )
-            alt_seq_1hot[permutation_start:permutation_end] = permuted_span
-            list_1hot.append(alt_seq_1hot)
-            
-        # yielding first the reference, then the permuted sequence
-        for sequence in list_1hot:
-            yield sequence
+        # joining all the chunks together
+        seq_1hot_insertion = np.concatenate((seq_1hot_flank_upstream, seq_1hot_core, seq_1hot_flank_downstream), axis=0)
+        seq_1hot = background_seqs[s.background_index].copy()
+        seq_1hot = _insert_casette(seq_1hot, seq_1hot_insertion, s.spacer_bp, s.orientation)
+
+        yield seq_1hot
 
 
+# mutagenesis
+
+def single_mutagenesis_seqs_gen(seq_coords_df, background_seqs, genome_open):
+    """
+    Generate sequences with single mutagenesis applied, based on specified sequence coordinates,
+    background sequences, and a reference genome.
+
+    This function iterates through a DataFrame of sequence coordinates (seq_coords_df), applying
+    single mutagenesis to each sequence. For each sequence, it adjusts for flanking regions,
+    retrieves the sequence from a reference genome, applies specified mutations, and then
+    incorporates the mutated sequence into a background sequence.
+
+    Parameters:
+    - seq_coords_df (pandas.DataFrame): A DataFrame containing the sequence coordinates and
+      mutation details. Expected columns include 'start', 'end', 'flank_bp', 'chrom', 'position',
+      'original_nucleotide', 'mutated_nucleotide', 'strand', 'background_index', 'spacer_bp', and
+      'orientation'.
+    - background_seqs (list): A list of background sequences (e.g., as one-hot encoded arrays)
+      into which the mutated sequences will be inserted.
+    - genome_open (pysam.FastaFile): An open FastaFile object of the reference genome from which
+      sequences will be fetched.
+
+    Yields:
+    - numpy.array: A one-hot encoded array representing the background sequence with the
+      mutated sequence inserted at the specified position and orientation.
+    """
+
+    for s in seq_coords_df.itertuples():
+        # Adjust start and end positions to include flanking regions
+        start_adj = s.start - s.flank_bp
+        end_adj = s.end + s.flank_bp
+        
+        # Fetch the sequence from the genome
+        sequence = genome_open.fetch(s.chrom, start_adj, end_adj).upper()
+
+        # Apply mutations
+        # Adjust position to be relative to the fetched sequence, considering flanking regions
+        pos_adj = s.position + s.flank_bp
+        
+        if s.strand == "-":
+            # Reverse complement the sequence for negative strand
+            sequence = dna_rc(sequence).upper()
+
+        # Mutate the sequence at specified position
+        sequence_list = list(sequence)
+        sequence_list[pos_adj] = s.mutated_nucleotide
+        mutated_sequence = ''.join(sequence_list)
+
+        seq_1hot_insertion = dna_1hot(mutated_sequence)
+        seq_1hot = background_seqs[s.background_index].copy()
+        seq_1hot = _insert_casette(
+            seq_1hot, seq_1hot_insertion, s.spacer_bp, s.orientation
+        )
+
+        yield seq_1hot
+
+
+def pairwise_mutagenesis_seqs_gen(seq_coords_df, background_seqs, genome_open):
+
+    """
+    Generate sequences with pairwise mutagenesis applied, based on specified sequence coordinates,
+    background sequences, and a reference genome.
+
+    This function iterates through a DataFrame of sequence coordinates (seq_coords_df), applying
+    pairwise mutagenesis to each sequence. For each sequence, it adjusts for flanking regions,
+    retrieves the sequence from a reference genome, applies specified mutations, and then
+    incorporates the mutated sequence into a background sequence.
+
+    Parameters:
+    - seq_coords_df (pandas.DataFrame): A DataFrame containing the sequence coordinates and
+      mutation details. Expected columns include 'start', 'end', 'flank_bp', 'chrom', 'pos1',
+      'pos2', 'MutatedNuc1', 'MutatedNuc2', 'strand', 'background_index', 'spacer_bp', and
+      'orientation'.
+    - background_seqs (list): A list of background sequences (e.g., as one-hot encoded arrays)
+      into which the mutated sequences will be inserted.
+    - genome_open (pysam.FastaFile): An open FastaFile object of the reference genome from which
+      sequences will be fetched.
+
+    Yields:
+    - numpy.array: A one-hot encoded array representing the background sequence with the
+      mutated sequence inserted at the specified position and orientation.
+    """
+    
+    for s in seq_coords_df.itertuples():
+        # Adjust start and end positions to include flanking regions
+        start_adj = s.start - s.flank_bp
+        end_adj = s.end + s.flank_bp
+        
+        # Fetch the sequence from the genome
+        sequence = genome_open.fetch(s.chrom, start_adj, end_adj).upper()
+
+        # Apply mutations
+        # Adjust positions to be relative to the fetched sequence, considering flanking regions
+        pos1_adj = s.pos1 + s.flank_bp
+        pos2_adj = s.pos2 + s.flank_bp
+        
+        if s.strand == "-":
+            # Reverse complement the sequence for negative strand
+            sequence = dna_rc(sequence).upper()
+
+        # Mutate the sequence at specified positions
+        sequence_list = list(sequence)
+        sequence_list[pos1_adj] = s.MutatedNuc1
+        sequence_list[pos2_adj] = s.MutatedNuc2
+        mutated_sequence = ''.join(sequence_list)
+
+        seq_1hot_insertion = dna_1hot(mutated_sequence)
+        seq_1hot = background_seqs[s.background_index].copy()
+        seq_1hot = _insert_casette(
+            seq_1hot, seq_1hot_insertion, s.spacer_bp, s.orientation
+        )
+
+        yield seq_1hot

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from __future__ import print_function
 from optparse import OptionParser
 import sys
@@ -6,17 +5,26 @@ import subprocess
 import tempfile
 import time
 
-################################################################################
-# slurm.py
-#
-# Methods to run jobs on SLURM.
-################################################################################
 
-
-################################################################################
-# main
-################################################################################
 def main():
+    """
+    Launches a job with specified parameters and optionally monitors its status and cleans up afterward.
+
+    Command-line Options
+    --------------------
+    -g, --go               Don't wait for the job to finish [Default: False]
+    -o, --out_file         Output file path for job logs
+    -e, --err_file         Error file path for job logs
+    -J, --job_name         Name of the job
+    -q, --queue            Job queue [Default: general]
+    -n, --cpu              Number of CPUs for the job [Default: 1]
+    -m, --mem              Memory allocation for the job (in MB)
+    -t, --time             Maximum execution time for the job
+
+    Returns
+    ---------
+    None
+    """
     usage = "usage: %prog [options] arg"
     parser = OptionParser(usage)
     parser.add_option(
@@ -80,13 +88,27 @@ def main():
         main_job.clean()
 
 
-################################################################################
-# multi_run
-#
-# Launch and manage multiple SLURM jobs in parallel, using only one 'sacct'
-# call per
-################################################################################
 def multi_run(jobs, max_proc=None, verbose=False, launch_sleep=2, update_sleep=20):
+    """
+    Launch multiple jobs sequentially and monitor their statuses until all jobs have finished.
+
+    Parameters
+    ------------
+    jobs : list
+        List of Job objects representing the jobs to be executed.
+    max_proc : int, optional
+        Maximum number of jobs to run concurrently. Default is None (runs all jobs concurrently).
+    verbose : bool, optional
+        If True, print job names and commands to stderr as they are launched and completed. Default is False.
+    launch_sleep : int, optional
+        Time to sleep (in seconds) after launching each job. Default is 2 seconds.
+    update_sleep : int, optional
+        Time to sleep (in seconds) between updating job statuses. Default is 20 seconds.
+
+    Returns
+    ---------
+    None
+    """
     total = len(jobs)
     finished = 0
     running = 0
@@ -134,14 +156,25 @@ def multi_run(jobs, max_proc=None, verbose=False, launch_sleep=2, update_sleep=2
                 finished += 1
 
         active_jobs = active_jobs_new
-    
-################################################################################
-# multi_update_status
-#
-# Update the status for multiple jobs at once.
-################################################################################
+
+
 def multi_update_status(jobs, max_attempts=3, sleep_attempt=5):
-    # reset all
+    """
+    Update the status of multiple Job objects by querying job status using `sacct` command.
+
+    Parameters
+    ------------
+    jobs : list
+        List of Job objects whose statuses need to be updated.
+    max_attempts : int, optional
+        Maximum number of attempts to query job status. Default is 3.
+    sleep_attempt : int, optional
+        Time to sleep (in seconds) between attempts to query job status. Default is 5 seconds.
+
+    Returns
+    ---------
+    None
+    """
     
     for j in jobs:
         j.status = None
@@ -176,13 +209,46 @@ def multi_update_status(jobs, max_attempts=3, sleep_attempt=5):
         attempt += 1
     
 class Job:
-    """class to manage SLURM jobs.
-
-    Notes:
-     -Since we have two types of machines in the GPU queue, I'm asking
-      for the machine type as "queue", and the "launch" method will handle it.
     """
+    Represents a job to be submitted to SLURM.
 
+    Attributes
+    ----------
+    cmd : str
+        Command to be executed.
+    name : str
+        Name of the job.
+    out_file : str, optional
+        Output file path for job logs.
+    err_file : str, optional
+        Error file path for job logs.
+    sb_file : str, optional
+        Path to the SLURM batch script file.
+    queue : str, optional
+        Queue name for job submission. Default is 'standard'.
+    cpu : int, optional
+        Number of CPUs required for the job. Default is 1.
+    mem : int, optional
+        Memory allocation (in MB) required for the job.
+    time : str, optional
+        Maximum execution time for the job (format: days-hours:minutes:seconds).
+    gpu : int, optional
+        Number of GPUs required for the job. Default is 0.
+    gres : str, optional
+        Generic resource specification for GPUs. Default is 'gpu:p100'.
+    constraint : str, optional
+        Specific node constraint for the job.
+
+    Methods
+    -------
+    flash():
+        Determine if the job can run on the flash queue based on its time requirements.
+    launch():
+        Create and launch the SLURM batch script, and save the job ID.
+    update_status(max_attempts=3, sleep_attempt=5):
+        Update the job status using 'sacct' command and return True if successful, False otherwise.
+    """
+    
     def __init__(
         self,
         cmd,
@@ -204,7 +270,6 @@ class Job:
         self.out_file = out_file
         self.err_file = err_file
         self.sb_file = sb_file
-        # self.account = account
         self.queue = queue
         self.cpu = cpu
         self.mem = mem
@@ -240,7 +305,7 @@ class Job:
         return hours_sum <= 4
 
     def launch(self):
-        """Make an sbatch file, launch it, and save the job id."""
+        """Create and launch the SLURM batch script, and save the job ID."""
 
         # make sbatch script
         if self.sb_file is None:
@@ -251,7 +316,6 @@ class Job:
         sbatch_out = open(sbatch_file, "w")
 
         print("#!/bin/bash\n", file=sbatch_out)
-        # print("#SBATCH --account %s" % self.account, file=sbatch_out)
         if self.gpu > 0:
             gres_str = "--gres=%s" % self.gres
             print("#SBATCH -p %s" % self.queue, file=sbatch_out)
@@ -283,7 +347,21 @@ class Job:
         self.id = int(launch_str.split()[3])
 
     def update_status(self, max_attempts=3, sleep_attempt=5):
-        """Use 'sacct' to update the job's status. Return True if found and False if not."""
+        """
+        Update the job's status using 'sacct' command.
+
+        Parameters
+        ------------
+        max_attempts : int, optional
+            Maximum number of attempts to query job status. Default is 3.
+        sleep_attempt : int, optional
+            Time to sleep (in seconds) between attempts to query job status. Default is 5 seconds.
+
+        Returns
+        ---------
+        bool
+            True if job status is updated successfully, False otherwise.
+        """
 
         status = None
 
@@ -316,7 +394,6 @@ class Job:
         else:
             self.status = status
             return True
-
 
 ################################################################################
 # __main__

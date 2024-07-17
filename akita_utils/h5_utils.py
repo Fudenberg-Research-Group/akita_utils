@@ -9,8 +9,8 @@ import os
 from akita_utils.utils import ut_dense
 from akita_utils.stats_utils import calculate_scores
 
-# METADATA FUNCTIONS
 
+# METADATA FUNCTIONS
 
 def prepare_metadata_dir(model_file, genome_fasta, seqnn_model):
     """
@@ -49,7 +49,6 @@ def prepare_metadata_dir(model_file, genome_fasta, seqnn_model):
 
 
 # H5 INITIALIZATION FUNCTIONS
-
 
 def initialize_stat_output_h5(
     out_dir,
@@ -238,7 +237,6 @@ def initialize_maps_output_references(
 
 # WRITING TO H5 FUNCTIONS
 
-
 def write_stat_metrics_to_h5(
     prediction_matrix,
     reference_prediction_matrix,
@@ -247,8 +245,7 @@ def write_stat_metrics_to_h5(
     head_index,
     model_index,
     diagonal_offset=2,
-    stat_metrics=["SCD"],
-):
+    stat_metrics=["SCD"]):
     """
     Writes to an h5 file saving statistical metrics calculated from Akita's predicftions.
 
@@ -402,18 +399,130 @@ def save_maps(
 
         plt.tight_layout()
 
-        # TODO: we can save SCD or other scores in the name of plots
-        # we should let user change which metric
-        # such that they can sort plots by name
-
         plt.savefig(
             f"e{experiment_index}_h{head_index}_m{model_index}_t{target_index}.pdf"
         )
         plt.close()
 
 
-# COLLECTING DATA FROM MULTIPLE HDF5 FILES & CHECKING START OF JOBS
+# AVERAGING FUNCTIONS
 
+def average_over_keys(h5_file, df, keywords):
+    """
+    Averages data over keys containing specific keywords in the provided HDF5 file.
+
+    This function takes an HDF5 file, a DataFrame, and a list of keywords as input.
+    It searches for keys in the HDF5 file containing each specified keyword,
+    extracts the data from those keys, averages the data over targets and/or models,
+    and adds a new column to the input DataFrame with the averaged values.
+
+    Parameters
+    ----------
+    h5_file : h5py.File)
+        The HDF5 file object containing the data.
+    df : pd.DataFrame)
+        The DataFrame to which the averaged values will be added.
+    keywords : list):
+        A list of keywords to search for in the HDF5 keys.
+
+    Returns
+    -------
+    df : pd.DataFrame
+        The input DataFrame with additional columns containing averaged values
+                  corresponding to the specified keywords.
+
+    Raises
+    ------
+    Exception: If no matching keys are found for any of the specified keywords.
+    """
+
+    for keyword in keywords:
+        # collecting all keys with keyword in the name
+        keys = [
+            key
+            for key in h5_file.keys()
+            if keyword in key and key not in keyword
+        ]
+        if not keys:
+            raise Exception(
+                f"There are no matching keys for the following keyword: {keyword}"
+            )
+
+        data = pd.DataFrame()
+        for key in keys:
+            nr_targets = h5_file[key][()].shape[1]
+            for target_index in range(nr_targets):
+                series = pd.Series(
+                    h5_file[key][:, target_index],
+                    name=key + f"_t{target_index}",
+                )
+                data = pd.concat([data, series], axis=1)
+
+        # averaging over targets and / or models
+        average = data.mean(axis=1)
+        df = pd.concat([df, pd.Series(average, name=keyword)], axis=1)
+
+    return df
+
+
+def collect_all_keys_with_keywords(h5_file, df, keywords, ignore_keys=[]):
+    """
+    Collects data from keys containing specific keywords in the provided HDF5 file.
+
+    This function takes an HDF5 file, a DataFrame, and a list of keywords as input.
+    It searches for keys in the HDF5 file containing each specified keyword,
+    extracts the data from those keys, and aggregates the data into a DataFrame.
+
+    Parameters
+    ----------
+    h5_file : h5py.File
+        The HDF5 file object containing the data.
+    df : pd.DataFrame
+        The initial DataFrame to which the collected data will be added.
+    keywords : list
+        A list of keywords to search for in the HDF5 keys.
+
+    Returns
+    -------
+    data : pd.DataFrame
+        A DataFrame containing data from keys with the specified keywords.
+
+    Raises
+    ------
+    Exception: If no matching keys are found for any of the specified keywords.
+    """
+
+    data = pd.DataFrame()
+
+    for keyword in keywords:
+        # collecting all keys with keyword in the name
+        keys = [
+            key
+            for key in h5_file.keys()
+            if (
+                keyword in key
+                and key not in keyword
+                and key not in ignore_keys
+            )
+        ]
+        if not keys:
+            raise Exception(
+                f"There are no matching keys for the following keyword: {keyword}"
+            )
+
+        for key in keys:
+            nr_targets = h5_file[key][()].shape[1]
+            for target_index in range(nr_targets):
+                series = pd.Series(
+                    h5_file[key][:, target_index],
+                    name=key + f"_t{target_index}",
+                )
+                data = pd.concat([data, series], axis=1)
+
+    return data
+
+
+# COLLECTING DATA FROM MULTIPLE HDF5 FILES & CHECKING START OF JOBS
 
 def job_started(out_dir, job_index, h5_file_name="STATS_OUT.h5"):
     """

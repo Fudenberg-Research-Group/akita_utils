@@ -3,13 +3,14 @@ from akita_utils.utils import ut_dense
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 # STANDARDS
 MOTIF_LEN = 19
 FLANK_LEN = 20
 INSERT_LEN = 2 * FLANK_LEN + MOTIF_LEN
 
-# MATRIX TRANSFORMATION
 
+# MATRIX TRANSFORMATION
 
 def get_reference_map_matrix(
     hf, head_index, model_index, num_background, diagonal_offset=2
@@ -110,46 +111,12 @@ def get_map_matrix(
         exp_map_matrix[exp_index, :, :, :] += map_matrix
 
     return exp_map_matrix
-
-
-# SINGLE-MAP PLOTTING FUNCTION
-
-
-def plot_map(matrix, vmin=-0.6, vmax=0.6, width=5, height=5, palette="RdBu_r"):
-    """
-    Plots a 512x512 log(obs/exp) map.
-
-    Parameters
-    ------------
-    matrix : numpy array
-        Predicted log(obs/exp) map.
-    vmin : float
-    vmax : float
-        Minimum and maximum in the colormap scale.
-    width : int
-    height : int
-        Width and height of a plotted map.
-    """
-
-    fig = plt.figure(figsize=(width, height))
-
-    sns.heatmap(
-        matrix,
-        vmin=vmin,
-        vmax=vmax,
-        cbar=False,
-        cmap=palette,
-        square=True,
-        xticklabels=False,
-        yticklabels=False,
-    )
-    plt.show()
-
+    
 
 # SCORES
 
-# 1) Insulation score
 
+# 1) Insulation score
 
 def _single_map_insulation(target_map, window=10):
     """
@@ -204,7 +171,6 @@ def calculate_INS(map_matrix, window=10):
 
 
 # 2) SCD (Square Contact Differences)
-
 
 def calculate_SCD(map_matrix, reference_map_matrix=None):
     """
@@ -266,7 +232,6 @@ def calculate_SSD(map_matrix, reference_map_matrix=None):
 
 
 # 3) functions required for dot scores calculation
-
 
 def get_bin(
     window_start,
@@ -725,15 +690,7 @@ def calculate_offset_INS(map_matrix, window=10, crop_around_center=True, crop_wi
     return scores
 
 
-# 5) flames score
-
-
-def calculate_flames_score(map_matrix):
-    raise NotImplementedError("Will be added soon")
-
-
 # calculating all desired scores for a set of maps
-
 
 def calculate_scores(
     stat_metrics, map_matrix, reference_map_matrix=None, **kwargs
@@ -804,3 +761,129 @@ def calculate_scores(
     # new scores will be added soon...
 
     return scores
+
+
+# CALCULATING SCORES (DF) BASED ON KEYWORDS
+
+def calculate_INS_keywords(df, keywords, drop=True):
+    """
+    Calculates INS values based on specified keywords in the DataFrame.
+
+    This function takes a DataFrame, a list of keywords, and an optional drop parameter as input.
+    If any of the keywords contain "INS", the function calculates the insertion (INS) values
+    by subtracting the "ref_INS" column from the "alt_INS" column for each specified window size.
+    If drop is True, the function drops the "alt_INS" and "ref_INS" columns after calculation.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The input DataFrame containing necessary columns for calculations.
+    keywords : list
+        A list of keywords to identify INS window sizes in the DataFrame columns.
+    drop : bool, optional
+        If True, drops "alt_INS" and "ref_INS" columns after calculation. Default is True.
+
+    Returns
+    -------
+    pd.DataFrame
+        If any of the keywords contain "INS", a DataFrame with additional columns
+        containing calculated INS values is returned. Otherwise, the function
+        returns unchanged input DataFrame.
+
+    Raises:
+    Exception: If "alt_INS" or "ref_INS" columns cannot be found for any specified keyword.
+    """
+    if any("INS" in keyword for keyword in keywords):
+        df_out = df.copy(deep=True)
+        windows = []
+
+        for keyword in keywords:
+            if "INS" in keyword:
+                window = int(keyword.split("-")[1])
+                if window not in windows:
+                    windows.append(window)
+
+        for window in windows:
+            key = f"INS-{window}"
+            if "ref_" + key in df.columns and "alt_" + key in df.columns:
+                df_out[key] = df_out["alt_" + key] - df_out["ref_" + key]
+                if drop:
+                    df_out = df_out.drop(columns=["alt_" + key, "ref_" + key])
+            else:
+                raise Exception(
+                    f"alt_ and ref_ columns cannot be found for the following keyword: {keyword}"
+                )
+
+        return df_out
+
+    else:
+        return df
+
+
+def calculate_INS_by_targets_keywords(
+    df, keywords, max_nr_targets=6, max_nr_heads=2, max_nr_models=8, drop=True
+):
+    """
+    Calculates INS values based on specified keywords in the DataFrame considering targets, heads, and models.
+
+    This function takes a DataFrame, a list of keywords, and optional parameters for the maximum number of
+    targets, heads, and models. It calculates the insertion (INS) values for each target index, head index,
+    and model index specified in the DataFrame columns. The function assumes a standard naming convention
+    for the columns where INS values are stored, including head index, model index, and target index
+    [{score}_h{head_index}_m{model_index}_t{target_index}].
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The input DataFrame containing necessary columns for calculations.
+    keywords : list
+        A list of keywords to identify INS window sizes in the DataFrame columns.
+    max_nr_targets : int, optional
+        The maximum number of target indices to consider. Default is 6.
+    max_nr_heads : int, optional
+        The maximum number of head indices to consider. Default is 2.
+    max_nr_models : int, optional
+        The maximum number of model indices to consider. Default is 8.
+    drop : bool, optional
+        If True, drops "alt_INS" and "ref_INS" columns after calculation. Default is True.
+
+    Returns
+    -------
+    pd.DataFrame
+        If any of the keywords contain "INS", DataFrame with additional columns containing calculated INS values
+        for each target, head, and model index is returned. Otherwise, the functionreturns unchanged input DataFrame.
+    """
+
+    if any("INS" in keyword for keyword in keywords):
+        df_out = df.copy(deep=True)
+        windows = []
+
+        for keyword in keywords:
+            if "INS" in keyword:
+                window = int(keyword.split("-")[1])
+                if window not in windows:
+                    windows.append(window)
+
+        for window in windows:
+            for head_index in range(max_nr_heads):
+                for model_index in range(max_nr_models):
+                    for target_index in range(max_nr_targets):
+                        key = f"INS-{window}_h{head_index}_m{model_index}_t{target_index}"
+
+                        if (
+                            "ref_" + key in df.columns
+                            and "alt_" + key in df.columns
+                        ):
+                            df_out[key] = (
+                                df_out["alt_" + key] - df_out["ref_" + key]
+                            )
+                            if drop:
+                                df_out = df_out.drop(
+                                    columns=["alt_" + key, "ref_" + key]
+                                )
+
+        return df_out
+
+    else:
+        return df
+        

@@ -4,15 +4,39 @@ import tensorflow as tf
 
 
 def dna_rc(seq):
+    """
+    Generate the reverse complement of a DNA sequence.
+
+    Parameters
+    ------------
+    seq : str
+        DNA sequence composed of 'A', 'T', 'C', and 'G' characters (case insensitive).
+
+    Returns
+    ---------
+    str
+        Reverse complement of the input DNA sequence.
+    """
     return seq.translate(str.maketrans("ATCGatcg", "TAGCtagc"))[::-1]
 
 
 def dna_1hot_index(seq, n_sample=False):
-    """dna_1hot_index
-    Args:
-      seq:       nucleotide sequence.
-    Returns:
-      seq_code:  index int array representation.
+    """
+    Convert a DNA sequence to a numerical index array, with an option for handling unknown nucleotides.
+
+    Parameters
+    ------------
+    seq : str
+        DNA sequence composed of 'A', 'T', 'C', and 'G' characters.
+    n_sample : bool, optional
+        If True, randomly assign a value of 0, 1, 2, or 3 to unknown nucleotides.
+        If False, assign a value of 4 to unknown nucleotides. Default is False.
+
+    Returns
+    ---------
+    seq_code : numpy array
+        Array of numerical indices representing the DNA sequence, where 'A' -> 0, 'C' -> 1, 'G' -> 2, 'T' -> 3.
+        Unknown nucleotides are assigned either a random value (0-3) or 4 based on the `n_sample` parameter.
     """
     seq_len = len(seq)
     seq = seq.upper()
@@ -40,6 +64,20 @@ def dna_1hot_index(seq, n_sample=False):
 
 
 def dna_1hot_GC(seq):
+    """
+    Convert a DNA sequence to a binary array indicating GC content.
+
+    Parameters
+    ------------
+    seq : str
+        DNA sequence composed of 'A', 'T', 'C', and 'G' characters.
+
+    Returns
+    ---------
+    seq_code : numpy array
+        Array of binary values representing the DNA sequence, where 'A' and 'T' -> 0, 'G' and 'C' -> 1.
+        Unknown nucleotides are assigned a random value of 0 or 1.
+    """
     seq_len = len(seq)
     seq = seq.upper()
     # map nt's to a len(seq) of 0 = A,T; 1 = G,C
@@ -60,14 +98,26 @@ def dna_1hot_GC(seq):
 
 
 def dna_1hot(seq, seq_len=None, n_uniform=False, n_sample=False):
-    """dna_1hot
-    Args:
-      seq:       nucleotide sequence.
-      seq_len:   length to extend/trim sequences to.
-      n_uniform: represent N's as 0.25, forcing float16,
-      n_sample:  sample ACGT for N
-    Returns:
-      seq_code: length by nucleotides array representation.
+    """
+    Convert a DNA sequence to a one-hot encoded matrix with optional sequence length adjustment and handling of unknown nucleotides.
+
+    Parameters
+    ------------
+    seq : str
+        DNA sequence composed of 'A', 'T', 'C', and 'G' characters.
+    seq_len : int, optional
+        Desired length of the output sequence. If None, the length of the input sequence is used. 
+        If specified and shorter than the input sequence, the sequence is trimmed. If longer, the sequence is centered.
+    n_uniform : bool, optional
+        If True, encode unknown nucleotides as [0.25, 0.25, 0.25, 0.25]. If False, encode unknown nucleotides as [0, 0, 0, 0] or one-hot based on `n_sample`.
+    n_sample : bool, optional
+        If True, randomly assign one of the four nucleotides (one-hot encoded) to unknown nucleotides. Used only if `n_uniform` is False. Default is False.
+
+    Returns
+    ---------
+    seq_code : numpy array
+        A matrix of shape (seq_len, 4) with one-hot encoded DNA sequence, where 'A' -> [1, 0, 0, 0], 'C' -> [0, 1, 0, 0], 
+        'G' -> [0, 0, 1, 0], 'T' -> [0, 0, 0, 1]. Unknown nucleotides are handled according to `n_uniform` and `n_sample`.
     """
     if seq_len is None:
         seq_len = len(seq)
@@ -139,10 +189,21 @@ def permute_seq_k(seq_1hot, k=2):
 
 
 def hot1_rc(seqs_1hot):
-    """Reverse complement a batch of one hot coded sequences,
-    while being robust to additional tracks beyond the four
-    nucleotides."""
+    """
+    Generate the reverse complement of one-hot encoded DNA sequences.
 
+    Parameters
+    ------------
+    seqs_1hot : numpy array
+        A 2D array of shape (sequence_length, 4) or a 3D array of shape (num_sequences, sequence_length, 4)
+        representing one-hot encoded DNA sequences, where 'A' -> [1, 0, 0, 0], 'C' -> [0, 1, 0, 0],
+        'G' -> [0, 0, 1, 0], 'T' -> [0, 0, 0, 1].
+
+    Returns
+    ---------
+    seqs_1hot_rc : numpy array
+        Array of the same shape as the input, representing the reverse complement of the input one-hot encoded DNA sequences.
+    """
     if seqs_1hot.ndim == 2:
         singleton = True
         seqs_1hot = np.expand_dims(seqs_1hot, axis=0)
@@ -167,6 +228,27 @@ def hot1_rc(seqs_1hot):
 
 
 def scan_motif(seq_1hot, motif, strand=None):
+    """
+    Scan a one-hot encoded DNA sequence for a given motif and return the match scores.
+
+    Parameters
+    ------------
+    seq_1hot : numpy array
+        A 2D array of shape (sequence_length, 4) representing a one-hot encoded DNA sequence,
+        where 'A' -> [1, 0, 0, 0], 'C' -> [0, 1, 0, 0], 'G' -> [0, 0, 1, 0], 'T' -> [0, 0, 0, 1].
+    motif : numpy array
+        A 2D array of shape (motif_length, 4) representing the motif to scan for, where each row is
+        the nucleotide probabilities for a position in the motif.
+    strand : str, optional
+        Specify 'forward' to scan only the forward strand, 'reverse' to scan only the reverse strand,
+        or None to scan both and return the maximum score. Default is None.
+
+    Returns
+    ---------
+    numpy array
+        An array of match scores for the motif along the DNA sequence. If `strand` is specified, returns
+        the scores for the specified strand. If `strand` is None, returns the maximum scores from both strands.
+    """
     if motif.shape[-1] != 4:
         raise ValueError(
             "motif should be n_postions x 4 bases, A=0, C=1, G=2, T=3"
@@ -195,11 +277,22 @@ def scan_motif(seq_1hot, motif, strand=None):
 
 
 def hot1_get(seqs_1hot, pos):
-    """hot1_get
-    Return the nucleotide corresponding to the one hot coding
-    of position "pos" in the Lx4 array seqs_1hot.
     """
+    Retrieve the nucleotide at a specific position from a one-hot encoded DNA sequence.
 
+    Parameters
+    ------------
+    seqs_1hot : numpy array
+        A 2D array of shape (sequence_length, 4) representing a one-hot encoded DNA sequence,
+        where 'A' -> [1, 0, 0, 0], 'C' -> [0, 1, 0, 0], 'G' -> [0, 0, 1, 0], 'T' -> [0, 0, 0, 1].
+    pos : int
+        Position in the sequence to retrieve the nucleotide from.
+
+    Returns
+    ---------
+    nt : str
+        The nucleotide ('A', 'C', 'G', 'T') at the specified position. Returns 'N' if no valid nucleotide is found.
+    """
     if seqs_1hot[pos, 0] == 1:
         nt = "A"
     elif seqs_1hot[pos, 1] == 1:
@@ -214,6 +307,20 @@ def hot1_get(seqs_1hot, pos):
 
 
 def dna_1hot_to_seq(ohe_sequence):
+    """
+    Convert a one-hot encoded DNA sequence back to its nucleotide sequence.
+
+    Parameters
+    ------------
+    ohe_sequence : numpy array
+        A 2D array of shape (sequence_length, 4) representing a one-hot encoded DNA sequence,
+        where 'A' -> [1, 0, 0, 0], 'C' -> [0, 1, 0, 0], 'G' -> [0, 0, 1, 0], 'T' -> [0, 0, 0, 1].
+
+    Returns
+    ---------
+    ACTG_seq : str
+        The nucleotide sequence corresponding to the one-hot encoded input sequence.
+    """
     ACTG_seq = str()
     for pos in range(len(ohe_sequence)):
         ACTG_seq = ACTG_seq + hot1_get(ohe_sequence, pos)
@@ -221,6 +328,19 @@ def dna_1hot_to_seq(ohe_sequence):
 
 
 def dna_seq_rc(seq):
+    """
+    Generate the reverse complement of a DNA sequence.
+
+    Parameters
+    ------------
+    seq : str
+        DNA sequence composed of 'A', 'T', 'C', and 'G' characters.
+
+    Returns
+    ---------
+    rc_seq : str
+        The reverse complement of the input DNA sequence.
+    """
     rc_seq = ""
     for nt in seq:
         if nt == "A":

@@ -5,85 +5,79 @@ import glob
 import bioframe as bf
 import itertools
 import akita_utils.format_io
+from akita_utils.tsv_utils import filter_dataframe_by_column
 
 
-def _split_spans(sites, concat=False, span_cols=["start_2", "end_2"]):
-    """Helper function to split a span 'start-end' into two integer series, and either
-    return as a dataFrame or concatenate to the input dataFrame"""
-
-    sites_spans_split = (
-        sites["span"]
-        .str.split("-", expand=True)
-        .astype(int)
-        .rename(columns={0: span_cols[0], 1: span_cols[1]})
-        .copy()
-    )
-    if concat:
-        return pd.concat(
-            [sites, sites_spans_split],
-            axis=1,
-        )
-
-    else:
-        return sites_spans_split
-
-
-def calculate_mean(dataframe, stat):
-    filtered_df = pd.DataFrame()
-    if any(stat in col for col in dataframe.columns):
-        filtered_df = filtered_df.append(
-            dataframe.loc[:, dataframe.columns.str.contains(stat)].copy()
-        )
-    else:
-        print(f"No columns matching '{stat}' found in the DataFrame.")
-    return filtered_df.mean(axis=1)
-
-
-def filter_boundary_ctcfs_from_h5(
-    h5_dirs="/project/fudenber_735/tensorflow_models/akita/v2/analysis/permute_boundaries_motifs_ctcf_mm10_model*/scd.h5",
-    score_key="SCD",
-    threshold_all_ctcf=5,
-):
-    """Takes a set of boundary mutagenesis dataframes as input, where individual sites are saved in the 'span' column,
-    extracts sites greater than a threshold, and filters out sites that overlap with repeatmasker elements.
+def split_df_equally(df, num_chunks, chunk_idx):
     """
-    ## load scores from boundary mutagenesis, average chosen score across models
-    dfs = []
-    for h5_file in glob.glob(h5_dirs):
-        dfs.append(
-            akita_utils.format_io.h5_to_df(h5_file, drop_duplicates_key=None)
+    Split a DataFrame into equal chunks and return the chunk specified by chunk_idx.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        The DataFrame to be split.
+    num_chunks : int
+        Total number of chunks to split the DataFrame into.
+    chunk_idx : int
+        Index of the chunk to retrieve (0-indexed).
+
+    Returns
+    -------
+    pandas.DataFrame
+        The chunk of the DataFrame corresponding to chunk_idx.
+    """
+    df_len = len(df)
+    chunks_bounds = np.linspace(0, df_len, num_chunks + 1, dtype="int")
+    df_chunk = df.loc[
+        chunks_bounds[chunk_idx] : (chunks_bounds[chunk_idx + 1] - 1), :
+    ]
+    return df_chunk
+
+
+def split_by_percentile_groups(df, column_to_split, num_classes, 
+                               upper_percentile=100, lower_percentile=0, 
+                               category_colname="category"):
+    """
+    Splits a dataframe into distinct groups based on the percentile ranges of a specified column.
+    Each group represents a percentile range based on the number of classes specified.
+
+    Parameters
+    ----------
+    df : DataFrame
+        The input pandas dataframe.
+    column_to_split : str
+        The column based on which the dataframe is split into percentile groups.
+    num_classes : int
+        The number of classes to split the dataframe into.
+    upper_percentile : int, default 100
+        The upper limit of the percentile range. Typically set to 100.
+    lower_percentile : int, default 0
+        The lower limit of the percentile range. Typically set to 0.
+    category_colname : str, default "category"
+        The name of the new column to be added to the dataframe, indicating the category of each row based on percentile range.
+
+    Returns
+    -------
+    DataFrame
+        A new dataframe with an additional column named as specified by 'category_colname'.
+        This column contains categorical labels corresponding to the specified percentile ranges.
+    """
+    bounds = np.linspace(lower_percentile, (upper_percentile-lower_percentile), num_classes + 1, dtype="int")
+    df_out = pd.DataFrame()
+
+    for i in range(num_classes):
+        
+        group_df = filter_dataframe_by_column(
+            df,
+            column_name=column_to_split,
+            upper_threshold=bounds[i+1],
+            lower_threshold=bounds[i],
+            drop_duplicates=False
         )
-    df = dfs[0].copy()
-    df[score_key] = np.mean([df[score_key] for df in dfs], axis=0)
+        group_df[category_colname] = f"Group_{i}"
+        df_out = pd.concat([df_out, group_df])
 
-    # append scores for full mut and all ctcf mut to table
-    print("annotating each site with boundary-wide scores")
-    score_10k = np.zeros((len(df),))
-    score_all_ctcf = np.zeros((len(df),))
-    for i in np.unique(df["boundary_index"].values):
-        inds = df["boundary_index"].values == i
-        df_boundary = df.iloc[inds]
-        score_10k[inds] = df_boundary.iloc[-1][score_key]
-        if len(df_boundary) > 2:
-            score_all_ctcf[inds] = df_boundary.iloc[-2][score_key]
-    df["score_all_ctcf"] = score_all_ctcf
-    df["score_10k"] = score_10k
-
-    # considering only single ctcf mutations
-    # require that they fall in an overall boundary that has some saliency
-    # TODO: maybe also require that the neighboring bins don't have a more salient boundary?
-    # suffix _2 means _motif
-    sites = df.iloc[
-        (df["strand_2"].values != "nan")
-        * (df["score_all_ctcf"].values > threshold_all_ctcf)
-    ].copy()
-
-    # extracting start/end of motif from span
-    sites = _split_spans(sites, concat=True)
-    sites.reset_index(inplace=True, drop=True)
-    if sites.duplicated().sum() > 0:
-        raise ValueError("no duplicates allowed")
-    return sites
+    return df_out
 
 
 def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
@@ -243,7 +237,6 @@ def unpack_range(int_range):
         A tuple of integer-type numbers.
 
     """
-
     range_start, range_end = [int(num) for num in int_range.split(",")]
     return (range_start, range_end)
 
@@ -294,52 +287,6 @@ def filter_by_overlap_num(
     working_df = working_df.drop(columns=["count"])
 
     return working_df
-
-
-def validate_df_lenght(
-    num_strong,
-    num_weak,
-    num_orientations,
-    num_backgrounds,
-    number_of_flanks_or_spacers,
-    df,
-):
-    """
-    validates if a created dataframe has an expected length (if number of experiments, so number of rows agrees)
-    sizes.
-
-    Parameters
-    ------------
-    num_strong : int
-        Number of strong CTCF-binding sites to be tested.
-    num_weak : int
-        Number of weak CTCF-binding sites to be tested.
-    num_backgrounds : int
-        Number of different backgrounds to be used.
-    flank_range : str
-        String in a form: "range_start, range_end".
-    df : dataFrame
-        Input dataframe
-
-    Returns
-    ---------
-    (expected_df_len, observed_df_len) : tuple
-        Tuple of two integers: expected and observed number of rows.
-        There is an assertation error if those values are not the same.
-    """
-
-    expected_df_len = (
-        (num_strong + num_weak)
-        * num_orientations
-        * num_backgrounds
-        * number_of_flanks_or_spacers
-    )
-
-    observed_df_len = len(df)
-
-    assert expected_df_len == observed_df_len
-
-    return (expected_df_len, observed_df_len)
 
 
 def generate_all_orientation_strings(N):
@@ -556,234 +503,3 @@ def add_background(seq_coords_df, background_indices_list):
 
     return seq_coords_df
 
-
-# -------------------------------------------------------------------------------------------------
-# functions below under review
-
-
-def generate_ctcf_motifs_list(
-    h5_dirs,
-    rmsk_file,
-    jaspar_file,
-    score_key,
-    mode,
-    num_sites,
-    weak_thresh_pct=1,
-    strong_thresh_pct=99,
-    unique_identifier="",
-):
-    """
-    Generates a list of genomic coordinates for potential CTCF binding sites in DNA sequences.
-
-    Arguments:
-    - h5_dirs: A list of directories containing input .h5 files.
-    - rmsk_file: The path to a .bed file containing repeat-masker annotations.
-    - jaspar_file: The path to a JASPAR-formatted CTCF motif database.
-    - score_key: The key to extract score values of putative binding sites from input .h5 files.
-    - mode: One of "head", "tail", "uniform", or "random"; specifies which percentiles of CTCF sites ranked by score should be selected.
-    - num_sites: The number of sites to select per mode.
-    - weak_thresh_pct: The percentile below which putative binding sites are considered weak (default 1).
-    - strong_thresh_pct: The percentile above which putative binding sites are considered strong (default 99).
-    - unique_identifier: An optional string that can be used to add a unique identifier to the output.
-
-    Returns:
-    - A list of strings representing genomic coordinates of putative CTCF binding sites in the following format: "chrom,start,end,strand#score_key=score_value".
-    """
-    sites = akita_utils.tsv_gen_utils.filter_boundary_ctcfs_from_h5(
-        h5_dirs=h5_dirs,
-        score_key=score_key,
-        threshold_all_ctcf=5,
-    )
-
-    sites = akita_utils.tsv_gen_utils.filter_by_rmsk(
-        sites, rmsk_file=rmsk_file, verbose=True
-    )
-
-    sites = akita_utils.tsv_gen_utils.filter_by_ctcf(
-        sites, ctcf_file=jaspar_file, verbose=True
-    )
-
-    site_df = akita_utils.tsv_gen_utils.filter_sites_by_score(
-        sites,
-        score_key=score_key,
-        lower_threshold=weak_thresh_pct,
-        upper_threshold=strong_thresh_pct,
-        mode=mode,
-        num_sites=num_sites,
-    )
-
-    seq_coords_df = (
-        site_df[["chrom", "start_2", "end_2", "strand_2", score_key]]
-        .copy()
-        .rename(
-            columns={
-                "start_2": "start",
-                "end_2": "end",
-                "strand_2": "strand",
-                score_key: "genomic_" + score_key,
-            }
-        )
-    )
-
-    seq_coords_df.reset_index(drop=True, inplace=True)
-    return generate_locus_specification_list(
-        dataframe=seq_coords_df, unique_identifier=unique_identifier
-    )
-
-
-def generate_locus_specification_list(
-    dataframe,
-    filter_out_ctcf_motifs=False,
-    jasper_df_path="/project/fudenber_735/motifs/mm10/jaspar/MA0139.1.tsv.gz",
-    specification_list=None,
-    unique_identifier="",
-):
-    """
-    Generate a list of locus specifications from a dataframe of genomic features.
-
-    Args:
-        dataframe (pandas.DataFrame): A pandas dataframe containing genomic features with columns
-            'chrom', 'start', 'end', 'strand' and additional columns to be included in the output.
-        filter_out_ctcf_motifs (bool, optional): Whether or not to filter out CTCF motifs. Defaults to False.
-        specification_list (list, optional): A list of indices to include in the output. Defaults to None.
-        unique_identifier (str, optional): A string to identify the unique identifier of additional columns. Defaults to "dummy".
-
-    Returns:
-        list: A list of locus specifications generated from the dataframe, where each specification is
-            of the format "chrom,start,end,strand#unique_identifier_col_name=value#unique_identifier_col_name=value..."
-
-    """
-
-    if filter_out_ctcf_motifs is True:
-        jaspar_df = bf.read_table(jasper_df_path, schema="jaspar", skiprows=1)
-        dataframe = bf.overlap(
-            dataframe, jaspar_df, suffixes=("", "_2"), return_index=False
-        )
-
-    if "strand" not in dataframe.columns:  # some inserts dont have this column
-        dataframe["strand"] = "+"
-
-    dataframe = _dataframe_cleaning(
-        dataframe=dataframe, unique_identifier=unique_identifier
-    )
-
-    # Generate list of locus specifications
-    if specification_list is not None:
-        locus_specifications = dataframe.loc[
-            specification_list, "locus_specification"
-        ].tolist()
-    else:
-        locus_specifications = dataframe["locus_specification"].tolist()
-
-    return locus_specifications
-
-
-def parameter_dataframe_reorganisation(
-    parameters_combo_dataframe, insert_names_list
-):
-    """
-    Reorganizes a parameter combination dataframe to have separate columns for each insert and its
-    associated parameters. It also splits the dataframe to have the crucial columns alone and others kept as trailers with the respective identifiers.
-
-    Args:
-        parameters_combo_dataframe (pandas.DataFrame): A dataframe with the parameter combinations
-            to test, where each row represents a unique combination of parameters and each column
-            represents a different parameter. The dataframe must have columns with the locus
-            specification for each insert, as well as columns with the flank size, offset, and
-            orientation for each insert.
-        insert_names_list (list): A list of the names of the inserts to be included in the final
-            output dataframe.
-
-    Returns:
-        pandas.DataFrame: A reorganized version of the input dataframe, with separate columns for
-        each insert and its associated parameters. Each row corresponds to a unique combination of
-        parameters, and each column contains the locus specification, flank size, offset, and
-        orientation for one insert.
-
-    Raises:
-        AssertionError: If any of the insert-specific column names are not found in the input
-            dataframe columns.
-
-    """
-    for col_name in parameters_combo_dataframe.columns:
-        if "locus_specification" in col_name:
-            split_df = parameters_combo_dataframe[col_name].str.split(
-                "#", expand=True
-            )
-            parameters_combo_dataframe = parameters_combo_dataframe.drop(
-                columns=[col_name]
-            )
-            column_names = [col_name] + [
-                x.split("=")[0] for x in split_df.iloc[0, 1:]
-            ]
-            split_df.columns = column_names
-
-            # Update the values in each cell of the split dataframe
-            for column in column_names[1:]:
-                split_df[column] = split_df[column].apply(
-                    lambda x: x.split("=")[1]
-                )
-
-            new_df = pd.concat([parameters_combo_dataframe, split_df], axis=1)
-            parameters_combo_dataframe = new_df
-
-    for insert_name in insert_names_list:
-        assert (
-            f"{insert_name}_locus_specification"
-            in parameters_combo_dataframe.columns
-        ), f"{insert_name}_locus_specification not found in dataframe columns."
-        assert (
-            f"{insert_name}_flank_bp" in parameters_combo_dataframe.columns
-        ), f"{insert_name}_flank_bp not found in dataframe columns."
-        assert (
-            f"{insert_name}_offset" in parameters_combo_dataframe.columns
-        ), f"{insert_name}_offset not found in dataframe columns."
-        assert (
-            f"{insert_name}_orientation" in parameters_combo_dataframe.columns
-        ), f"{insert_name}_orientation not found in dataframe columns."
-
-        # Combine all columns into one column separated by "$"
-        insert_cols = [
-            f"{insert_name}_locus_specification",
-            f"{insert_name}_flank_bp",
-            f"{insert_name}_offset",
-            f"{insert_name}_orientation",
-        ]
-        parameters_combo_dataframe[
-            f"{insert_name}_insert"
-        ] = parameters_combo_dataframe[insert_cols].apply(
-            lambda x: ",".join(x.astype(str)), axis=1
-        )
-        parameters_combo_dataframe = parameters_combo_dataframe.drop(
-            columns=insert_cols
-        )
-    return parameters_combo_dataframe
-
-
-def _dataframe_cleaning(dataframe, unique_identifier=""):
-
-    # Generate locus specification column
-    dataframe["locus_specification"] = (
-        dataframe["chrom"].astype(str)
-        + ","
-        + dataframe["start"].astype(str)
-        + ","
-        + dataframe["end"].astype(str)
-        + ","
-        + dataframe["strand"].astype(str)
-    )
-
-    # Add any other arbitrary columns from insert dataframe
-    extra_cols = set(dataframe.columns) - set(
-        ["chrom", "start", "end", "strand", "locus_specification"]
-    )
-    for col in extra_cols:
-        dataframe["locus_specification"] += (
-            "#"
-            + f"{unique_identifier}_"
-            + col
-            + "="
-            + dataframe[col].astype(str)
-        )
-
-    return dataframe

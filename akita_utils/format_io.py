@@ -3,243 +3,8 @@ import h5py
 from io import StringIO
 import numpy as np
 
-
-def average_over_keys(h5_file, df, keywords):
-    """
-    Averages data over keys containing specific keywords in the provided HDF5 file.
-
-    This function takes an HDF5 file, a DataFrame, and a list of keywords as input.
-    It searches for keys in the HDF5 file containing each specified keyword,
-    extracts the data from those keys, averages the data over targets and/or models,
-    and adds a new column to the input DataFrame with the averaged values.
-
-    Parameters
-    ----------
-    h5_file : h5py.File)
-        The HDF5 file object containing the data.
-    df : pd.DataFrame)
-        The DataFrame to which the averaged values will be added.
-    keywords : list):
-        A list of keywords to search for in the HDF5 keys.
-
-    Returns
-    -------
-    df : pd.DataFrame
-        The input DataFrame with additional columns containing averaged values
-                  corresponding to the specified keywords.
-
-    Raises
-    ------
-    Exception: If no matching keys are found for any of the specified keywords.
-    """
-
-    for keyword in keywords:
-        # collecting all keys with keyword in the name
-        keys = [
-            key
-            for key in h5_file.keys()
-            if keyword in key and key not in keyword
-        ]
-        if not keys:
-            raise Exception(
-                f"There are no matching keys for the following keyword: {keyword}"
-            )
-
-        data = pd.DataFrame()
-        for key in keys:
-            nr_targets = h5_file[key][()].shape[1]
-            for target_index in range(nr_targets):
-                series = pd.Series(
-                    h5_file[key][:, target_index],
-                    name=key + f"_t{target_index}",
-                )
-                data = pd.concat([data, series], axis=1)
-
-        # averaging over targets and / or models
-        average = data.mean(axis=1)
-        df = pd.concat([df, pd.Series(average, name=keyword)], axis=1)
-
-    return df
-
-
-def collect_all_keys_with_keywords(h5_file, df, keywords, ignore_keys=[]):
-    """
-    Collects data from keys containing specific keywords in the provided HDF5 file.
-
-    This function takes an HDF5 file, a DataFrame, and a list of keywords as input.
-    It searches for keys in the HDF5 file containing each specified keyword,
-    extracts the data from those keys, and aggregates the data into a DataFrame.
-
-    Parameters
-    ----------
-    h5_file : h5py.File
-        The HDF5 file object containing the data.
-    df : pd.DataFrame
-        The initial DataFrame to which the collected data will be added.
-    keywords : list
-        A list of keywords to search for in the HDF5 keys.
-
-    Returns
-    -------
-    data : pd.DataFrame
-        A DataFrame containing data from keys with the specified keywords.
-
-    Raises
-    ------
-    Exception: If no matching keys are found for any of the specified keywords.
-    """
-
-    data = pd.DataFrame()
-
-    for keyword in keywords:
-        # collecting all keys with keyword in the name
-        keys = [
-            key
-            for key in h5_file.keys()
-            if (
-                keyword in key
-                and key not in keyword
-                and key not in ignore_keys
-            )
-        ]
-        if not keys:
-            raise Exception(
-                f"There are no matching keys for the following keyword: {keyword}"
-            )
-
-        for key in keys:
-            nr_targets = h5_file[key][()].shape[1]
-            for target_index in range(nr_targets):
-                series = pd.Series(
-                    h5_file[key][:, target_index],
-                    name=key + f"_t{target_index}",
-                )
-                data = pd.concat([data, series], axis=1)
-
-    return data
-
-
-def calculate_INS(df, keywords, drop=True):
-    """
-    Calculates INS values based on specified keywords in the DataFrame.
-
-    This function takes a DataFrame, a list of keywords, and an optional drop parameter as input.
-    If any of the keywords contain "INS", the function calculates the insertion (INS) values
-    by subtracting the "ref_INS" column from the "alt_INS" column for each specified window size.
-    If drop is True, the function drops the "alt_INS" and "ref_INS" columns after calculation.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        The input DataFrame containing necessary columns for calculations.
-    keywords : list
-        A list of keywords to identify INS window sizes in the DataFrame columns.
-    drop : bool, optional
-        If True, drops "alt_INS" and "ref_INS" columns after calculation. Default is True.
-
-    Returns
-    -------
-    pd.DataFrame
-        If any of the keywords contain "INS", a DataFrame with additional columns
-        containing calculated INS values is returned. Otherwise, the function
-        returns unchanged input DataFrame.
-
-    Raises:
-    Exception: If "alt_INS" or "ref_INS" columns cannot be found for any specified keyword.
-    """
-    if any("INS" in keyword for keyword in keywords):
-        df_out = df.copy(deep=True)
-        windows = []
-
-        for keyword in keywords:
-            if "INS" in keyword:
-                window = int(keyword.split("-")[1])
-                if window not in windows:
-                    windows.append(window)
-
-        for window in windows:
-            key = f"INS-{window}"
-            if "ref_" + key in df.columns and "alt_" + key in df.columns:
-                df_out[key] = df_out["alt_" + key] - df_out["ref_" + key]
-                if drop:
-                    df_out = df_out.drop(columns=["alt_" + key, "ref_" + key])
-            else:
-                raise Exception(
-                    f"alt_ and ref_ columns cannot be found for the following keyword: {keyword}"
-                )
-
-        return df_out
-
-    else:
-        return df
-
-
-def calculate_INS_by_targets(
-    df, keywords, max_nr_targets=6, max_nr_heads=2, max_nr_models=8, drop=True
-):
-    """
-    Calculates INS values based on specified keywords in the DataFrame considering targets, heads, and models.
-
-    This function takes a DataFrame, a list of keywords, and optional parameters for the maximum number of
-    targets, heads, and models. It calculates the insertion (INS) values for each target index, head index,
-    and model index specified in the DataFrame columns. The function assumes a standard naming convention
-    for the columns where INS values are stored, including head index, model index, and target index
-    [{score}_h{head_index}_m{model_index}_t{target_index}].
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        The input DataFrame containing necessary columns for calculations.
-    keywords : list
-        A list of keywords to identify INS window sizes in the DataFrame columns.
-    max_nr_targets : int, optional
-        The maximum number of target indices to consider. Default is 6.
-    max_nr_heads : int, optional
-        The maximum number of head indices to consider. Default is 2.
-    max_nr_models : int, optional
-        The maximum number of model indices to consider. Default is 8.
-    drop : bool, optional
-        If True, drops "alt_INS" and "ref_INS" columns after calculation. Default is True.
-
-    Returns
-    -------
-    pd.DataFrame
-        If any of the keywords contain "INS", DataFrame with additional columns containing calculated INS values
-        for each target, head, and model index is returned. Otherwise, the functionreturns unchanged input DataFrame.
-    """
-
-    if any("INS" in keyword for keyword in keywords):
-        df_out = df.copy(deep=True)
-        windows = []
-
-        for keyword in keywords:
-            if "INS" in keyword:
-                window = int(keyword.split("-")[1])
-                if window not in windows:
-                    windows.append(window)
-
-        for window in windows:
-            for head_index in range(max_nr_heads):
-                for model_index in range(max_nr_models):
-                    for target_index in range(max_nr_targets):
-                        key = f"INS-{window}_h{head_index}_m{model_index}_t{target_index}"
-
-                        if (
-                            "ref_" + key in df.columns
-                            and "alt_" + key in df.columns
-                        ):
-                            df_out[key] = (
-                                df_out["alt_" + key] - df_out["ref_" + key]
-                            )
-                            if drop:
-                                df_out = df_out.drop(
-                                    columns=["alt_" + key, "ref_" + key]
-                                )
-
-        return df_out
-
-    else:
-        return df
+from akita_utils.h5_utils import average_over_keys, collect_all_keys_with_keywords
+from akita_utils.stats_utils import calculate_INS_keywords, calculate_INS_by_targets_keywords
 
 
 def h5_to_df(
@@ -327,9 +92,9 @@ def h5_to_df(
     hf.close()
 
     if average:
-        df_out = calculate_INS(df_out, stats)
+        df_out = calculate_INS_keywords(df_out, stats)
     else:
-        df_out = calculate_INS_by_targets(df_out, stats)
+        df_out = calculate_INS_by_targets_keywords(df_out, stats)
 
     # checking and optionally correcting dtypes
     for key, key_dtype in df_out.dtypes.items():
@@ -348,22 +113,21 @@ def read_jaspar_to_numpy(
     normalize=True,
 ):
     """
-    Read a jaspar pfm to a numpy array that can be used with scan_motif. Default motif is CTCF (MA0139.1)
+    Read a JASPAR motif file into a numpy array.
 
     Parameters
-    ----------
-    motif_file : str
-        Default CTCF motif file.
-    normalize :
-        Whether to normalize counts to sum to one for each position in the motif. Default True.
+    ------------
+    motif_file : str, optional
+        Path to the JASPAR motif file. Default is a specific path.
+    normalize : bool, optional
+        If True, normalize the motif matrix by dividing each row by its sum. Default is True.
 
     Returns
-    -------
-    motif : np.array
-        n_positions by 4 bases
-
+    ---------
+    motif : numpy array
+        A 2D array of shape (n_positions, 4) representing the motif matrix, where each row corresponds
+        to the probabilities of 'A', 'C', 'G', 'T' at that position.
     """
-
     with open(motif_file, "r") as f:
         motif = []
         for line in f.readlines():
@@ -385,20 +149,18 @@ def read_rmsk(
     rmsk_file="/project/fudenber_735/genomes/mm10/database/rmsk.txt.gz",
 ):
     """
-    Reads a DataFrame containing repeatable elements and renames genomic interval columns to standard format.
+    Read RepeatMasker annotation file into a pandas DataFrame.
 
-    This function reads a tabular file containing repeatable elements (typically from RepeatMasker output)
-    and processes it into a DataFrame. The input file should have columns specifying genomic intervals
-    with headers like "genoName", "genoStart", and "genoEnd". This function renames these columns to "chrom",
-    "start", and "end" respectively, which is the standard format used in this repository.
-
-    Parameters:
+    Parameters
+    ------------
     rmsk_file : str, optional
-        Path to the RepeatMasker output file. Default is a specific mm10 genome file.
+        Path to the RepeatMasker annotation file. Default is a specific path.
 
-    Returns:
-    rmsk : pd.DataFrame:
-        A DataFrame containing repeatable elements with columns "chrom", "start", and "end".
+    Returns
+    ---------
+    rmsk : pandas DataFrame
+        DataFrame containing RepeatMasker annotation data with columns: 'chrom', 'start', 'end',
+        'genoLeft', 'strand', 'repName', 'repClass', 'repFamily', 'repStart', 'repEnd', 'id'.
     """
     rmsk_cols = list(
         pd.read_csv(
