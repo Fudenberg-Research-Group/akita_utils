@@ -12,6 +12,7 @@ Functionality:
     - Fetching Subsequences: The fetch method enables users to retrieve a subsequence from a specific chromosome by providing the chromosome name, start position, and end position. It returns the subsequence as a string. If the specified chromosome is not found, a ValueError is raised.
     - Retrieving Chromosome Length: The get_reference_length method allows users to obtain the length of a specific chromosome by providing its name. It returns the length as an integer. If the specified chromosome is not found, a ValueError is raised.
 '''
+
 class ToyGenomeOpen:
     def __init__(self, genome_data):
         """

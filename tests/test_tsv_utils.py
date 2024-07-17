@@ -1,9 +1,10 @@
 import pandas as pd
-from akita_utils.tsv_gen_utils import (
+from akita_utils.tsv_utils import (
     filter_by_chrmlen,
     filter_dataframe_by_column,
     generate_all_orientation_strings,
     filter_by_overlap_num,
+    test_split_df_equally
 )
 
 
@@ -155,3 +156,11 @@ def test_filter_by_overlap_num():
     assert len(test4_out) == 2, "sub-test 4 failed"
     # same as in sub-test 3;
     # checking if column names' renaming works as expected
+
+def test_split_df_equally():
+
+    df = pd.DataFrame(np.linspace(0, 99, 100), columns=["col1"])
+    fifth_chunk = split_df_equally(df, 20, 5)
+    assert (
+        fifth_chunk["col1"].to_numpy() == np.linspace(25, 29, 5)
+    ).all() == True

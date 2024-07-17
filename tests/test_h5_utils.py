@@ -67,13 +67,13 @@ def test_initialize_stat_output_h5():
     - Deletes the temporary h5 file after the test is completed.
     """
 
-    out_dir = "./tmp_OUT"
+    out_dir = "./OUT"
     stats = ["SCD", "INS-16", "INS-64"]
     toy_gen_coordinates_df = pd.read_csv(
         "./test_data/genomic_coordinates_10rows.tsv", sep="\t"
     )
     model_file = "/project/fudenber_735/tensorflow_models/akita/v2/models/f1c0/train/model1_best.h5"
-    filename = "./tmp_OUT/STATS_OUT.h5"
+    filename = "./OUT/STATS_OUT.h5"
 
     tmp_h5 = initialize_stat_output_h5(
         out_dir, model_file, stats, toy_gen_coordinates_df

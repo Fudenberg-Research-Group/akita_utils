@@ -82,5 +82,3 @@ def test_insert_casette():
         )
         == "A" + motif1 + dna_seq_rc(motif1) + "A"
     )
-
-

@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from akita_utils.utils import ut_dense, split_df_equally
+from akita_utils.utils import ut_dense
 
 
 def test_ut_dense():
@@ -22,12 +22,3 @@ def test_ut_dense():
 
     assert (dense_mats[:, :, 0] == target_0).all()
     assert (dense_mats[:, :, 1] == target_1).all()
-
-
-def test_split_df_equally():
-
-    df = pd.DataFrame(np.linspace(0, 99, 100), columns=["col1"])
-    fifth_chunk = split_df_equally(df, 20, 5)
-    assert (
-        fifth_chunk["col1"].to_numpy() == np.linspace(25, 29, 5)
-    ).all() == True
