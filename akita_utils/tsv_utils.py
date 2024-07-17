@@ -5,7 +5,6 @@ import glob
 import bioframe as bf
 import itertools
 import akita_utils.format_io
-from akita_utils.tsv_utils import filter_dataframe_by_column
 
 
 def split_df_equally(df, num_chunks, chunk_idx):
