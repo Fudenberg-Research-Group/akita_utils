@@ -505,6 +505,7 @@ def collect_all_keys_with_keywords(h5_file, df, keywords, ignore_keys=[]):
                 and key not in ignore_keys
             )
         ]
+        
         if not keys:
             raise Exception(
                 f"There are no matching keys for the following keyword: {keyword}"

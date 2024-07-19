@@ -243,3 +243,99 @@ def prepare_nt_count_table(
         nt_count = nt_count + dna_1hot(seq)
     genome_open.close()
     return nt_count
+
+
+# AVERAGING FUNCTIONS
+
+def average_stat_over_targets(df, model_index, head_index, stat="SCD"):
+    """
+    Calculate the average of a specified statistical metric (stat) over multiple targets for a given model and head.
+
+    Parameters:
+    df (DataFrame): The input DataFrame containing the data.
+    model_index (int): The index of the model for which the metric is calculated.
+    head_index (int): The index of the head for which the metric is calculated.
+    stat (str, optional): The statistical metric to calculate the average for (default is "SCD").
+
+    Returns:
+    DataFrame: A DataFrame with a new column containing the average of the specified metric for the specified model and head.
+    """
+    if head_index == 1:
+        target_indices = 6
+    else:
+        target_indices = 5
+
+    df[f"{stat}_m{model_index}"] = df[
+        [
+            f"{stat}_h{head_index}_m{model_index}_t{target_index}"
+            for target_index in range(target_indices)
+        ]
+    ].mean(axis=1)
+    return df
+
+
+def average_stat_over_backgrounds(
+    df,
+    model_index=0,
+    head_index=1,
+    num_backgrounds=10,
+    stat="SCD",
+    columns_to_keep=["chrom", "end", "start", "strand", "seq_id"],
+    keep_background_columns=True,
+):
+    """
+    Calculate the average of a specified statistical metric (stat) over multiple background samples for a given model and head.
+
+    Parameters:
+    df (DataFrame): The input DataFrame containing the data, including background information.
+    model_index (int, optional): The index of the model for which the metric is calculated (default is 0).
+    head_index (int, optional): The index of the head for which the metric is calculated (default is 1).
+    num_backgrounds (int, optional): The number of background samples to consider (default is 10).
+    stat (str, optional): The statistical metric to calculate the average for (default is "SCD").
+    columns_to_keep (list, optional): A list of columns to keep in the output DataFrame (default is ["chrom", "end", "start", "strand", "seq_id"]).
+    keep_background_columns (bool, optional): Whether to keep individual background columns in the output DataFrame (default is True).
+
+    Returns:
+    DataFrame: A DataFrame with the specified statistical metric's average for the specified model and head, along with optional columns.
+    """
+
+    if head_index == 1:
+        target_indices = 6
+    else:
+        target_indices = 5
+
+    num_sites = len(df) // num_backgrounds
+    output_df = df[columns_to_keep][:num_sites]
+
+    for bg_index in range(num_backgrounds):
+        output_df[f"{stat}_bg{bg_index}"] = df[
+            df["background_index"] == bg_index
+        ][f"{stat}_m{model_index}"].values
+
+    output_df[f"{stat}_m{model_index}"] = output_df[
+        [f"{stat}_bg{bg_index}" for bg_index in range(num_backgrounds)]
+    ].mean(axis=1)
+
+    if keep_background_columns == False:
+        output_df = output_df.drop(
+            columns=[
+                f"{stat}_bg{bg_index}" for bg_index in range(num_backgrounds)
+            ]
+        )
+
+    return output_df
+
+
+def average_stat_for_shift(df, shift, model_index, head_index, stat="SCD"):
+    if head_index == 1:
+        target_indices = 6
+    else:
+        target_indices = 5
+
+    df[f"{stat}_{shift}"] = df[
+        [
+            f"{stat}_h{head_index}_m{model_index}_t{target_index}"
+            for target_index in range(target_indices)
+        ]
+    ].mean(axis=1)
+    return df

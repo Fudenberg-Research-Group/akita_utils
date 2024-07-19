@@ -50,7 +50,7 @@ def h5_to_df(
         else:
             extended_stats.append(stat)
     stats = extended_stats
-
+    
     if average:
         df_out = average_over_keys(hf, df_out, stats)
         if verbose:
