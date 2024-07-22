@@ -339,3 +339,50 @@ def average_stat_for_shift(df, shift, model_index, head_index, stat="SCD"):
         ]
     ].mean(axis=1)
     return df
+
+
+def split_by_percentile_groups(df, column_to_split, num_classes, 
+                               upper_percentile=100, lower_percentile=0, 
+                               category_colname="category"):
+    """
+    Splits a dataframe into distinct groups based on the percentile ranges of a specified column.
+    Each group represents a percentile range based on the number of classes specified.
+
+    Parameters
+    ----------
+    df : DataFrame
+        The input pandas dataframe.
+    column_to_split : str
+        The column based on which the dataframe is split into percentile groups.
+    num_classes : int
+        The number of classes to split the dataframe into.
+    upper_percentile : int, default 100
+        The upper limit of the percentile range. Typically set to 100.
+    lower_percentile : int, default 0
+        The lower limit of the percentile range. Typically set to 0.
+    category_colname : str, default "category"
+        The name of the new column to be added to the dataframe, indicating the category of each row based on percentile range.
+
+    Returns
+    -------
+    DataFrame
+        A new dataframe with an additional column named as specified by 'category_colname'.
+        This column contains categorical labels corresponding to the specified percentile ranges.
+    """
+    bounds = np.linspace(lower_percentile, (upper_percentile-lower_percentile), num_classes + 1, dtype="int")
+    df_out = pd.DataFrame()
+
+    for i in range(num_classes):
+            
+        group_df = filter_dataframe_by_column(
+            df,
+            column_name=column_to_split,
+            upper_threshold=bounds[i+1],
+            lower_threshold=bounds[i],
+            drop_duplicates=False
+        )
+        group_df[category_colname] = f"Group_{i}"
+        df_out = pd.concat([df_out, group_df])
+
+    return df_out
+
