@@ -5,12 +5,13 @@ import seaborn as sns
 from datetime import date
 import pandas as pd
 import os
-
+from skimage.measure import block_reduce
 from akita_utils.utils import ut_dense
 from akita_utils.stats_utils import calculate_scores
 
 
 # METADATA FUNCTIONS
+
 
 def prepare_metadata_dir(model_file, genome_fasta, seqnn_model):
     """
@@ -50,6 +51,7 @@ def prepare_metadata_dir(model_file, genome_fasta, seqnn_model):
 
 # H5 INITIALIZATION FUNCTIONS
 
+
 def initialize_stat_output_h5(
     out_dir,
     model_file,
@@ -85,7 +87,7 @@ def initialize_stat_output_h5(
         An initialized h5 file.
     """
 
-    h5_outfile = h5py.File(f"%s/STATS_OUT.h5" % out_dir, "w")
+    h5_outfile = h5py.File("%s/STATS_OUT.h5" % out_dir, "w")
     seq_coords_df_dtypes = seq_coords_df.dtypes
 
     head_index = int(model_file.split("model")[-1][0])
@@ -115,7 +117,7 @@ def initialize_stat_output_h5(
             h5_outfile.create_dataset(
                 key, data=seq_coords_df[key].values.astype(dtype_str)
             )
-            
+
         else:
             h5_outfile.create_dataset(key, data=seq_coords_df[key])
 
@@ -168,7 +170,7 @@ def initialize_maps_output_h5(out_dir, model_file, seqnn_model, seq_coords_df):
     h5_outfile : h5py object
         An initialized h5 file.
     """
-    h5_outfile = h5py.File(f"%s/MAPS_OUT.h5" % out_dir, "w")
+    h5_outfile = h5py.File("%s/MAPS_OUT.h5" % out_dir, "w")
     seq_coords_df_dtypes = seq_coords_df.dtypes
 
     head_index = int(model_file.split("model")[-1][0])
@@ -237,6 +239,7 @@ def initialize_maps_output_references(
 
 # WRITING TO H5 FUNCTIONS
 
+
 def write_stat_metrics_to_h5(
     prediction_matrix,
     reference_prediction_matrix,
@@ -245,7 +248,8 @@ def write_stat_metrics_to_h5(
     head_index,
     model_index,
     diagonal_offset=2,
-    stat_metrics=["SCD"]):
+    stat_metrics=["SCD"],
+):
     """
     Writes to an h5 file saving statistical metrics calculated from Akita's predicftions.
 
@@ -278,7 +282,9 @@ def write_stat_metrics_to_h5(
     # increase dtype
     prediction_matrix = prediction_matrix.astype("float32")
     if type(reference_prediction_matrix) == np.ndarray:
-        reference_prediction_matrix = reference_prediction_matrix.astype("float32")
+        reference_prediction_matrix = reference_prediction_matrix.astype(
+            "float32"
+        )
 
     # convert prediction vectors to maps
     map_matrix = ut_dense(prediction_matrix, diagonal_offset)
@@ -290,7 +296,7 @@ def write_stat_metrics_to_h5(
         scores = calculate_scores(stat_metrics, map_matrix, ref_map_matrix)
     else:
         scores = calculate_scores(stat_metrics, map_matrix)
-        
+
     for key in scores:
         h5_outfile[f"{key}_h{head_index}_m{model_index}"][
             experiment_index
@@ -407,6 +413,7 @@ def save_maps(
 
 # AVERAGING FUNCTIONS
 
+
 def average_over_keys(h5_file, df, keywords):
     """
     Averages data over keys containing specific keywords in the provided HDF5 file.
@@ -505,7 +512,7 @@ def collect_all_keys_with_keywords(h5_file, df, keywords, ignore_keys=[]):
                 and key not in ignore_keys
             )
         ]
-        
+
         if not keys:
             raise Exception(
                 f"There are no matching keys for the following keyword: {keyword}"
@@ -524,6 +531,7 @@ def collect_all_keys_with_keywords(h5_file, df, keywords, ignore_keys=[]):
 
 
 # COLLECTING DATA FROM MULTIPLE HDF5 FILES & CHECKING START OF JOBS
+
 
 def job_started(out_dir, job_index, h5_file_name="STATS_OUT.h5"):
     """
@@ -580,7 +588,9 @@ def infer_num_jobs(out_dir):
     return num_job
 
 
-def collect_h5(out_dir, seq_coords_df, h5_file_name="STATS_OUT.h5", virtual_exp=True):
+def collect_h5(
+    out_dir, seq_coords_df, h5_file_name="STATS_OUT.h5", virtual_exp=True
+):
     """
     Aggregates data from multiple job-specific HDF5 files into a single consolidated HDF5 file.
 
@@ -623,7 +633,7 @@ def collect_h5(out_dir, seq_coords_df, h5_file_name="STATS_OUT.h5", virtual_exp=
     num_jobs = infer_num_jobs(out_dir)
 
     num_experiments = len(seq_coords_df)
-    if virtual_exp==True:
+    if virtual_exp is True:
         num_backgrounds = len(seq_coords_df["background_index"].unique())
 
     seq_coords_df_dtypes = seq_coords_df.dtypes
@@ -643,14 +653,14 @@ def collect_h5(out_dir, seq_coords_df, h5_file_name="STATS_OUT.h5", virtual_exp=
             final_h5_open.create_dataset(
                 key, data=seq_coords_df[key].values.astype(dtype_str)
             )
-            
+
         else:
             final_h5_open.create_dataset(key, data=seq_coords_df[key])
-    
+
     print("Getting keys from job 0")
     job0_h5_file = "%s/job0/%s" % (out_dir, h5_file_name)
     job0_h5_open = h5py.File(job0_h5_file, "r")
-    
+
     for key in job0_h5_open.keys():
         if (job0_h5_open[key].ndim == 1) and (key not in final_h5_open):
             final_h5_open.create_dataset(
@@ -756,9 +766,6 @@ def collect_h5(out_dir, seq_coords_df, h5_file_name="STATS_OUT.h5", virtual_exp=
                 elif key.split("_")[0] == "refmap":
                     if virtual_exp:
                         bg_indices = list(set(job_h5_open["background_index"]))
-                        min_bg_index = min(
-                            list(set(job_h5_open["background_index"]))
-                        )
 
                         for bg_index in bg_indices:
                             # if this background hasn't been saved yet, save it

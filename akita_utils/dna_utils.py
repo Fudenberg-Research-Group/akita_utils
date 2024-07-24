@@ -106,7 +106,7 @@ def dna_1hot(seq, seq_len=None, n_uniform=False, n_sample=False):
     seq : str
         DNA sequence composed of 'A', 'T', 'C', and 'G' characters.
     seq_len : int, optional
-        Desired length of the output sequence. If None, the length of the input sequence is used. 
+        Desired length of the output sequence. If None, the length of the input sequence is used.
         If specified and shorter than the input sequence, the sequence is trimmed. If longer, the sequence is centered.
     n_uniform : bool, optional
         If True, encode unknown nucleotides as [0.25, 0.25, 0.25, 0.25]. If False, encode unknown nucleotides as [0, 0, 0, 0] or one-hot based on `n_sample`.
@@ -116,7 +116,7 @@ def dna_1hot(seq, seq_len=None, n_uniform=False, n_sample=False):
     Returns
     ---------
     seq_code : numpy array
-        A matrix of shape (seq_len, 4) with one-hot encoded DNA sequence, where 'A' -> [1, 0, 0, 0], 'C' -> [0, 1, 0, 0], 
+        A matrix of shape (seq_len, 4) with one-hot encoded DNA sequence, where 'A' -> [1, 0, 0, 0], 'C' -> [0, 1, 0, 0],
         'G' -> [0, 0, 1, 0], 'T' -> [0, 0, 0, 1]. Unknown nucleotides are handled according to `n_uniform` and `n_sample`.
     """
     if seq_len is None:

@@ -1,21 +1,27 @@
-#!/usr/bin/env python
+# This script collects and processes HDF5 files generated from genomic experiments,
+# ensuring proper data collection and directory management. It supports both virtual and genomic experiments,
+# and provides options for cleaning up the output directory.
+#
+# Inputs:
+# - out_dir: Output directory where the collected HDF5 files and logs will be stored.
+#
+# Parameters:
+# - h5_file_name: Name of the HDF5 files to collect (default: "STATS_OUT.h5").
+# - tsv_path: Path to the table with experiment specifications.
+# - virtual_experiment: Flag indicating a virtual experiment (default: True).
+# - genomic_experiment: Flag indicating a genomic experiment (default: True).
+# - collecting_maps: Flag to indicate if maps should be collected (default: True).
+# - not_collecting_maps: Flag to indicate if maps should not be collected (default: True).
+# - leave_files: Flag to indicate if the output directory should not be cleaned (default: True).
+# - not_leave_files: Flag to indicate if the output directory should be cleaned (default: True).
+# - collected_to_sum_file_size_ths: Threshold for suspicious size difference (default: 0.8).
+#
+# Outputs:
+# - Collected HDF5 files stored in the specified output directory.
+#
+# Example command-line usage:
+# python collect_h5_files.py -f STATS_OUT.h5 -d experiment_specifications.tsv -g -m -l out_directory
 
-# Copyright 2017 Calico LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# =========================================================================
-
-###################################################
 
 import os
 import pandas as pd
@@ -98,7 +104,7 @@ def main():
     )
 
     (options, args) = parser.parse_args()
-    
+
     if len(args) == 1:
         out_dir = args[0]
     else:
@@ -109,10 +115,10 @@ def main():
     exp_dataframe = pd.read_csv(options.tsv_path, sep="\t")
     if "Unnamed: 0" in exp_dataframe.columns:
         exp_dataframe = exp_dataframe.drop(columns=["Unnamed: 0"])
-        
+
     if options.not_collecting_maps == True:
         options.collecting_maps = False
-    
+
     if options.genomic_experiment == True:
         options.virtual_experiment = False
 
@@ -131,7 +137,10 @@ def main():
     print("Collecting h5 files...")
 
     collect_h5(
-        out_dir, exp_dataframe, options.h5_file_name, virtual_exp=options.virtual_experiment
+        out_dir,
+        exp_dataframe,
+        options.h5_file_name,
+        virtual_exp=options.virtual_experiment,
     )
 
     if not options.leave_files:

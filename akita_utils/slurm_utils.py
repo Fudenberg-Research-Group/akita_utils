@@ -79,7 +79,10 @@ def main():
             time.sleep(10)
 
         # wait for it to complete
-        while main_job.update_status() and main_job.status in ["PENDING", "RUNNING"]:
+        while main_job.update_status() and main_job.status in [
+            "PENDING",
+            "RUNNING",
+        ]:
             time.sleep(30)
 
         print("%s %s" % (main_job.name, main_job.status), file=sys.stderr)
@@ -88,7 +91,9 @@ def main():
         main_job.clean()
 
 
-def multi_run(jobs, max_proc=None, verbose=False, launch_sleep=2, update_sleep=20):
+def multi_run(
+    jobs, max_proc=None, verbose=False, launch_sleep=2, update_sleep=20
+):
     """
     Launch multiple jobs sequentially and monitor their statuses until all jobs have finished.
 
@@ -113,10 +118,10 @@ def multi_run(jobs, max_proc=None, verbose=False, launch_sleep=2, update_sleep=2
     finished = 0
     running = 0
     active_jobs = []
-    
+
     if max_proc is None:
         max_proc = len(jobs)
-    
+
     while finished + running < total:
         # launch jobs up to the max
         while running < max_proc and finished + running < total:
@@ -136,10 +141,10 @@ def multi_run(jobs, max_proc=None, verbose=False, launch_sleep=2, update_sleep=2
 
         # sleep
         time.sleep(update_sleep)
-        
+
         # update all statuses
         multi_update_status(active_jobs)
-        
+
         # update active jobs
         active_jobs_new = []
         for i in range(len(active_jobs)):
@@ -175,25 +180,24 @@ def multi_update_status(jobs, max_attempts=3, sleep_attempt=5):
     ---------
     None
     """
-    
+
     for j in jobs:
         j.status = None
-    
+
     # try multiple times because sometimes it fails
     attempt = 0
     while attempt < max_attempts and [j for j in jobs if j.status is None]:
-
         if attempt > 0:
             time.sleep(sleep_attempt)
 
         sacct_str = subprocess.check_output("sacct", shell=True)
         sacct_str = sacct_str.decode("UTF-8")
-        
+
         # split into job lines
         sacct_lines = sacct_str.split("\n")
         for line in sacct_lines[2:]:
             a = line.split()
-            
+
             if a != []:
                 try:
                     line_id = int(a[0].split(".")[0])
@@ -205,9 +209,10 @@ def multi_update_status(jobs, max_attempts=3, sleep_attempt=5):
                 for j in jobs:
                     if line_id == j.id:
                         j.status = a[5].split(".")[0]
-        
+
         attempt += 1
-    
+
+
 class Job:
     """
     Represents a job to be submitted to SLURM.
@@ -248,7 +253,7 @@ class Job:
     update_status(max_attempts=3, sleep_attempt=5):
         Update the job status using 'sacct' command and return True if successful, False otherwise.
     """
-    
+
     def __init__(
         self,
         cmd,
@@ -341,7 +346,9 @@ class Job:
         sbatch_out.close()
 
         # launch it; check_output to get the id
-        launch_str = subprocess.check_output("sbatch %s" % sbatch_file, shell=True)
+        launch_str = subprocess.check_output(
+            "sbatch %s" % sbatch_file, shell=True
+        )
 
         # e.g. "Submitted batch job 13861989"
         self.id = int(launch_str.split()[3])
@@ -376,7 +383,7 @@ class Job:
             sacct_lines = sacct_str.split("\n")
             for line in sacct_lines[2:]:
                 a = line.split()
-                
+
                 if a != []:
                     try:
                         line_id = int(a[0])
@@ -394,6 +401,7 @@ class Job:
         else:
             self.status = status
             return True
+
 
 ################################################################################
 # __main__

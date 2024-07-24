@@ -41,7 +41,7 @@ def read_requirements(path):
         for line in read(path).split("\n")
         if not line.startswith(('"', "#", "-", "git+"))
     ]
- 
+
 
 setup(
     name="akita_utils",

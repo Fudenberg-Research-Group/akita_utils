@@ -1,5 +1,6 @@
 import numpy as np
 
+
 # numeric utilites
 def absmaxND(a, axis=None):
     """

@@ -1,9 +1,6 @@
-import pytest
-import numpy as np
 from .Toy_genome import ToyGenomeOpen
 from akita_utils.dna_utils import dna_1hot, dna_1hot_to_seq, dna_seq_rc
 from akita_utils.seq_gens import _insert_casette
-
 
 genome_data = {
     "chr1": "AGCTCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG",

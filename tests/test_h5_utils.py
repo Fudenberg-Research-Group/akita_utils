@@ -79,7 +79,7 @@ def test_initialize_stat_output_h5():
         out_dir, model_file, stats, toy_gen_coordinates_df
     )
 
-    assert _check_unique_values(toy_gen_coordinates_df, filename) == True
+    assert _check_unique_values(toy_gen_coordinates_df, filename) is True
 
     tmp_h5.close()
     os.remove(filename)

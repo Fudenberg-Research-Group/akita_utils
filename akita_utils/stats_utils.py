@@ -1,8 +1,5 @@
 import numpy as np
 from akita_utils.utils import ut_dense
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 
 # STANDARDS
 MOTIF_LEN = 19
@@ -111,12 +108,13 @@ def get_map_matrix(
         exp_map_matrix[exp_index, :, :, :] += map_matrix
 
     return exp_map_matrix
-    
+
 
 # SCORES
 
 
 # 1) Insulation score
+
 
 def _single_map_insulation(target_map, window=10):
     """
@@ -171,6 +169,7 @@ def calculate_INS(map_matrix, window=10):
 
 
 # 2) SCD (Square Contact Differences)
+
 
 def calculate_SCD(map_matrix, reference_map_matrix=None):
     """
@@ -233,6 +232,7 @@ def calculate_SSD(map_matrix, reference_map_matrix=None):
 
 # 3) functions required for dot scores calculation
 
+
 def get_bin(
     window_start,
     window_end,
@@ -261,9 +261,6 @@ def get_bin(
     bin_index : int
         The bin overlapping the given window.
     """
-
-    window_size = window_end - window_start
-
     size_after_cropping = map_size * bin_size
     size_difference = input_size - size_after_cropping
     one_side_cropped_length = size_difference // 2
@@ -557,6 +554,7 @@ def calculate_dot_cross_score(
 
 # 4) Sliding INS Score
 
+
 def slide_diagonal_insulation(target_map, window=10):
     """
     Calculate insulation by sliding a window along the diagonal of the target map.
@@ -577,11 +575,11 @@ def slide_diagonal_insulation(target_map, window=10):
     map_size = target_map.shape[0]
     scores = np.empty((map_size,))
     scores[:] = np.nan
-    
+
     for mid in range(window, (map_size - window)):
-        lo = max(0, mid+1-window)
+        lo = max(0, mid + 1 - window)
         hi = min(map_size, mid + window)
-        score = np.nanmean(target_map[lo:(mid+1), mid:hi])
+        score = np.nanmean(target_map[lo : (mid + 1), mid:hi])
         scores[mid] = score
 
     return scores
@@ -604,13 +602,15 @@ def extract_window_from_vector(vector, window=10, width=3):
         Extracted window of size 3*window.
     """
     center_index = len(vector) // 2
-    start_index = max(center_index - width*window, 0)
-    end_index = min(center_index + width*window, len(vector))
+    start_index = max(center_index - width * window, 0)
+    end_index = min(center_index + width * window, len(vector))
     window_vector = vector[start_index:end_index]
     return window_vector
 
 
-def min_insulation_offset_from_center(target_map, window=10, crop_around_center=True, crop_width=3):
+def min_insulation_offset_from_center(
+    target_map, window=10, crop_around_center=True, crop_width=3
+):
     """
     Calculate the offset from the center position for the position along the diagonal
     with the minimum insulation score for a sliding window along the diagonal.
@@ -630,14 +630,16 @@ def min_insulation_offset_from_center(target_map, window=10, crop_around_center=
     map_size = target_map.shape[0]
     center_position = map_size // 2
     bin_shift = 0
-    
+
     insulation_scores = slide_diagonal_insulation(target_map, window)
-    
+
     if crop_around_center:
-        bin_shift = max(center_position - crop_width*window, 0)
-        insulation_scores = extract_window_from_vector(insulation_scores, window=window, width=3)
-    
-    min_score = np.nanmin(insulation_scores)  
+        bin_shift = max(center_position - crop_width * window, 0)
+        insulation_scores = extract_window_from_vector(
+            insulation_scores, window=window, width=3
+        )
+
+    min_score = np.nanmin(insulation_scores)
 
     # Find indices with min_score
     indices_tuple = np.where(insulation_scores == min_score)
@@ -646,10 +648,10 @@ def min_insulation_offset_from_center(target_map, window=10, crop_around_center=
     # in case there are more than one index with min_score
     # Calculate midpoint of the array
     midpoint = len(insulation_scores) // 2
-    
+
     # Find index closest to the midpoint among indices with the same score
     closest_index = None
-    min_difference = float('inf')
+    min_difference = float("inf")
     for index in indices_list:
         difference = abs(index - midpoint)
         if difference < min_difference:
@@ -661,7 +663,9 @@ def min_insulation_offset_from_center(target_map, window=10, crop_around_center=
     return offset_from_center
 
 
-def calculate_offset_INS(map_matrix, window=10, crop_around_center=True, crop_width=3):
+def calculate_offset_INS(
+    map_matrix, window=10, crop_around_center=True, crop_width=3
+):
     """
     Calculate insulation in a window-size diamond around the central pixel
     for a set of num_targets contact difference maps.
@@ -679,18 +683,20 @@ def calculate_offset_INS(map_matrix, window=10, crop_around_center=True, crop_wi
     """
 
     num_targets = map_matrix.shape[-1]
-    map_size = map_matrix.shape[0]
     scores = np.zeros((num_targets,))
     for target_index in range(num_targets):
-        offset_from_center = min_insulation_offset_from_center(map_matrix[:, :, target_index], 
-                                                               window=window, 
-                                                               crop_around_center=crop_around_center, 
-                                                               crop_width=crop_width)
+        offset_from_center = min_insulation_offset_from_center(
+            map_matrix[:, :, target_index],
+            window=window,
+            crop_around_center=crop_around_center,
+            crop_width=crop_width,
+        )
         scores[target_index] = offset_from_center
     return scores
 
 
 # calculating all desired scores for a set of maps
+
 
 def calculate_scores(
     stat_metrics, map_matrix, reference_map_matrix=None, **kwargs
@@ -718,9 +724,11 @@ def calculate_scores(
         for stat in stat_metrics:
             if stat.split("-")[0] == "OFF":
                 window = int(stat.split("-")[1])
-                OFF = calculate_offset_INS(map_matrix, window, crop_around_center=True, crop_width=3)
+                OFF = calculate_offset_INS(
+                    map_matrix, window, crop_around_center=True, crop_width=3
+                )
                 scores[f"{stat}"] = OFF
-                
+
     if (
         ("dot-score" in stat_metrics)
         or ("cross-score" in stat_metrics)
@@ -764,6 +772,7 @@ def calculate_scores(
 
 
 # CALCULATING SCORES (DF) BASED ON KEYWORDS
+
 
 def calculate_INS_keywords(df, keywords, drop=True):
     """
@@ -886,4 +895,3 @@ def calculate_INS_by_targets_keywords(
 
     else:
         return df
-        

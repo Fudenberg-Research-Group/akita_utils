@@ -1,10 +1,8 @@
 import pandas as pd
 import numpy as np
 import akita_utils
-import glob
 import bioframe as bf
 import itertools
-import akita_utils.format_io
 
 
 def split_df_equally(df, num_chunks, chunk_idx):
@@ -33,9 +31,14 @@ def split_df_equally(df, num_chunks, chunk_idx):
     return df_chunk
 
 
-def split_by_percentile_groups(df, column_to_split, num_classes, 
-                               upper_percentile=100, lower_percentile=0, 
-                               category_colname="category"):
+def split_by_percentile_groups(
+    df,
+    column_to_split,
+    num_classes,
+    upper_percentile=100,
+    lower_percentile=0,
+    category_colname="category",
+):
     """
     Splits a dataframe into distinct groups based on the percentile ranges of a specified column.
     Each group represents a percentile range based on the number of classes specified.
@@ -61,17 +64,21 @@ def split_by_percentile_groups(df, column_to_split, num_classes,
         A new dataframe with an additional column named as specified by 'category_colname'.
         This column contains categorical labels corresponding to the specified percentile ranges.
     """
-    bounds = np.linspace(lower_percentile, (upper_percentile-lower_percentile), num_classes + 1, dtype="int")
+    bounds = np.linspace(
+        lower_percentile,
+        (upper_percentile - lower_percentile),
+        num_classes + 1,
+        dtype="int",
+    )
     df_out = pd.DataFrame()
 
     for i in range(num_classes):
-        
         group_df = filter_dataframe_by_column(
             df,
             column_name=column_to_split,
-            upper_threshold=bounds[i+1],
+            upper_threshold=bounds[i + 1],
             lower_threshold=bounds[i],
-            drop_duplicates=False
+            drop_duplicates=False,
         )
         group_df[category_colname] = f"Group_{i}"
         df_out = pd.concat([df_out, group_df])
@@ -115,7 +122,9 @@ def filter_by_chrmlen(df, chrmsizes, buffer_bp=0):
     return df_filtered
 
 
-def filter_by_chromID(df, chrom_column = "chrom", chrID_to_drop=["chrX", "chrY", "chrM"]):
+def filter_by_chromID(
+    df, chrom_column="chrom", chrID_to_drop=["chrX", "chrY", "chrM"]
+):
     """
     Filter a DataFrame based on chromosome IDs.
 
@@ -143,7 +152,7 @@ def filter_dataframe_by_column(
     lower_threshold=0,
     filter_mode="uniform",
     num_rows=None,
-    drop_duplicates=True
+    drop_duplicates=True,
 ):
     """
     Filters a pandas dataframe by a specified column, considering given thresholds, filter mode, and other parameters. Optionally, removes duplicate rows based on the specified column.
@@ -159,8 +168,8 @@ def filter_dataframe_by_column(
     lower_threshold : float, default 0
         Float in a range (0,100); rows with column_name's values below this percentile are removed.
     filter_mode : str, default "uniform"
-        Specifies the subset of interest in the filtered dataframe. 
-        "head" returns the first rows, "tail" returns the last rows, "random" returns a random set of rows. 
+        Specifies the subset of interest in the filtered dataframe.
+        "head" returns the first rows, "tail" returns the last rows, "random" returns a random set of rows.
         Otherwise, rows are sampled uniformly with respect to their column_name's values.
     num_rows : int, optional
         The number of rows to return. If None, the function returns the full filtered dataframe.
@@ -188,17 +197,14 @@ def filter_dataframe_by_column(
     upper_thresh = np.percentile(df[column_name].values, upper_threshold)
     lower_thresh = np.percentile(df[column_name].values, lower_threshold)
 
-    filtered_df = (
-        df[
-            (df[column_name] >= lower_thresh)
-            & (df[column_name] <= upper_thresh)
-        ]
-        .copy())
+    filtered_df = df[
+        (df[column_name] >= lower_thresh) & (df[column_name] <= upper_thresh)
+    ].copy()
 
-    if drop_duplicates == True:
+    if drop_duplicates is True:
         filtered_df = filtered_df.drop_duplicates(subset=[column_name])
     filtered_df = filtered_df.sort_values(column_name, ascending=False)
-    
+
     if num_rows is not None:
         assert num_rows <= len(
             filtered_df
@@ -248,7 +254,6 @@ def filter_by_overlap_num(
     filter_df_cols=["chrom", "start", "end"],
     max_overlap_num=0,
 ):
-
     """
     Filter out rows from working_df that overlap entries in filter_df above given threshold.
 
@@ -501,4 +506,3 @@ def add_background(seq_coords_df, background_indices_list):
     seq_coords_df["background_index"] = background_ls
 
     return seq_coords_df
-
