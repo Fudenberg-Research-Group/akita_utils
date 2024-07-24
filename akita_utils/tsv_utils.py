@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import akita_utils
 import bioframe as bf
 import itertools
 

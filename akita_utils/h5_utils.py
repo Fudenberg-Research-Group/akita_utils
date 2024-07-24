@@ -5,7 +5,6 @@ import seaborn as sns
 from datetime import date
 import pandas as pd
 import os
-from skimage.measure import block_reduce
 from akita_utils.utils import ut_dense
 from akita_utils.stats_utils import calculate_scores
 
@@ -387,7 +386,6 @@ def save_maps(
 
         for target_index in range(prediction_matrix.shape[-1]):
             map_target = map_matrix[..., target_index]
-            map_target = block_reduce(map_target, (2, 2), np.mean)
             vmin = min(map_target.min(), map_target.min())
             vmax = max(map_target.max(), map_target.max())
             vmin = min(-plot_lim_min, vmin)
