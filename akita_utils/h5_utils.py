@@ -5,7 +5,7 @@ import seaborn as sns
 from datetime import date
 import pandas as pd
 import os
-from akita_utils.utils import ut_dense
+from akita_utils.numpy_utils import ut_dense
 from akita_utils.stats_utils import calculate_scores
 
 
