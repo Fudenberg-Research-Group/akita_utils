@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import logomaker as lm
 from sklearn.preprocessing import normalize
-from akita_utils.dna_utils import dna_rc, dna_1hot_index, dna_1hot
+from .dna_utils import dna_rc, dna_1hot_index, dna_1hot
 
 
 # FLANKING SEQUENCES ANALYSIS

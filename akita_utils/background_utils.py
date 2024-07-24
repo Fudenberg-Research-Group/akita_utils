@@ -1,6 +1,6 @@
 import numpy as np
 import pysam
-from akita_utils.dna_utils import dna_1hot, permute_seq_k
+from .dna_utils import dna_1hot, permute_seq_k
 
 
 def _calculate_scores_from_predictions(predictions):

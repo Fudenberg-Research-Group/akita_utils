@@ -2,11 +2,11 @@ import pandas as pd
 import h5py
 from io import StringIO
 
-from akita_utils.h5_utils import (
+from .h5_utils import (
     average_over_keys,
     collect_all_keys_with_keywords,
 )
-from akita_utils.stats_utils import (
+from .stats_utils import (
     calculate_INS_keywords,
     calculate_INS_by_targets_keywords,
 )

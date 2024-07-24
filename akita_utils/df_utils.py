@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from akita_utils.tsv_utils import filter_dataframe_by_column
+from .tsv_utils import filter_dataframe_by_column
 
 
 # AVERAGING FUNCTIONS

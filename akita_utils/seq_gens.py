@@ -1,5 +1,5 @@
 import numpy as np
-from akita_utils.dna_utils import hot1_rc, dna_1hot, permute_seq_k, dna_rc
+from .dna_utils import hot1_rc, dna_1hot, permute_seq_k, dna_rc
 
 
 # reference (wild type)

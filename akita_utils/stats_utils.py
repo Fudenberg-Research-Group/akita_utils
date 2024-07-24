@@ -1,5 +1,5 @@
 import numpy as np
-from akita_utils.numpy_utils import ut_dense
+from .numpy_utils import ut_dense
 
 # STANDARDS
 MOTIF_LEN = 19
