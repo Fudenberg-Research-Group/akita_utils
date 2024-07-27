@@ -80,6 +80,19 @@ def average_stat_over_backgrounds(
 
 
 def average_stat_for_shift(df, shift, model_index, head_index, stat="SCD"):
+    """
+    Compute the average of specified statistics for a given shift and add it as a new column to the DataFrame.
+
+    Parameters:
+    df (pd.DataFrame): The input DataFrame containing the statistics.
+    shift (str): The shift for which the average statistic is calculated (used as a suffix in the new column name).
+    model_index (int): The index of the model from which the statistics are taken.
+    head_index (int): The index of the head from which the statistics are taken. Determines the range of target indices.
+    stat (str): The type of statistic to average (default is "SCD").
+
+    Returns:
+    pd.DataFrame: The DataFrame with a new column containing the average of the specified statistics for the given shift.
+    """
     if head_index == 1:
         target_indices = 6
     else:
