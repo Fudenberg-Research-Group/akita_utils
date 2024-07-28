@@ -701,6 +701,24 @@ def calculate_offset_INS(
 def calculate_scores(
     stat_metrics, map_matrix, reference_map_matrix=None, **kwargs
 ):
+    """
+    Calculate various scores based on the given statistical metrics and mapping matrices.
+
+    Parameters:
+    stat_metrics (list of str): List of statistical metrics to calculate. Possible values include "SCD", "SSD", "INS-{window_size}", "OFF-{window_size}", "dot-score", "cross-score", and "x-score".
+    map_matrix (np.ndarray): The mapping matrix for which the scores are calculated.
+    reference_map_matrix (np.ndarray, optional): The reference mapping matrix for comparative calculations. Default is None.
+    **kwargs: Additional keyword arguments for specific score calculations.
+
+    Returns:
+    dict: A dictionary containing the calculated scores. The keys are the names of the scores, and the values are the calculated score values.
+
+    Notes:
+    - "SCD" and "SSD" scores are calculated using `calculate_SCD` and `calculate_SSD` functions.
+    - "INS-{window_size}" scores are calculated using `calculate_INS` function, where `window_size` is an integer.
+    - "OFF-{window_size}" scores are calculated using `calculate_offset_INS` function, where `window_size` is an integer.
+    - "dot-score", "cross-score", and "x-score" are calculated using respective functions that use specific row and column lines derived from insertion start positions.
+    """
     scores = {}
 
     if "SCD" in stat_metrics:
