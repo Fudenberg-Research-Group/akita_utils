@@ -306,13 +306,13 @@ def hot1_get(seqs_1hot, pos):
     return nt
 
 
-def dna_1hot_to_seq(ohe_sequence):
+def dna_1hot_to_seq(seq_1hot):
     """
     Convert a one-hot encoded DNA sequence back to its nucleotide sequence.
 
     Parameters
     ------------
-    ohe_sequence : numpy array
+    seq_1hot : numpy array
         A 2D array of shape (sequence_length, 4) representing a one-hot encoded DNA sequence,
         where 'A' -> [1, 0, 0, 0], 'C' -> [0, 1, 0, 0], 'G' -> [0, 0, 1, 0], 'T' -> [0, 0, 0, 1].
 
@@ -322,8 +322,8 @@ def dna_1hot_to_seq(ohe_sequence):
         The nucleotide sequence corresponding to the one-hot encoded input sequence.
     """
     ACTG_seq = str()
-    for pos in range(len(ohe_sequence)):
-        ACTG_seq = ACTG_seq + hot1_get(ohe_sequence, pos)
+    for pos in range(len(seq_1hot)):
+        ACTG_seq = ACTG_seq + hot1_get(seq_1hot, pos)
     return ACTG_seq
 
 
