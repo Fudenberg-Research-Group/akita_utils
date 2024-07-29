@@ -24,6 +24,22 @@ git clone https://github.com/Fudenberg-Research-Group/akita_utils.git
 cd akita_utils
 make install
 ```
+
+Working environment specifying requirements can be installed as
+```py
+conda env create -f basenji_py3.9_tf2.15.yml
+```
+
+Ensure you have the following dependencies installed:
+
+- numpy
+- pandas
+- scipy
+- tensorflow
+- h5py
+- bioframe
+- seaborn
+
 ## Usage
 
 Here are some examples of how to use Akita Utils in your projects:
@@ -51,18 +67,6 @@ Feedback and questions are appreciated. Please contact us at: fudenber at usc fu
 - `./akita_utils`: Contains helper functions split by application, e.g., dna_utils, h5_utils, seq_genes.
 - `./cli`: Contains a script for collecting h5 files output jobs.
 - `./tests`: Contains test functions for the akita_utils functions.
-
-## Prerequisites
-
-Ensure you have the following dependencies installed:
-
-- numpy
-- pandas
-- scipy
-- tensorflow
-- h5py
-- bioframe
-- seaborn
 
 ## License
 
