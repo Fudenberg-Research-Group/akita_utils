@@ -2,10 +2,6 @@ import numpy as np
 import pandas as pd
 from .tsv_utils import filter_dataframe_by_column
 
-
-# AVERAGING FUNCTIONS
-
-
 def average_stat_over_targets(df, model_index, head_index, stat="SCD"):
     """
     Calculate the average of a specified statistical metric (stat) over multiple targets for a given model and head.

@@ -27,10 +27,10 @@ def collect_flanked_sequences(
     - sites (DataFrame): A pandas DataFrame containing the genomic sites of interest. The DataFrame must
       include columns 'chrom', 'start', 'end', and 'strand'.
     - flank_length (int, optional): The number of base pairs to include on each side of the site. Default is 30.
-    - genome_path (str, optional): The file path to the genome fasta file. Default is "/project/fudenber_735/genomes/mm10/mm10.fa".
-
+    - genome_path (str, optional): The file path to the genome fasta file. 
+    
     Returns:
-    - numpy.ndarray: An array where each element is a one-hot encoded representation of the flanked sequence at each site.
+    - numpy.ndarray: array where each row contains integer encoded DNA sequence of the site and flanking sequence
     """
     genome_open = pysam.Fastafile(genome_path)
     sites_dna_num = []
