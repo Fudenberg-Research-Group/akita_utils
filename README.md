@@ -24,7 +24,7 @@ make install
 ```
 
 Working environment specifying requirements can be installed as
-```py
+```bash
 conda env create -f basenji_py3.9_tf2.15.yml
 ```
 

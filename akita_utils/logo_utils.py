@@ -32,6 +32,10 @@ def collect_flanked_sequences(
     Returns:
     - numpy.ndarray: array where each row contains integer encoded DNA sequence of the site and flanking sequence
     """
+    # Check if all sequences are of the same length
+    if not all((sites['end'] - sites['start']).eq((sites['end'] - sites['start']).iloc[0])):
+        raise ValueError("All sequences must be of the same length.")
+    
     genome_open = pysam.Fastafile(genome_path)
     sites_dna_num = []
 
@@ -52,7 +56,7 @@ def collect_flanked_sequences(
     return sites_dna_num
 
 
-def reorder_by_hamming_dist(dna_matrix, sub_index=(0, -1)):
+def reorder_by_hamming_dist(dna_matrix, position_subset=(0, -1)):
     """
     Reorders a matrix of DNA sequences based on their pairwise Hamming distances.
 
@@ -62,7 +66,7 @@ def reorder_by_hamming_dist(dna_matrix, sub_index=(0, -1)):
 
     Parameters:
     - dna_matrix (numpy.ndarray): A 2D numpy array where each row represents a DNA sequence.
-    - sub_index (tuple, optional): A tuple (start, end) indicating the subset of each sequence to consider
+    - position_subset (tuple, optional): A tuple (start, end) indicating the subset of each sequence to consider
       for the Hamming distance calculation. Default is (0, -1) which considers the full length of each sequence.
 
     Returns:
@@ -75,10 +79,10 @@ def reorder_by_hamming_dist(dna_matrix, sub_index=(0, -1)):
     seq_dist = np.zeros((num_seqs, num_seqs))
 
     for i in range(num_seqs):
-        seq_i = dna_matrix[i][sub_index[0] : sub_index[1]]
+        seq_i = dna_matrix[i][position_subset[0] : position_subset[1]]
         for j in range(num_seqs):
             if i < j:
-                seq_j = dna_matrix[j][sub_index[0] : sub_index[1]]
+                seq_j = dna_matrix[j][position_subset[0] : position_subset[1]]
                 seq_dist[i, j] = 1 - scipy.spatial.distance.hamming(
                     seq_i, seq_j
                 )
@@ -90,7 +94,7 @@ def reorder_by_hamming_dist(dna_matrix, sub_index=(0, -1)):
     return dna_matrix[reording]
 
 
-def plot_seq_matrix(dna_matrix, cluster_by_hamming=True, sub_index=(0, -1)):
+def plot_seq_matrix(dna_matrix, cluster_by_hamming=True, position_subset=(0, -1), cmap_acgt=None):
     """
     Plot a matrix representing DNA sequences, optionally clustering by Hamming distance.
 
@@ -99,10 +103,12 @@ def plot_seq_matrix(dna_matrix, cluster_by_hamming=True, sub_index=(0, -1)):
     dna_matrix : numpy.ndarray
         Matrix of DNA sequences encoded as integers (0 for 'A', 1 for 'C', 2 for 'G', 3 for 'T').
     cluster_by_hamming : bool, optional
-        Whether to reorder rows by Hamming distance to subsequence defined by `sub_index` (default is True).
-    sub_index : tuple of ints, optional
+        Whether to reorder rows by Hamming distance to subsequence defined by `position_subset` (default is True).
+    position_subset : tuple of ints, optional
         Subsequence indices `(start, end)` to define the sequence for clustering by Hamming distance (default is (0, -1),
         representing the entire sequence).
+    cmap_acgt : matplotlib.colors.ListedColormap, optional
+        Colormap for DNA bases (A=green, C=blue, G=gold, T=red). If None, a default colormap is used.
 
     Returns
     -------
@@ -111,18 +117,19 @@ def plot_seq_matrix(dna_matrix, cluster_by_hamming=True, sub_index=(0, -1)):
     Notes
     -----
     This function plots a heatmap of the `dna_matrix` using a colormap that matches standard logo colors for DNA bases (A=green, C=blue, G=gold, T=red).
-    If `cluster_by_hamming` is True, it reorders the rows of `dna_matrix` based on Hamming distance to the subsequence defined by `sub_index`.
+    If `cluster_by_hamming` is True, it reorders the rows of `dna_matrix` based on Hamming distance to the subsequence defined by `position_subset`.
     """
-    # colormap matching logo colors
-    cmap_acgt = colors.ListedColormap([
-        'green', #a green
-        'blue', #c blue
-        'gold', #g gold
-        'red' #t red
-    ])
+    # Default colormap if none is provided
+    if cmap_acgt is None:
+        cmap_acgt = colors.ListedColormap([
+            'green',  # A green
+            'blue',   # C blue
+            'gold',   # G gold
+            'red'     # T red
+        ])
 
     if cluster_by_hamming:
-        dna_matrix = reorder_by_hamming_dist(dna_matrix, sub_index=sub_index)
+        dna_matrix = reorder_by_hamming_dist(dna_matrix, position_subset=position_subset)
 
     plt.figure(figsize=(10,18))
     im = plt.matshow(
@@ -132,13 +139,13 @@ def plot_seq_matrix(dna_matrix, cluster_by_hamming=True, sub_index=(0, -1)):
     plt.colorbar(im, fraction=0.046, pad=0.04)
 
 
-def plot_logo_from_counts(nt_count_table, logo_height = 3, logo_width = 0.45):
+def plot_logo_from_counts(nucleotide_count_table, logo_height = 3, logo_width = 0.45):
     """
     Plot a sequence logo from a nucleotide count table.
 
     Parameters
     ----------
-    nt_count_table : pandas.DataFrame
+    nucleotide_count_table : pandas.DataFrame
         Table of nucleotide counts with columns ['A', 'C', 'G', 'T'].
     logo_height : float, optional
         Height of the logo plot (default is 3).
@@ -154,7 +161,7 @@ def plot_logo_from_counts(nt_count_table, logo_height = 3, logo_width = 0.45):
     This function normalizes the nucleotide counts to probabilities, transforms them into information content,
     and plots a sequence logo using the Logomaker library.
     """
-    dna_prob = normalize(nt_count_table, axis=1, norm="l1")
+    dna_prob = normalize(nucleotide_count_table, axis=1, norm="l1")
     dna_prob_df = pd.DataFrame(dna_prob, columns=["A", "C", "G", "T"])
 
     logo_params = {"df": lm.transform_matrix(dna_prob_df, from_type="probability", to_type="information"),
@@ -168,7 +175,7 @@ def plot_logo_from_counts(nt_count_table, logo_height = 3, logo_width = 0.45):
     logo.ax.set_yticks([0, 0.5, 1, 1.5, 2], minor=False)
 
 
-def prepare_nt_count_table(
+def prepare_nucleotide_count_table(
     sites,
     flank_length=30,
     genome_path="/project/fudenber_735/genomes/mm10/mm10.fa",
@@ -196,7 +203,7 @@ def prepare_nt_count_table(
     )
     genome_open = pysam.Fastafile(genome_path)
 
-    nt_count = np.zeros(shape=(seq_length, 4))
+    nucleotide_count = np.zeros(shape=(seq_length, 4))
     for i in range(len(sites)):
         chrm, start, end, strand = sites.iloc[i][
             ["chrom", "start", "end", "strand"]
@@ -206,6 +213,6 @@ def prepare_nt_count_table(
         seq = genome_open.fetch(chrm, start, end).upper()
         if strand == "-":
             seq = dna_rc(seq)
-        nt_count = nt_count + dna_1hot(seq)
+        nucleotide_count = nucleotide_count + dna_1hot(seq)
     genome_open.close()
-    return nt_count
+    return nucleotide_count

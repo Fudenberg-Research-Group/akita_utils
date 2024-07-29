@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from .tsv_utils import filter_dataframe_by_column
 
-def average_stat_over_targets(df, model_index, head_index, stat="SCD"):
+def average_stat_over_targets(df, model_index=0, head_index=1, stat="SCD"):
     """
     Calculate the average of a specified statistical metric (stat) over multiple targets for a given model and head.
 
@@ -75,7 +75,7 @@ def average_stat_over_backgrounds(
     return output_df
 
 
-def average_stat_for_shift(df, shift, model_index, head_index, stat="SCD"):
+def average_stat_for_shift(df, shift, model_index=0, head_index=1, stat="SCD"):
     """
     Compute the average of specified statistics for a given shift and add it as a new column to the DataFrame.
 
