@@ -28,7 +28,7 @@ Working environment specifying requirements can be installed as
 conda env create -f basenji_py3.9_tf2.15.yml
 ```
 
-Ensure you have the following dependencies installed:
+Alternatively, install the requirements below:
 
 - numpy
 - pandas
@@ -37,24 +37,6 @@ Ensure you have the following dependencies installed:
 - h5py
 - bioframe
 - seaborn
-
-## Usage
-
-Here are some examples of how to use Akita Utils in your projects:
-
-```py
-import akita_utils
-from akita_utils.plot_utils import plot_map
-from akita_utils.stats_utils import calculate_scores
-```
-
-You can also run Akita Utils from the command line:
-
-```bash
-$ python -m akita_utils
-#or
-$ akita_utils
-```
 
 ## Contact Information
 
