@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 def plot_map(matrix, vmin=-0.6, vmax=0.6, width=5, height=5, palette="RdBu_r"):
     """
-    Plots a 512x512 log(obs/exp) map.
+    Plot a log(obs/exp) map with reasonable defaults for AkitaV2.
 
     Parameters
     ------------
