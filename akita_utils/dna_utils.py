@@ -175,7 +175,9 @@ def permute_seq_k(seq_1hot, k=2):
     seq_length = len(seq_1hot)
     if seq_length % k != 0:
         raise ValueError("Sequence length must be divisible by k")
-
+    if seq_length < k:
+        raise ValueError("Sequence length must be greater than k")
+        
     seq_1hot_perm = np.zeros_like(seq_1hot)
 
     num_permutations = seq_length // k
