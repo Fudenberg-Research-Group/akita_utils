@@ -413,7 +413,7 @@ def shuffled_sequences_gen(seq_coords_df, genome_open, jasper_motif_file=None):
 # tests on shuffling and its impact on insertion score
 
 
-def unshuffled_insertion_gen(
+def genomic_insertion_seq_gen(
     seq_coords_df,
     genome_open,
     ctcf_site_coordinates,
