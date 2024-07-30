@@ -358,40 +358,30 @@ def sliding_disruption_seq_gen(
 # generating shuffled sequences (once!)
 
 
-def shuffled_sequences_gen(seq_coords_df, genome_open, jasper_motif_file=None):
+def shuffled_sequences_gen(seq_coords_df, genome_open):
     """
-    Generates sequences with shuffled backgrounds based on the input sequences' coordinates.
+    Generate shuffled sequences based on provided coordinates and genome.
 
-    This generator function takes a DataFrame of sequence coordinates, an open genome file,
-    and an optional JASPAR motif file. It iterates through each row in the DataFrame,
-    fetches the corresponding DNA sequence from the genome, converts it into a one-hot encoding,
-    and then applies a shuffling mutation method as specified by the 'mutation_method' column
-    in the DataFrame. The function currently supports only the "permute_whole_seq" mutation method.
-    If the 'jasper_motif_file' parameter is provided, the function raises a NotImplementedError
-    as the handling for this parameter has not been included.
+    This generator function takes a DataFrame of sequence coordinates and a genome object,
+    extracts the corresponding DNA sequences, and applies a specified shuffling method to
+    generate alternative sequences. Currently, only whole sequence permutation is supported.
 
     Parameters:
-    - seq_coords_df (DataFrame): A pandas DataFrame containing the sequence coordinates.
-      It must have the columns 'chrom', 'start', 'end', and 'mutation_method'. Optionally,
-      a 'shuffle_parameter' column is required for the "permute_whole_seq" mutation method.
-    - genome_open (file-like): An open file-like object of the genome sequences, supporting
-      the fetch method to retrieve DNA sequences given chromosome, start, and end positions.
-    - jasper_motif_file (str, optional): Path to a JASPAR motif file. Currently, the use of this
-      file is not implemented, and providing it will raise a NotImplementedError.
+    seq_coords_df (pd.DataFrame): DataFrame containing sequence coordinates and mutation methods.
+        Expected columns are:
+        - chrom (str): Chromosome identifier.
+        - start (int): Start position of the sequence.
+        - end (int): End position of the sequence.
+        - mutation_method (str): Method for generating shuffled sequences. Supported method is "permute_whole_seq".
+        - shuffle_parameter (int): Parameter for the permutation method (e.g., k-mer size for shuffling).
+    genome_open (pysam.FastaFile): Opened genome file for fetching DNA sequences.
 
     Yields:
-    - numpy.ndarray: A one-hot encoded numpy array representing the shuffled sequence.
+    np.ndarray: One-hot encoded shuffled sequence.
 
     Raises:
-    - NotImplementedError: If 'jasper_motif_file' is provided or if a mutation method other
-      than "permute_whole_seq" is encountered.
+    NotImplementedError: If the mutation method specified in the DataFrame is not supported.
     """
-
-    if jasper_motif_file is not None:
-        raise NotImplementedError(
-            "Background generation using jaspar_motif_file not implemented."
-        )
-
     for s in seq_coords_df.itertuples():
         chrom, start, end = s.chrom, s.start, s.end
         seq_dna = genome_open.fetch(chrom, int(start), int(end))
