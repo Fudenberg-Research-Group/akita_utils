@@ -38,6 +38,16 @@ Alternatively, install the requirements below:
 - bioframe
 - seaborn
 
+## Usage
+
+For usage examples, please refer to the [akitaX1-analyses repository](https://github.com/Fudenberg-Research-Group/akitaX1-analyses) repository. 
+
+We recommend starting with the following tutorials:
+- `akitaXi-analyses/tutorials/disruption_tutorial.ipynb`
+- `akitaXi-analyses/tutorials/insertion_tutorial.ipynb`
+  
+These tutorials will help you understand the basic functionalities and applications of akita_utils.
+
 ## Contact Information
 
 Feedback and questions are appreciated. Please contact us at: fudenber at usc fullstop edu & smaruj at usc fullstop edu.
