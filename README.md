@@ -9,7 +9,7 @@ Akita Utils is a set of functions to aid analysis of Akita. Akita is a deep lear
 
 Scripts used for cross-species AkitaV2 training and model weights are available from the [Basenji repository](https://github.com/calico/basenji/tree/master/manuscripts/akita/v2).
 
-Akita Utils have been used to perform *in silico* experiments to extract the sequence contributions of CTCF to genome folding. The code for these experiments and computational analysis of Akita.V2’s predictions can be found in the [akitaX1-analyses repository](https://github.com/Fudenberg-Research-Group/akitaX1-analyses).
+Akita Utils have been used to perform *in silico* experiments to extract the sequence contributions of CTCF to genome folding. The code for these experiments and computational analysis of Akita.V2’s predictions can be found in the [akitaV2-analyses repository](https://github.com/Fudenberg-Research-Group/akitaV2-analyses.git).
 
 Preprint available here: *link to be added very soon*
 
@@ -40,11 +40,11 @@ Alternatively, install the requirements below:
 
 ## Usage
 
-For usage examples, please refer to the [akitaX1-analyses repository](https://github.com/Fudenberg-Research-Group/akitaX1-analyses). 
+For usage examples, please refer to the [akitaV2-analyses repository](https://github.com/Fudenberg-Research-Group/akitaV2-analyses.git). 
 
 We recommend starting with the following tutorials:
-- `akitaX1-analyses/tutorials/disruption_tutorial.ipynb`
-- `akitaX1-analyses/tutorials/insertion_tutorial.ipynb`
+- `akitaV2-analyses/tutorials/disruption_tutorial.ipynb`
+- `akitaV2-analyses/tutorials/insertion_tutorial.ipynb`
   
 These tutorials will help you understand the basic functionalities and applications of akita_utils.
 
