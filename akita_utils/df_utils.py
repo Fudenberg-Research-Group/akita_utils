@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from .tsv_utils import filter_dataframe_by_column
 import bioframe as bf
 import itertools
 
