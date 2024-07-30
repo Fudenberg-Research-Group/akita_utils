@@ -2,31 +2,7 @@ import numpy as np
 from .dna_utils import hot1_rc, dna_1hot, permute_seq_k, dna_rc
 
 
-# reference (wild type)
-
-
-def reference_seqs_gen(background_seqs):
-    """
-    Generate one-hot encoded reference sequences from a list of background DNA sequences.
-
-    This iterator function takes a list of background DNA sequences `background_seqs`
-    and yields one-hot encoded reference sequences that can be used as input to Akita
-    via PredStreamGen.
-
-    Parameters:
-    - background_seqs (List[str]): List of background DNA sequences.
-
-    Yields:
-    numpy.ndarray: One-hot encoded DNA reference sequence.
-    """
-
-    for background_index in range(len(background_seqs)):
-        seq_1hot = background_seqs[background_index].copy()
-        yield seq_1hot
-
-
 # insertion experiment
-
 
 def _insert_casette(
     seq_1hot, seq_1hot_insertion, spacer_bp, orientation_string
