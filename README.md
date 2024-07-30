@@ -40,7 +40,7 @@ Alternatively, install the requirements below:
 
 ## Usage
 
-For usage examples, please refer to the [akitaX1-analyses repository](https://github.com/Fudenberg-Research-Group/akitaX1-analyses) repository. 
+For usage examples, please refer to the [akitaX1-analyses repository](https://github.com/Fudenberg-Research-Group/akitaX1-analyses). 
 
 We recommend starting with the following tutorials:
 - `akitaX1-analyses/tutorials/disruption_tutorial.ipynb`
