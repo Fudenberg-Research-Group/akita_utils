@@ -1,5 +1,5 @@
 import numpy as np
-from akita_utils.dna_utils import dna_1hot, dna_1hot_to_seq, dna_seq_rc, test_permute_seq_k
+from akita_utils.dna_utils import dna_1hot, dna_1hot_to_seq, dna_seq_rc, permute_seq_k
 
 
 def test_dna_1hot_to_seq():
