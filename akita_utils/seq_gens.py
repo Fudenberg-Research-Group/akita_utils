@@ -300,26 +300,45 @@ def central_permutation_seqs_gen(
 
 
 def sliding_disruption_seq_gen(
-    seq_coords_df, genome_open, split=10, bin_size=2048, seq_length=1310720
+    seq_coords_df,
+    genome_open,
+    split=10,
+    bin_size=2048,
+    seq_length=1310720,
+    shuffle_k=1,
 ):
     """
-    Generates wild-type and permuted sequences in one-hot encoding format for given genomic coordinates.
+    Generates sequences with sliding disruptions for a given set of genomic coordinates.
 
-    This function iterates over a DataFrame containing genomic coordinates, fetches the wild-type sequence from
-    a genome file, and generates permuted versions of the sequence by disrupting specific regions. The sequences
-    are then returned in a one-hot encoding format.
+    This generator function takes a DataFrame of sequence coordinates and a genome file handle,
+    and yields one-hot encoded sequences with sliding window disruptions. Each sequence is split
+    into smaller bins, and a segment of each bin is permuted to create variations of the sequence.
 
-    Args:
-        seq_coords_df (pd.DataFrame): DataFrame containing genomic coordinates with columns 'chr', 'start', 'end', and 'genome_window_start'.
-        genome_open (pysam.Fasta): Open genome file from which sequences will be fetched.
-        split (int, optional): Number of splits to create for permutation within each sequence window. Default is 10.
-        bin_size (int, optional): Size of the bins used for permutation. Default is 2048.
-        seq_length (int, optional): Length of the sequence to be fetched from the genome. Default is 1310720.
+    Parameters
+    ------------
+    seq_coords_df : pandas.DataFrame
+        DataFrame containing sequence coordinates with columns `chr`, `genome_window_start`, and `genome_window_end`.
+    genome_open : pysam.FastaFile or similar
+        Open genome file handle for fetching sequences.
+    split : int, optional
+        Number of splits to create within each bin. Default is 10.
+    bin_size : int, optional
+        Size of each bin in base pairs (bp). Default is 2048.
+    seq_length : int, optional
+        Length of the sequence to extract from the genome. Default is 1310720.
+    shuffle_k : int, optional
+        Number of shuffles to perform on the sequence segment. Default is 1.
 
-    Yields:
-        np.ndarray: One-hot encoded representation of the wild-type sequence and permuted sequences.
+    Yields
+    -------
+    sequence : numpy.ndarray
+        One-hot encoded sequence, first yielding the wild-type sequence followed by permuted sequences.
+
+    Notes
+    -----
+    The wild-type sequence is fetched from the genome based on the provided coordinates. For each split,
+    a segment within the bin is permuted, and the resulting sequences are yielded one by one.
     """
-
     rel_start_permutation_bin = (seq_length // 2) - bin_size
 
     for s in seq_coords_df.itertuples():
@@ -345,7 +364,7 @@ def sliding_disruption_seq_gen(
 
             alt_seq_1hot = wt_seq_1hot.copy()
             permuted_span = permute_seq_k(
-                alt_seq_1hot[permutation_start:permutation_end], k=1
+                alt_seq_1hot[permutation_start:permutation_end], k=shuffle_k
             )
             alt_seq_1hot[permutation_start:permutation_end] = permuted_span
             list_1hot.append(alt_seq_1hot)

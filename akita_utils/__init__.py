@@ -1,12 +1,12 @@
 __all__ = [
-    "utils",
-    "analysis_utils",
     "background_utils",
+    "df_utils",
     "dna_utils",
-    "h5_utils",
-    "slurm_utils",
     "format_io",
+    "h5_utils",
+    "logo_utils",
+    "numpy_utils",
     "seq_gens",
+    "slurm_utils",
     "stats_utils",
-    "tsv_utils",
 ]

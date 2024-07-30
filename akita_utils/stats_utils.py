@@ -9,56 +9,6 @@ INSERT_LEN = 2 * FLANK_LEN + MOTIF_LEN
 
 # MATRIX TRANSFORMATION
 
-def get_reference_map_matrix(
-    hf, head_index, model_index, num_background, diagonal_offset=2
-):
-    """
-    Collect all the reference predictions from the h5 file and transform it to
-    log(exp/obs) maps returned as an array of size (num_background, map_size, map_size, num_targets).
-
-    Parameters
-    ------------
-    hf : h5 object
-        Opened h5 file.
-    head_index : int
-        Head index used to get a prediction (Mouse: head_index=1; Human: head_index=0).
-    model_index : int
-        Index of one of 8 models that has been used to make predictions (an index between 0 and 7).
-    num_background : int
-        Number of background sequences used in the experiment.
-    diagonal_offset : int
-        Number of diagonals that are added as zeros in the conversion.
-        Typically 2 diagonals are ignored in Hi-C data processing.
-
-    Returns
-    ---------
-    ref_map_matrix : numpy array
-        An array of size (num_background, map_size, map_size, num_targets) with log(exp/obs) maps.
-    """
-    num_targets = 6
-    if head_index != 1:
-        num_targets = 5
-
-    map_size = len(
-        ut_dense(
-            hf[f"refmap_h{head_index}_m{model_index}"][0, :, :],
-            diagonal_offset,
-        )
-    )
-    ref_map_matrix = np.zeros(
-        (num_background, map_size, map_size, num_targets)
-    )
-
-    for background_index in range(num_background):
-        preds_matrix = hf[f"refmap_h{head_index}_m{model_index}"][
-            background_index, :, :
-        ]
-        map_matrix = ut_dense(preds_matrix, diagonal_offset)
-
-        ref_map_matrix[background_index, :, :, :] += map_matrix
-
-    return ref_map_matrix
-
 
 def get_map_matrix(
     hf, head_index, model_index, num_experiments, diagonal_offset=2
@@ -201,39 +151,10 @@ def calculate_SCD(map_matrix, reference_map_matrix=None):
         )
 
 
-def calculate_SSD(map_matrix, reference_map_matrix=None):
-    """
-    Calculates SSD score for a multiple-target prediction matrix.
-    If reference_matrix is not given, it is assumed that an insertion-into-background
-    experiment has been performed so reference values are close to 0.
-
-    Parameters
-    ------------
-    map_matrix : numpy array
-        Array with contact change maps predicted by Akita, usually of a size (512 x 512 x num_targets)
-    reference_map_matrix : numpy array
-        Array with contact change maps predicted by Akita for a reference sequence, usually of a size (512 x 512 x num_targets)
-
-    Returns
-    ---------
-    num_targets-long vector with SSD score calculated for each target.
-    """
-
-    if type(reference_map_matrix) != np.ndarray:
-        map_matrix = map_matrix.astype("float32")
-        return map_matrix.sum(axis=(0, 1))
-    else:
-        map_matrix = map_matrix.astype("float32")
-        reference_map_matrix = reference_map_matrix.astype("float32")
-        return map_matrix.sum(axis=(0, 1)) - reference_map_matrix.sum(
-            axis=(0, 1)
-        )
-
-
 # 3) functions required for dot scores calculation
 
 
-def get_bin(
+def _get_overlapping_bin_index(
     window_start,
     window_end,
     map_size=512,
@@ -313,14 +234,7 @@ def get_insertion_start_pos(
     return insertion_starting_positions
 
 
-def map_sum(map_fragment):
-    """
-    Returns a sum of values for a 2D matrix.
-    """
-    return (map_fragment**2).sum(axis=(0, 1))
-
-
-def get_lines(row_line, col_line, dot_band_size):
+def _calculate_dot_score_region(row_line, col_line, dot_band_size):
     """
     Returns a list of columns and rows limiting the fragment of a map
     that calculation of (local) dot score is based on.
@@ -383,14 +297,15 @@ def calculate_dot_score(
         lower_horizontal,
         left_vertical,
         right_vertical,
-    ) = get_lines(row_line, col_line, dot_band_size)
+    ) = _calculate_dot_score_region(row_line, col_line, dot_band_size)
 
     # central, dot part
-    dot_score = map_sum(
+    dot_score = (
         map_matrix[
             upper_horizontal:lower_horizontal, left_vertical:right_vertical
         ]
-    )
+        ** 2
+    ).sum(axis=(0, 1))
     return dot_score
 
 
@@ -432,18 +347,16 @@ def calculate_dot_x_score(
         lower_horizontal,
         left_vertical,
         right_vertical,
-    ) = get_lines(row_line, col_line, dot_band_size)
+    ) = _calculate_dot_score_region(row_line, col_line, dot_band_size)
 
     # central, dot part
     dot_size = dot_band_size**2
     dot_score = (
-        map_sum(
-            map_matrix[
-                upper_horizontal:lower_horizontal, left_vertical:right_vertical
-            ]
-        )
-        / dot_size
-    )
+        map_matrix[
+            upper_horizontal:lower_horizontal, left_vertical:right_vertical
+        ]
+        ** 2
+    ).sum(axis=(0, 1)) / dot_size
 
     # x-parts
     x_score = 0
@@ -466,7 +379,7 @@ def calculate_dot_x_score(
             right_vertical : right_vertical + boundary_band_size,
         ],
     ]:
-        x_score += map_sum(matrix_part)
+        x_score += (matrix_part**2).sum(axis=(0, 1))
 
     x_score = x_score / x_size
 
@@ -511,18 +424,16 @@ def calculate_dot_cross_score(
         lower_horizontal,
         left_vertical,
         right_vertical,
-    ) = get_lines(row_line, col_line, dot_band_size)
+    ) = _calculate_dot_score_region(row_line, col_line, dot_band_size)
 
     # central, dot part
     dot_size = dot_band_size**2
     dot_score = (
-        map_sum(
-            map_matrix[
-                upper_horizontal:lower_horizontal, left_vertical:right_vertical
-            ]
-        )
-        / dot_size
-    )
+        map_matrix[
+            upper_horizontal:lower_horizontal, left_vertical:right_vertical
+        ]
+        ** 2
+    ).sum(axis=(0, 1)) / dot_size
 
     # cross-parts
     cross_score = 0
@@ -545,7 +456,7 @@ def calculate_dot_cross_score(
             left_vertical:right_vertical,
         ],
     ]:
-        cross_score += map_sum(matrix_part)
+        cross_score += (matrix_part**2).sum(axis=(0, 1))
 
     cross_score = cross_score / cross_size
 
@@ -585,7 +496,7 @@ def slide_diagonal_insulation(target_map, window=10):
     return scores
 
 
-def extract_window_from_vector(vector, window=10, width=3):
+def _extract_centered_window(vector, window=10, width=3):
     """
     Extract a window of size 3*window centered around the center of the vector.
 
@@ -635,7 +546,7 @@ def min_insulation_offset_from_center(
 
     if crop_around_center:
         bin_shift = max(center_position - crop_width * window, 0)
-        insulation_scores = extract_window_from_vector(
+        insulation_scores = _extract_centered_window(
             insulation_scores, window=window, width=3
         )
 
@@ -753,9 +664,11 @@ def calculate_scores(
         or ("x-score" in stat_metrics)
     ):
         starting_positions = get_insertion_start_pos()
-        row_line, col_line = get_bin(
+        row_line, col_line = _get_overlapping_bin_index(
             starting_positions[0], starting_positions[0] + INSERT_LEN
-        ), get_bin(starting_positions[1], starting_positions[1] + INSERT_LEN)
+        ), _get_overlapping_bin_index(
+            starting_positions[1], starting_positions[1] + INSERT_LEN
+        )
 
         if "dot-score" in stat_metrics:
             dot_score = calculate_dot_score(
