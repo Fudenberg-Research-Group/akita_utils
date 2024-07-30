@@ -389,7 +389,7 @@ def shuffled_sequences_gen(seq_coords_df, genome_open, jasper_motif_file=None):
 
     if jasper_motif_file is not None:
         raise NotImplementedError(
-            "The background generation methods using jaspar_motif_file have not been included."
+            "Background generation using jaspar_motif_file not implemented."
         )
 
     for s in seq_coords_df.itertuples():
@@ -406,7 +406,7 @@ def shuffled_sequences_gen(seq_coords_df, genome_open, jasper_motif_file=None):
             yield permuted_alt_seq_1hot
         else:
             raise NotImplementedError(
-                "Other background generation methods have not been included."
+                "Alternative background generation methods not implemented."
             )
 
 
